@@ -1,26 +1,34 @@
-import { Injectable } from '@nestjs/common';
-import { CreateProductoStatusDto } from './dto/create-producto-status.dto';
-import { UpdateProductoStatusDto } from './dto/update-producto-status.dto';
+import { Repository } from 'typeorm'
+import { Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+
+import { ProductStatusEntity } from 'src/entities/product_status.entity'
+
+import { PageDto } from 'src/dto/page.dto'
+import { PageMetaDto } from 'src/dto/page-meta.dto'
+import { PageOptionsDto } from 'src/dto/page-options.dto'
 
 @Injectable()
 export class ProductoStatusService {
-  create(createProductoStatusDto: CreateProductoStatusDto) {
-    return 'This action adds a new productoStatus';
-  }
+	constructor(
+		@InjectRepository(ProductStatusEntity)
+		private readonly productStatusRepository: Repository<ProductStatusEntity>
+	) {}
 
-  findAll() {
-    return `This action returns all productoStatus`;
-  }
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<ProductStatusEntity>> {
+		const queryBuilder = this.productStatusRepository.createQueryBuilder('product_status')
+		.select([
+			'product_status.id',
+			'product_status.name'
+		])
+		.orderBy('product_status.id', pageOptionsDto.order)
+		.skip(pageOptionsDto.skip)
+		.take(pageOptionsDto.take)
 
-  findOne(id: number) {
-    return `This action returns a #${id} productoStatus`;
-  }
+		const [ items, totalCount ] = await queryBuilder.getManyAndCount()
 
-  update(id: number, updateProductoStatusDto: UpdateProductoStatusDto) {
-    return `This action updates a #${id} productoStatus`;
-  }
+		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 
-  remove(id: number) {
-    return `This action removes a #${id} productoStatus`;
-  }
+		return new PageDto(items, pageMetaDto)
+	}
 }

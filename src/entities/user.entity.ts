@@ -20,6 +20,9 @@ export class UserEntity {
   @Column("int", { name: "role_id" })
   roleId: number;
 
+  @Column("int", { name: "active" })
+  active: number;
+
   @Column("varchar", { name: "name", length: 255 })
   name: string;
 

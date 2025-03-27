@@ -21,7 +21,7 @@ export class RoleService {
 			'role.id',
 			'role.name'
 		])
-		.orderBy('role.created_at')
+		.orderBy('role.id', pageOptionsDto.order)
 		.skip(pageOptionsDto.skip)
 		.take(pageOptionsDto.take)
 

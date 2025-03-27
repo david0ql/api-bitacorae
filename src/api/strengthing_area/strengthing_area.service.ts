@@ -32,7 +32,7 @@ export class StrengthingAreaService {
 			'strengthing_area.name',
 			'strengthing_area.levelId',
 		])
-		.orderBy('strengthing_area.created_at')
+		.orderBy('strengthing_area.name', pageOptionsDto.order)
 		.skip(pageOptionsDto.skip)
 		.take(pageOptionsDto.take)
 

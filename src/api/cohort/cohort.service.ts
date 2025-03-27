@@ -34,7 +34,7 @@ export class CohortService {
 			'cohort.startDate',
 			'cohort.endDate'
 		])
-		.orderBy('cohort.created_at')
+		.orderBy('cohort.name', pageOptionsDto.order)
 		.skip(pageOptionsDto.skip)
 		.take(pageOptionsDto.take)
 

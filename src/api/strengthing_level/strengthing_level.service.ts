@@ -21,7 +21,7 @@ export class StrengthingLevelService {
 			'strengthing_level.id',
 			'strengthing_level.name'
 		])
-		.orderBy('strengthing_level.created_at')
+		.orderBy('strengthing_level.id', pageOptionsDto.order)
 		.skip(pageOptionsDto.skip)
 		.take(pageOptionsDto.take)
 

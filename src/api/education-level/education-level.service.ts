@@ -1,26 +1,32 @@
-import { Injectable } from '@nestjs/common';
-import { CreateEducationLevelDto } from './dto/create-education-level.dto';
-import { UpdateEducationLevelDto } from './dto/update-education-level.dto';
+import { Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { EducationLevelEntity } from 'src/entities/education_level.entity'
+import { Repository } from 'typeorm'
+import { PageOptionsDto } from 'src/dto/page-options.dto'
+import { PageDto } from 'src/dto/page.dto'
+import { PageMetaDto } from 'src/dto/page-meta.dto'
 
 @Injectable()
 export class EducationLevelService {
-  create(createEducationLevelDto: CreateEducationLevelDto) {
-    return 'This action adds a new educationLevel';
-  }
+  	constructor(
+		@InjectRepository(EducationLevelEntity)
+		private readonly educationLevelRepository: Repository<EducationLevelEntity>
+	) {}
 
-  findAll() {
-    return `This action returns all educationLevel`;
-  }
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<EducationLevelEntity>> {
+		const queryBuilder = this.educationLevelRepository.createQueryBuilder('education_level')
+		.select([
+			'education_level.id',
+			'education_level.name'
+		])
+		.orderBy('education_level.name', pageOptionsDto.order)
+		.skip(pageOptionsDto.skip)
+		.take(pageOptionsDto.take)
 
-  findOne(id: number) {
-    return `This action returns a #${id} educationLevel`;
-  }
+		const [ items, totalCount ] = await queryBuilder.getManyAndCount()
 
-  update(id: number, updateEducationLevelDto: UpdateEducationLevelDto) {
-    return `This action updates a #${id} educationLevel`;
-  }
+		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 
-  remove(id: number) {
-    return `This action removes a #${id} educationLevel`;
-  }
+		return new PageDto(items, pageMetaDto)
+	}
 }

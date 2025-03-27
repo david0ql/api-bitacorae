@@ -31,7 +31,7 @@ export class EconomicActivityService {
 			'economic_activity.id',
 			'economic_activity.name'
 		])
-		.orderBy('economic_activity.created_at')
+		.orderBy('economic_activity.name', pageOptionsDto.order)
 		.skip(pageOptionsDto.skip)
 		.take(pageOptionsDto.take)
 

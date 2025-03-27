@@ -1,34 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { DocumentTypeService } from './document-type.service';
-import { CreateDocumentTypeDto } from './dto/create-document-type.dto';
-import { UpdateDocumentTypeDto } from './dto/update-document-type.dto';
+import { Controller, Get, HttpCode, Query } from '@nestjs/common'
+
+import { DocumentTypeService } from './document-type.service'
+import { DocumentTypeEntity } from 'src/entities/document_type.entity'
+
+import { PageDto } from 'src/dto/page.dto'
+import { PageOptionsDto } from 'src/dto/page-options.dto'
 
 @Controller('document-type')
 export class DocumentTypeController {
-  constructor(private readonly documentTypeService: DocumentTypeService) {}
+	constructor(private readonly documentTypeService: DocumentTypeService) {}
 
-  @Post()
-  create(@Body() createDocumentTypeDto: CreateDocumentTypeDto) {
-    return this.documentTypeService.create(createDocumentTypeDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.documentTypeService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.documentTypeService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDocumentTypeDto: UpdateDocumentTypeDto) {
-    return this.documentTypeService.update(+id, updateDocumentTypeDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.documentTypeService.remove(+id);
-  }
+	@Get()
+	@HttpCode(200)
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<DocumentTypeEntity>> {
+		return this.documentTypeService.findAll(pageOptionsDto)
+	}
 }

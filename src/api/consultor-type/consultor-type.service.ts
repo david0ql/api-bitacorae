@@ -32,7 +32,7 @@ export class ConsultorTypeService {
 			'consultor_type.roleId',
 			'consultor_type.name'
 		])
-		.orderBy('consultor_type.created_at')
+		.orderBy('consultor_type.name', pageOptionsDto.order)
 		.skip(pageOptionsDto.skip)
 		.take(pageOptionsDto.take)
 

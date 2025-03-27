@@ -1,26 +1,34 @@
-import { Injectable } from '@nestjs/common';
-import { CreateBusinessSizeDto } from './dto/create-business-size.dto';
-import { UpdateBusinessSizeDto } from './dto/update-business-size.dto';
+import { Repository } from 'typeorm'
+import { Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+
+import { BusinessSizeEntity } from 'src/entities/business_size.entity'
+
+import { PageDto } from 'src/dto/page.dto'
+import { PageMetaDto } from 'src/dto/page-meta.dto'
+import { PageOptionsDto } from 'src/dto/page-options.dto'
 
 @Injectable()
 export class BusinessSizeService {
-  create(createBusinessSizeDto: CreateBusinessSizeDto) {
-    return 'This action adds a new businessSize';
-  }
+ 	constructor(
+		@InjectRepository(BusinessSizeEntity)
+		private readonly businessSizeRepository: Repository<BusinessSizeEntity>
+	) {}
 
-  findAll() {
-    return `This action returns all businessSize`;
-  }
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<BusinessSizeEntity>> {
+		const queryBuilder = this.businessSizeRepository.createQueryBuilder('business_size')
+		.select([
+			'business_size.id',
+			'business_size.name'
+		])
+		.orderBy('business_size.id', pageOptionsDto.order)
+		.skip(pageOptionsDto.skip)
+		.take(pageOptionsDto.take)
 
-  findOne(id: number) {
-    return `This action returns a #${id} businessSize`;
-  }
+		const [ items, totalCount ] = await queryBuilder.getManyAndCount()
 
-  update(id: number, updateBusinessSizeDto: UpdateBusinessSizeDto) {
-    return `This action updates a #${id} businessSize`;
-  }
+		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 
-  remove(id: number) {
-    return `This action removes a #${id} businessSize`;
-  }
+		return new PageDto(items, pageMetaDto)
+	}
 }

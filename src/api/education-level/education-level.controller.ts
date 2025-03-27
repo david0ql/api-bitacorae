@@ -1,34 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { EducationLevelService } from './education-level.service';
-import { CreateEducationLevelDto } from './dto/create-education-level.dto';
-import { UpdateEducationLevelDto } from './dto/update-education-level.dto';
+import { Controller, Get, HttpCode, Query } from '@nestjs/common'
+
+import { EducationLevelService } from './education-level.service'
+import { EducationLevelEntity } from 'src/entities/education_level.entity'
+
+import { PageDto } from 'src/dto/page.dto'
+import { PageOptionsDto } from 'src/dto/page-options.dto'
 
 @Controller('education-level')
 export class EducationLevelController {
-  constructor(private readonly educationLevelService: EducationLevelService) {}
+	constructor(private readonly educationLevelService: EducationLevelService) {}
 
-  @Post()
-  create(@Body() createEducationLevelDto: CreateEducationLevelDto) {
-    return this.educationLevelService.create(createEducationLevelDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.educationLevelService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.educationLevelService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEducationLevelDto: UpdateEducationLevelDto) {
-    return this.educationLevelService.update(+id, updateEducationLevelDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.educationLevelService.remove(+id);
-  }
+	@Get()
+	@HttpCode(200)
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<EducationLevelEntity>> {
+		return this.educationLevelService.findAll(pageOptionsDto)
+	}
 }

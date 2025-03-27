@@ -1,26 +1,34 @@
-import { Injectable } from '@nestjs/common';
-import { CreateGenderDto } from './dto/create-gender.dto';
-import { UpdateGenderDto } from './dto/update-gender.dto';
+import { Repository } from 'typeorm'
+import { Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+
+import { GenderEntity } from 'src/entities/gender.entity'
+
+import { PageDto } from 'src/dto/page.dto'
+import { PageMetaDto } from 'src/dto/page-meta.dto'
+import { PageOptionsDto } from 'src/dto/page-options.dto'
 
 @Injectable()
 export class GenderService {
-  create(createGenderDto: CreateGenderDto) {
-    return 'This action adds a new gender';
-  }
+	constructor(
+		@InjectRepository(GenderEntity)
+		private readonly genderRepository: Repository<GenderEntity>
+	) {}
 
-  findAll() {
-    return `This action returns all gender`;
-  }
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<GenderEntity>> {
+		const queryBuilder = this.genderRepository.createQueryBuilder('gender')
+		.select([
+			'gender.id',
+			'gender.name'
+		])
+		.orderBy('gender.id', pageOptionsDto.order)
+		.skip(pageOptionsDto.skip)
+		.take(pageOptionsDto.take)
 
-  findOne(id: number) {
-    return `This action returns a #${id} gender`;
-  }
+		const [ items, totalCount ] = await queryBuilder.getManyAndCount()
 
-  update(id: number, updateGenderDto: UpdateGenderDto) {
-    return `This action updates a #${id} gender`;
-  }
+		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 
-  remove(id: number) {
-    return `This action removes a #${id} gender`;
-  }
+		return new PageDto(items, pageMetaDto)
+	}
 }

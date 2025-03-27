@@ -1,26 +1,34 @@
-import { Injectable } from '@nestjs/common';
-import { CreatePositionDto } from './dto/create-position.dto';
-import { UpdatePositionDto } from './dto/update-position.dto';
+import { Repository } from 'typeorm'
+import { Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+
+import { PositionEntity } from 'src/entities/position.entity'
+
+import { PageDto } from 'src/dto/page.dto'
+import { PageMetaDto } from 'src/dto/page-meta.dto'
+import { PageOptionsDto } from 'src/dto/page-options.dto'
 
 @Injectable()
 export class PositionService {
-  create(createPositionDto: CreatePositionDto) {
-    return 'This action adds a new position';
-  }
+  	constructor(
+		@InjectRepository(PositionEntity)
+		private readonly positionRepository: Repository<PositionEntity>
+	) {}
 
-  findAll() {
-    return `This action returns all position`;
-  }
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<PositionEntity>> {
+		const queryBuilder = this.positionRepository.createQueryBuilder('position')
+		.select([
+			'position.id',
+			'position.name'
+		])
+		.orderBy('position.id', pageOptionsDto.order)
+		.skip(pageOptionsDto.skip)
+		.take(pageOptionsDto.take)
 
-  findOne(id: number) {
-    return `This action returns a #${id} position`;
-  }
+		const [ items, totalCount ] = await queryBuilder.getManyAndCount()
 
-  update(id: number, updatePositionDto: UpdatePositionDto) {
-    return `This action updates a #${id} position`;
-  }
+		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 
-  remove(id: number) {
-    return `This action removes a #${id} position`;
-  }
+		return new PageDto(items, pageMetaDto)
+	}
 }

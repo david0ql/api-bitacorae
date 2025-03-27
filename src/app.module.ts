@@ -16,6 +16,7 @@ import { MarketScopeModule } from './api/market-scope/market-scope.module';
 import { PositionModule } from './api/position/position.module';
 import { ProductoStatusModule } from './api/producto-status/producto-status.module';
 import { RoleModule } from './api/role/role.module';
+import { ServiceModule } from './api/service/service.module';
 import { StrengthingAreaModule } from './api/strengthing_area/strengthing_area.module';
 import { StrengthingLevelModule } from './api/strengthing_level/strengthing_level.module';
 import { UserModule } from './api/user/user.module';
@@ -34,6 +35,7 @@ import { MarketScopeEntity } from './entities/market_scope.entity';
 import { PositionEntity } from './entities/position.entity';
 import { ProductStatusEntity } from './entities/product_status.entity';
 import { RoleEntity } from 'src/entities/role.entity';
+import { ServiceEntity } from './entities/service.entity';
 import { StrengthingAreaEntity } from 'src/entities/strengthing_area.entity';
 import { StrengthingLevelEntity } from './entities/strengthing_level.entity';
 import { UserEntity } from 'src/entities/user.entity';
@@ -67,6 +69,7 @@ import envVars from './config/env';
 			PositionEntity,
 			ProductStatusEntity,
 			RoleEntity,
+			ServiceEntity,
 			StrengthingAreaEntity,
 			StrengthingLevelEntity,
 			UserEntity
@@ -86,6 +89,7 @@ import envVars from './config/env';
 		PositionModule,
 		ProductoStatusModule,
 		RoleModule,
+		ServiceModule,
 		StrengthingAreaModule,
 		StrengthingLevelModule,
 
