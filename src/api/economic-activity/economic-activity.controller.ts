@@ -1,34 +1,38 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { EconomicActivityService } from './economic-activity.service';
-import { CreateEconomicActivityDto } from './dto/create-economic-activity.dto';
-import { UpdateEconomicActivityDto } from './dto/update-economic-activity.dto';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query } from '@nestjs/common'
+
+import { EconomicActivityService } from './economic-activity.service'
+import { EconomicActivityEntity } from 'src/entities/economic_activity.entity'
+
+import { PageDto } from 'src/dto/page.dto'
+import { PageOptionsDto } from 'src/dto/page-options.dto'
+import { CreateEconomicActivityDto } from './dto/create-economic-activity.dto'
+import { UpdateEconomicActivityDto } from './dto/update-economic-activity.dto'
 
 @Controller('economic-activity')
 export class EconomicActivityController {
-  constructor(private readonly economicActivityService: EconomicActivityService) {}
+	constructor(private readonly economicActivityService: EconomicActivityService) {}
 
-  @Post()
-  create(@Body() createEconomicActivityDto: CreateEconomicActivityDto) {
-    return this.economicActivityService.create(createEconomicActivityDto);
-  }
+	@Post()
+	@HttpCode(200)
+	create(@Body() createEconomicActivityDto: CreateEconomicActivityDto) {
+		return this.economicActivityService.create(createEconomicActivityDto)
+	}
 
-  @Get()
-  findAll() {
-    return this.economicActivityService.findAll();
-  }
+	@Get()
+	@HttpCode(200)
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<EconomicActivityEntity>> {
+		return this.economicActivityService.findAll(pageOptionsDto)
+	}
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.economicActivityService.findOne(+id);
-  }
+	@Patch(':id')
+	@HttpCode(200)
+	update(@Param('id') id: string, @Body() updateEconomicActivityDto: UpdateEconomicActivityDto) {
+		return this.economicActivityService.update(+id, updateEconomicActivityDto)
+	}
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEconomicActivityDto: UpdateEconomicActivityDto) {
-    return this.economicActivityService.update(+id, updateEconomicActivityDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.economicActivityService.remove(+id);
-  }
+	@Delete(':id')
+	@HttpCode(200)
+	remove(@Param('id') id: string) {
+		return this.economicActivityService.remove(+id)
+	}
 }

@@ -17,6 +17,7 @@ import { PositionModule } from './api/position/position.module';
 import { ProductoStatusModule } from './api/producto-status/producto-status.module';
 import { RoleModule } from './api/role/role.module';
 import { StrengthingAreaModule } from './api/strengthing_area/strengthing_area.module';
+import { StrengthingLevelModule } from './api/strengthing_level/strengthing_level.module';
 import { UserModule } from './api/user/user.module';
 
 import { BusinessEntity } from 'src/entities/business.entity';
@@ -34,60 +35,64 @@ import { PositionEntity } from './entities/position.entity';
 import { ProductStatusEntity } from './entities/product_status.entity';
 import { RoleEntity } from 'src/entities/role.entity';
 import { StrengthingAreaEntity } from 'src/entities/strengthing_area.entity';
+import { StrengthingLevelEntity } from './entities/strengthing_level.entity';
 import { UserEntity } from 'src/entities/user.entity';
 
 import envVars from './config/env';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      BusinessEntity,
-      BusinessSizeEntity,
-      CohortEntity,
-      ConsultorTypeEntity,
-      ContactInformationEntity,
-      DocumentTypeEntity,
-      EconomicActivityEntity,
-      EducationLevelEntity,
-      ExpertEntity,
-      GenderEntity,
-      MarketScopeEntity,
-      PositionEntity,
-      ProductStatusEntity,
-      RoleEntity,
-      StrengthingAreaEntity,
-      UserEntity
-    ]),
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: envVars.DB_HOST,
-      port: envVars.DB_PORT,
-      username: envVars.DB_USER,
-      password: envVars.DB_PASSWORD,
-      database: envVars.DB_NAME,
-      synchronize: false,
-      autoLoadEntities: true,
-    }),
-    AuthModule,
-    BusinessModule,
-    BusinessSizeModule,
-    CohortModule,
-    ConsultorTypeModule,
-    ContactInformationModule,
-    DocumentTypeModule,
-    EconomicActivityModule,
-    EducationLevelModule,
-    ExpertModule,
-    GenderModule,
-    MarketScopeModule,
-    PositionModule,
-    ProductoStatusModule,
-    RoleModule,
-    StrengthingAreaModule,
-    UserModule
-  ],
-  controllers: [],
-  providers: [],
+	imports: [
+		TypeOrmModule.forRoot({
+			type: 'mysql',
+			host: envVars.DB_HOST,
+			port: envVars.DB_PORT,
+			username: envVars.DB_USER,
+			password: envVars.DB_PASSWORD,
+			database: envVars.DB_NAME,
+			synchronize: false,
+			autoLoadEntities: true,
+		}),
+		TypeOrmModule.forFeature([
+			BusinessEntity,
+			BusinessSizeEntity,
+			CohortEntity,
+			ConsultorTypeEntity,
+			ContactInformationEntity,
+			DocumentTypeEntity,
+			EconomicActivityEntity,
+			EducationLevelEntity,
+			ExpertEntity,
+			GenderEntity,
+			MarketScopeEntity,
+			PositionEntity,
+			ProductStatusEntity,
+			RoleEntity,
+			StrengthingAreaEntity,
+			StrengthingLevelEntity,
+			UserEntity
+		]),
+		AuthModule,
+		BusinessModule,
+		BusinessSizeModule,
+		CohortModule,
+		ConsultorTypeModule,
+		ContactInformationModule,
+		DocumentTypeModule,
+		EconomicActivityModule,
+		EducationLevelModule,
+		ExpertModule,
+		GenderModule,
+		MarketScopeModule,
+		PositionModule,
+		ProductoStatusModule,
+		RoleModule,
+		StrengthingAreaModule,
+		StrengthingLevelModule,
+
+		UserModule
+	],
+	controllers: [],
+	providers: []
 })
 
 export class AppModule { }

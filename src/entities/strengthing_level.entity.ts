@@ -1,22 +1,13 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { BusinessEntity } from "./business.entity";
+import { StrengthingAreaEntity } from "./strengthing_area.entity";
 
-@Entity("cohort", { schema: "dbbitacorae" })
-export class CohortEntity {
+@Entity("strengthing_level", { schema: "dbbitacorae" })
+export class StrengthingLevelEntity {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;
 
   @Column("varchar", { name: "name", length: 255 })
   name: string;
-
-  @Column("int", { name: "order" })
-  order: number;
-
-  @Column("date", { name: "start_date" })
-  startDate: string;
-
-  @Column("date", { name: "end_date" })
-  endDate: string;
 
   @Column("timestamp", {
     name: "created_at",
@@ -30,6 +21,6 @@ export class CohortEntity {
   })
   updatedAt: Date;
 
-  @OneToMany(() => BusinessEntity, (businessEntity) => businessEntity.cohort)
-  businesses: BusinessEntity[];
+  @OneToMany(() => StrengthingAreaEntity, (strengthingAreaEntity) => strengthingAreaEntity.level)
+  strengthingAreas: StrengthingAreaEntity[];
 }

@@ -1,18 +1,38 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common'
 
-import { StrengthingAreaService } from './strengthing_area.service';
+import { StrengthingAreaService } from './strengthing_area.service'
+import { StrengthingAreaEntity } from 'src/entities/strengthing_area.entity'
 
-import { PageOptionsDto } from 'src/dto/page-options.dto';
-import { PageDto } from 'src/dto/page.dto';
-
-import { StrengthingAreaEntity } from 'src/entities/strengthing_area.entity';
+import { PageDto } from 'src/dto/page.dto'
+import { PageOptionsDto } from 'src/dto/page-options.dto'
+import { CreateStrengthingAreaDto } from './dto/create-strengthing-area.dto'
+import { UpdateStrengthingAreaDto } from './dto/update-strengthing-area.dto'
 
 @Controller('strengthing-area')
 export class StrengthingAreaController {
-  constructor(private readonly strengthingAreaService: StrengthingAreaService) {}
+	constructor(private readonly strengthingAreaService: StrengthingAreaService) {}
 
-  @Get()
-  findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<StrengthingAreaEntity>> {
-    return this.strengthingAreaService.findAll(pageOptionsDto);
-  }
+	@Post()
+	@HttpCode(200)
+	create(@Body() createStrengthingAreaDto: CreateStrengthingAreaDto) {
+		return this.strengthingAreaService.create(createStrengthingAreaDto)
+	}
+
+	@Get()
+	@HttpCode(200)
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<StrengthingAreaEntity>> {
+		return this.strengthingAreaService.findAll(pageOptionsDto)
+	}
+
+	@Patch(':id')
+	@HttpCode(200)
+	update(@Param('id') id: string, @Body() updateStrengthingAreaDto: UpdateStrengthingAreaDto) {
+		return this.strengthingAreaService.update(+id, updateStrengthingAreaDto)
+	}
+
+	@Delete(':id')
+	@HttpCode(200)
+	remove(@Param('id') id: string) {
+		return this.strengthingAreaService.remove(+id)
+	}
 }

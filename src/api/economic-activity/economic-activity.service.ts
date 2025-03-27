@@ -1,26 +1,56 @@
-import { Injectable } from '@nestjs/common';
-import { CreateEconomicActivityDto } from './dto/create-economic-activity.dto';
-import { UpdateEconomicActivityDto } from './dto/update-economic-activity.dto';
+import { Repository } from 'typeorm'
+import { Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+
+import { EconomicActivityEntity } from 'src/entities/economic_activity.entity'
+
+import { PageDto } from 'src/dto/page.dto'
+import { PageMetaDto } from 'src/dto/page-meta.dto'
+import { PageOptionsDto } from 'src/dto/page-options.dto'
+import { CreateEconomicActivityDto } from './dto/create-economic-activity.dto'
+import { UpdateEconomicActivityDto } from './dto/update-economic-activity.dto'
 
 @Injectable()
 export class EconomicActivityService {
-  create(createEconomicActivityDto: CreateEconomicActivityDto) {
-    return 'This action adds a new economicActivity';
-  }
+	constructor(
+		@InjectRepository(EconomicActivityEntity)
+		private readonly economicRepository: Repository<EconomicActivityEntity>
+	) {}
 
-  findAll() {
-    return `This action returns all economicActivity`;
-  }
+	create(createEconomicActivityDto: CreateEconomicActivityDto) {
+		const { name } = createEconomicActivityDto
 
-  findOne(id: number) {
-    return `This action returns a #${id} economicActivity`;
-  }
+		const economicActivity = this.economicRepository.create({ name })
 
-  update(id: number, updateEconomicActivityDto: UpdateEconomicActivityDto) {
-    return `This action updates a #${id} economicActivity`;
-  }
+		return this.economicRepository.save(economicActivity)
+	}
 
-  remove(id: number) {
-    return `This action removes a #${id} economicActivity`;
-  }
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<EconomicActivityEntity>> {
+		const queryBuilder = this.economicRepository.createQueryBuilder('economic_activity')
+		.select([
+			'economic_activity.id',
+			'economic_activity.name'
+		])
+		.orderBy('economic_activity.created_at')
+		.skip(pageOptionsDto.skip)
+		.take(pageOptionsDto.take)
+
+		const [ items, totalCount ] = await queryBuilder.getManyAndCount()
+
+		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
+
+		return new PageDto(items, pageMetaDto)
+	}
+
+	update(id: number, updateEconomicActivityDto: UpdateEconomicActivityDto) {
+		const { name } = updateEconomicActivityDto
+
+		const economicActivity = this.economicRepository.create({ name })
+
+		return this.economicRepository.update(id, economicActivity)
+	}
+
+	remove(id: number) {
+		return this.economicRepository.delete(id)
+	}
 }
