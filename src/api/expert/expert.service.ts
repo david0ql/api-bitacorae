@@ -129,6 +129,8 @@ export class ExpertService {
 	}
 
 	async update(id: number, updateExpertDto: UpdateExpertDto) {
+		if(!id) return { affected: 0 }
+
 		const {
 			active,
 			firstName,
@@ -179,12 +181,12 @@ export class ExpertService {
 
 		const result = await this.expertRepository.update(id, expert)
 
-		const userId = await this.expertRepository.findOne({
+		const expertData = await this.expertRepository.findOne({
 			select: { userId: true },
 			where: { id }
 		})
 
-		if(userId) {
+		if(expertData) {
 			const user = this.userRepository.create({
 				roleId: consultorType?.roleId,
 				active,
@@ -192,22 +194,24 @@ export class ExpertService {
 				email
 			})
 
-			await this.userRepository.update(userId.userId, user)
+			await this.userRepository.update(expertData.userId, user)
 		}
 
 		return result
 	}
 
 	async remove(id: number) {
-		const userId = await this.expertRepository.findOne({
+		if(!id) return { affected: 0 }
+
+		const expertData = await this.expertRepository.findOne({
 			select: { userId: true },
 			where: { id }
 		})
 
 		const result = await this.expertRepository.delete(id)
 
-		if(userId) {
-			await this.userRepository.delete(userId.userId)
+		if(expertData) {
+			await this.userRepository.delete(expertData.userId)
 		}
 
 		return result

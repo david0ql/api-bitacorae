@@ -43,6 +43,8 @@ export class EconomicActivityService {
 	}
 
 	update(id: number, updateEconomicActivityDto: UpdateEconomicActivityDto) {
+		if(!id) return { affected: 0 }
+
 		const { name } = updateEconomicActivityDto
 
 		const economicActivity = this.economicRepository.create({ name })
@@ -51,6 +53,8 @@ export class EconomicActivityService {
 	}
 
 	remove(id: number) {
+		if(!id) return { affected: 0 }
+
 		return this.economicRepository.delete(id)
 	}
 }

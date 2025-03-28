@@ -20,6 +20,8 @@ import { ServiceModule } from './api/service/service.module';
 import { StrengthingAreaModule } from './api/strengthing_area/strengthing_area.module';
 import { StrengthingLevelModule } from './api/strengthing_level/strengthing_level.module';
 import { UserModule } from './api/user/user.module';
+import { PostModule } from './api/post/post.module';
+import { PostCategoryModule } from './api/post-category/post-category.module';
 
 import { BusinessEntity } from 'src/entities/business.entity';
 import { BusinessSizeEntity } from './entities/business_size.entity';
@@ -39,6 +41,8 @@ import { ServiceEntity } from './entities/service.entity';
 import { StrengthingAreaEntity } from 'src/entities/strengthing_area.entity';
 import { StrengthingLevelEntity } from './entities/strengthing_level.entity';
 import { UserEntity } from 'src/entities/user.entity';
+import { PostEntity } from './entities/post.entity';
+import { PostCategoryEntity } from './entities/post_category.entity';
 
 import envVars from './config/env';
 
@@ -53,6 +57,7 @@ import envVars from './config/env';
 			database: envVars.DB_NAME,
 			synchronize: false,
 			autoLoadEntities: true,
+			timezone: 'Z'
 		}),
 		TypeOrmModule.forFeature([
 			BusinessEntity,
@@ -72,7 +77,9 @@ import envVars from './config/env';
 			ServiceEntity,
 			StrengthingAreaEntity,
 			StrengthingLevelEntity,
-			UserEntity
+			UserEntity,
+			PostEntity,
+			PostCategoryEntity
 		]),
 		AuthModule,
 		BusinessModule,
@@ -92,8 +99,9 @@ import envVars from './config/env';
 		ServiceModule,
 		StrengthingAreaModule,
 		StrengthingLevelModule,
-
-		UserModule
+		UserModule,
+		PostModule,
+		PostCategoryModule
 	],
 	controllers: [],
 	providers: []

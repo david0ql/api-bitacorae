@@ -1,34 +1,44 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { BusinessService } from './business.service';
-import { CreateBusinessDto } from './dto/create-business.dto';
-import { UpdateBusinessDto } from './dto/update-business.dto';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query } from '@nestjs/common'
+
+import { BusinessService } from './business.service'
+import { BusinessEntity } from 'src/entities/business.entity'
+
+import { PageDto } from 'src/dto/page.dto'
+import { PageOptionsDto } from 'src/dto/page-options.dto'
+import { CreateBusinessDto } from './dto/create-business.dto'
+import { UpdateBusinessDto } from './dto/update-business.dto'
 
 @Controller('business')
 export class BusinessController {
-  constructor(private readonly businessService: BusinessService) {}
+	constructor(private readonly businessService: BusinessService) {}
 
-  @Post()
-  create(@Body() createBusinessDto: CreateBusinessDto) {
-    return this.businessService.create(createBusinessDto);
-  }
+	@Post()
+	@HttpCode(200)
+	create(@Body() createBusinessDto: CreateBusinessDto) {
+		return this.businessService.create(createBusinessDto)
+	}
 
-  @Get()
-  findAll() {
-    return this.businessService.findAll();
-  }
+	@Get()
+	@HttpCode(200)
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<BusinessEntity>> {
+		return this.businessService.findAll(pageOptionsDto)
+	}
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.businessService.findOne(+id);
-  }
+	@Get(':id')
+	@HttpCode(200)
+	findOne(@Param('id') id: string) {
+		return this.businessService.findOne(+id)
+	}
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBusinessDto: UpdateBusinessDto) {
-    return this.businessService.update(+id, updateBusinessDto);
-  }
+	@Patch(':id')
+	@HttpCode(200)
+	update(@Param('id') id: string, @Body() updateBusinessDto: UpdateBusinessDto) {
+		return this.businessService.update(+id, updateBusinessDto)
+	}
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.businessService.remove(+id);
-  }
+	@Delete(':id')
+	@HttpCode(200)
+	remove(@Param('id') id: string) {
+		return this.businessService.remove(+id)
+	}
 }

@@ -44,6 +44,8 @@ export class ConsultorTypeService {
 	}
 
 	update(id: number, updateConsultorTypeDto: UpdateConsultorTypeDto) {
+		if(!id) return { affected: 0 }
+
 		const { name, role } = updateConsultorTypeDto
 
 		const consultor = this.consultorRepository.create({ name, roleId: role })
@@ -52,6 +54,8 @@ export class ConsultorTypeService {
 	}
 
 	remove(id: number) {
+		if(!id) return { affected: 0 }
+
 		return this.consultorRepository.delete(id)
 	}
 }

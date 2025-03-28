@@ -44,6 +44,8 @@ export class ServiceService {
 	}
 
 	update(id: number, updateServiceDto: UpdateServiceDto) {
+		if(!id) return { affected: 0 }
+
 		const { name, level } = updateServiceDto
 
 		const service = this.serviceRepository.create({ name, levelId: level })
@@ -52,6 +54,8 @@ export class ServiceService {
 	}
 
 	remove(id: number) {
+		if(!id) return { affected: 0 }
+
 		return this.serviceRepository.delete(id)
 	}
 }

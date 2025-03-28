@@ -21,13 +21,13 @@ export class AuthService {
 
 		const user = await this.userRepository.findOne({
 			where: { email },
-			select: { id: true, password: true },
+			select: { id: true, roleId: true, password: true },
 		})
 
 		if (!user) throw new NotFoundException('User not found')
 		if (!bcrypt.compareSync(password, user.password)) throw new NotFoundException('User not found')
 
-		const payload = { id: user.id, email }
+		const payload = { id: user.id, roleId: user.roleId, email }
 
 		return { token: this.generateToken(payload) }
 	}

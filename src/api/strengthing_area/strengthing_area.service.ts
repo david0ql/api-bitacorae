@@ -44,6 +44,8 @@ export class StrengthingAreaService {
 	}
 
 	update(id: number, updateStrengthingAreaDto: UpdateStrengthingAreaDto) {
+		if(!id) return { affected: 0 }
+
 		const { name, level } = updateStrengthingAreaDto
 
 		const strengthingArea = this.strengthingAreaRepository.create({ name, levelId: level })
@@ -52,6 +54,8 @@ export class StrengthingAreaService {
 	}
 
 	remove(id: number) {
+		if(!id) return { affected: 0 }
+
 		return this.strengthingAreaRepository.delete(id)
 	}
 }

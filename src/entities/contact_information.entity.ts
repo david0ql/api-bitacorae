@@ -91,7 +91,7 @@ export class ContactInformationEntity {
   @ManyToOne(
     () => BusinessEntity,
     (businessEntity) => businessEntity.contactInformations,
-    { onDelete: "RESTRICT", onUpdate: "RESTRICT" }
+    { onDelete: "CASCADE", onUpdate: "CASCADE" }
   )
   @JoinColumn([{ name: "business_id", referencedColumnName: "id" }])
   business: BusinessEntity;
