@@ -1,55 +1,37 @@
-// import { Injectable, UnauthorizedException } from '@nestjs/common'
-// import { ExtractJwt, Strategy } from 'passport-jwt'
-// import { PassportStrategy } from '@nestjs/passport'
-// import { InjectDataSource } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Injectable, UnauthorizedException } from '@nestjs/common'
+import { PassportStrategy } from '@nestjs/passport'
+import { ExtractJwt, Strategy } from 'passport-jwt'
 
-// import { DataSource } from 'typeorm'
+import envVars from 'src/config/env'
+import { UserEntity } from 'src/entities/user.entity'
+import { JwtPayload } from '../interfaces/jwt-payload.interface'
 
-// import { JwtPayload } from '../interfaces/jwt-payload.interface'
-// // import { Path, User, UserPath } from '../entities'
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+	constructor(
+		@InjectRepository(UserEntity)
+		private readonly userRepository: Repository<UserEntity>
+	) {
+		super({
+			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+			secretOrKey: envVars.JWT_SECRET
+		})
+	}
 
-// import envVars from 'src/config/env'
+	async validate(payload: JwtPayload) {
+		const { id } = payload
 
-// @Injectable()
-// export class JwtStrategy extends PassportStrategy(Strategy) {
-// 	constructor(
-// 		@InjectDataSource(envVars.DB_ALIAS)
-// 		private readonly dataSource: DataSource,
-// 	) {
-// 		super({
-// 			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-// 			ignoreExpiration: false,
-// 			secretOrKey: envVars.JWT_SECRET
-// 		})
-// 	}
+		const user = await this.userRepository.findOne({
+			where: { id },
+			select: { id: true, roleId: true, email: true, active: true }
+		})
 
-// 	// async validate(payload: JwtPayload): Promise<any> {
-// 	// 	const { id } = payload
+		if (!user || !user.active) {
+			throw new UnauthorizedException('Invalid token or inactive user')
+		}
 
-// 	// 	const user = await this.userRepository.findOne({
-// 	// 		where: { id },
-// 	// 	})
-
-// 	// 	if (!user) {
-// 	// 		throw new UnauthorizedException('User not found')
-// 	// 	}
-
-// 	// 	const userPaths = await this.userPathRepository.find({
-// 	// 	where: { user_id: id },
-// 	// 	})
-
-// 	// 	const paths = await Promise.all(
-// 	// 	userPaths.map(async (userPath) => {
-// 	// 		const path = await this.pathRepository.findOne({
-// 	// 		where: { id: userPath.path_id },
-// 	// 		})
-// 	// 		return path
-// 	// 	}),
-// 	// 	)
-
-// 	// 	return {
-// 	// 	paths,
-// 	// 	user: user.name,
-// 	// 	}
-// 	// }
-// }
+		return user //* req.user
+	}
+}

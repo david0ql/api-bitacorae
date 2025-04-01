@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 
 import { StrengthingAreaService } from './strengthing_area.service'
 import { StrengthingAreaEntity } from 'src/entities/strengthing_area.entity'
@@ -8,7 +8,13 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateStrengthingAreaDto } from './dto/create-strengthing-area.dto'
 import { UpdateStrengthingAreaDto } from './dto/update-strengthing-area.dto'
 
+import { ApiBearerAuth } from '@nestjs/swagger'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { PermissionsGuard } from '../auth/guards/permissions.guard'
+
 @Controller('strengthing-area')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class StrengthingAreaController {
 	constructor(private readonly strengthingAreaService: StrengthingAreaService) {}
 

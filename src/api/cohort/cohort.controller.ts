@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { CohortService } from './cohort.service'
 import { CohortEntity } from 'src/entities/cohort.entity'
@@ -8,7 +8,13 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateCohortDto } from './dto/create-cohort.dto'
 import { UpdateCohortDto } from './dto/update-cohort.dto'
 
+import { ApiBearerAuth } from '@nestjs/swagger'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { PermissionsGuard } from '../auth/guards/permissions.guard'
+
 @Controller('cohort')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class CohortController {
   	constructor(private readonly cohortService: CohortService) {}
 

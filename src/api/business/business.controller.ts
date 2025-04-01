@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { BusinessService } from './business.service'
 import { BusinessEntity } from 'src/entities/business.entity'
@@ -8,7 +8,13 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateBusinessDto } from './dto/create-business.dto'
 import { UpdateBusinessDto } from './dto/update-business.dto'
 
+import { ApiBearerAuth } from '@nestjs/swagger'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { PermissionsGuard } from '../auth/guards/permissions.guard'
+
 @Controller('business')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class BusinessController {
 	constructor(private readonly businessService: BusinessService) {}
 

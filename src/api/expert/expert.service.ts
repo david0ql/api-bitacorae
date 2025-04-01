@@ -1,5 +1,5 @@
 import { Repository } from 'typeorm'
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import * as bcrypt from 'bcrypt'
 
@@ -48,6 +48,9 @@ export class ExpertService {
 			profile,
 			password
 		} = createExpertDto
+
+		const existingUser = await this.userRepository.findOne({ where: { email } })
+		if(existingUser) throw new BadRequestException('Email already exists')
 
 		const consultorType = await this.consultorTypeRepository.findOne({
 			select: { roleId: true },
@@ -152,6 +155,11 @@ export class ExpertService {
 			linkedin,
 			profile
 		} = updateExpertDto
+
+		const existingUser = await this.userRepository.findOne({ where: { email } })
+		if(existingUser && existingUser.id != id) {
+			throw new BadRequestException('Email already exists')
+		}
 
 		const consultorType = await this.consultorTypeRepository.findOne({
 			select: { roleId: true },

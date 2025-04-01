@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { PostCategoryService } from './post-category.service'
 import { PostCategoryEntity } from 'src/entities/post_category.entity'
@@ -8,7 +8,13 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreatePostCategoryDto } from './dto/create-post-category.dto'
 import { UpdatePostCategoryDto } from './dto/update-post-category.dto'
 
+import { ApiBearerAuth } from '@nestjs/swagger'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { PermissionsGuard } from '../auth/guards/permissions.guard'
+
 @Controller('post-category')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class PostCategoryController {
 	constructor(private readonly postCategoryService: PostCategoryService) {}
 

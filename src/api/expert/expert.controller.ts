@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { ExpertService } from './expert.service'
 import { ExpertEntity } from 'src/entities/expert.entity'
@@ -8,7 +8,13 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateExpertDto } from './dto/create-expert.dto'
 import { UpdateExpertDto } from './dto/update-expert.dto'
 
+import { ApiBearerAuth } from '@nestjs/swagger'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { PermissionsGuard } from '../auth/guards/permissions.guard'
+
 @Controller('expert')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ExpertController {
 	constructor(private readonly expertService: ExpertService) {}
 

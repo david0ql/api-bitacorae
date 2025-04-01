@@ -37,6 +37,8 @@ import { MarketScopeEntity } from './entities/market_scope.entity';
 import { PositionEntity } from './entities/position.entity';
 import { ProductStatusEntity } from './entities/product_status.entity';
 import { RoleEntity } from 'src/entities/role.entity';
+import { RolePermissionEntity } from './entities/role_permission.entity';
+import { PermissionEntity } from './entities/permission.entity';
 import { ServiceEntity } from './entities/service.entity';
 import { StrengthingAreaEntity } from 'src/entities/strengthing_area.entity';
 import { StrengthingLevelEntity } from './entities/strengthing_level.entity';
@@ -74,6 +76,8 @@ import envVars from './config/env';
 			PositionEntity,
 			ProductStatusEntity,
 			RoleEntity,
+			RolePermissionEntity,
+			PermissionEntity,
 			ServiceEntity,
 			StrengthingAreaEntity,
 			StrengthingLevelEntity,

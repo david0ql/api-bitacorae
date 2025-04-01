@@ -1,5 +1,5 @@
 import { Repository } from 'typeorm'
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import * as bcrypt from 'bcrypt'
 
@@ -56,6 +56,9 @@ export class BusinessService {
 			evidence,
 			password
 		} = createBusinessDto
+
+		const existingUser = await this.userRepository.findOne({ where: { email } })
+		if(existingUser) throw new BadRequestException('Email already exists')
 
 		const salt = bcrypt.genSaltSync(10)
 		const hash = bcrypt.hashSync(password, salt)
@@ -178,6 +181,11 @@ export class BusinessService {
 			diagnostic,
 			evidence
 		} = updateBusinessDto
+
+		const existingUser = await this.userRepository.findOne({ where: { email } })
+		if(existingUser && existingUser.id != id) {
+			throw new BadRequestException('Email already exists')
+		}
 
 		const business = this.businessRepository.create({
 			socialReason,

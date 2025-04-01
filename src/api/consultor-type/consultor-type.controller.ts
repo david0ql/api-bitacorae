@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { ConsultorTypeService } from './consultor-type.service'
 import { ConsultorTypeEntity } from 'src/entities/consultor_type.entity'
@@ -8,7 +8,13 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateConsultorTypeDto } from './dto/create-consultor-type.dto'
 import { UpdateConsultorTypeDto } from './dto/update-consultor-type.dto'
 
+import { ApiBearerAuth } from '@nestjs/swagger'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { PermissionsGuard } from '../auth/guards/permissions.guard'
+
 @Controller('consultor-type')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ConsultorTypeController {
 	constructor(private readonly consultorTypeService: ConsultorTypeService) {}
 

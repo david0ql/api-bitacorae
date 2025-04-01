@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { EconomicActivityService } from './economic-activity.service'
 import { EconomicActivityEntity } from 'src/entities/economic_activity.entity'
@@ -8,7 +8,13 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateEconomicActivityDto } from './dto/create-economic-activity.dto'
 import { UpdateEconomicActivityDto } from './dto/update-economic-activity.dto'
 
+import { ApiBearerAuth } from '@nestjs/swagger'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { PermissionsGuard } from '../auth/guards/permissions.guard'
+
 @Controller('economic-activity')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class EconomicActivityController {
 	constructor(private readonly economicActivityService: EconomicActivityService) {}
 

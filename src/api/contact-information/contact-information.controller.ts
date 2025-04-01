@@ -1,10 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common'
 
 import { ContactInformationService } from './contact-information.service'
 import { CreateContactInformationDto } from './dto/create-contact-information.dto'
 import { UpdateContactInformationDto } from './dto/update-contact-information.dto'
 
+import { ApiBearerAuth } from '@nestjs/swagger'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { PermissionsGuard } from '../auth/guards/permissions.guard'
+
 @Controller('contact-information')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ContactInformationController {
 	constructor(private readonly contactInformationService: ContactInformationService) {}
 
