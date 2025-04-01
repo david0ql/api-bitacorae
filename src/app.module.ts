@@ -1,6 +1,7 @@
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Module } from '@nestjs/common';
 
+import { RedisModule } from './services/redis/redis.module';
 import { AuthModule } from './api/auth/auth.module';
 import { BusinessModule } from './api/business/business.module';
 import { BusinessSizeModule } from './api/business-size/business-size.module';
@@ -85,6 +86,7 @@ import envVars from './config/env';
 			PostEntity,
 			PostCategoryEntity
 		]),
+		RedisModule,
 		AuthModule,
 		BusinessModule,
 		BusinessSizeModule,
