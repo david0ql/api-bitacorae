@@ -22,7 +22,7 @@ export class PostService {
 	) {}
 
 	async create(createPostDto: CreatePostDto) {
-		const { title, image, content, categories, post_date } = createPostDto
+		const { title, image, content, categories, postDate } = createPostDto
 
 		const categoryEntities = await this.postCategoryRepository.findBy({
 			id: In(categories)
@@ -32,7 +32,7 @@ export class PostService {
 			title,
 			image,
 			content,
-			post_date,
+			postDate,
 			categories: categoryEntities
 		})
 
@@ -46,7 +46,7 @@ export class PostService {
 			'post.title',
 			'post.image',
 			'post.content',
-			'post.post_date',
+			'post.postDate',
 			'post.created_at'
 		])
 		.addSelect(['category.id', 'category.name'])
@@ -65,7 +65,7 @@ export class PostService {
 	async update(id: number, updatePostDto: UpdatePostDto) {
 		if(!id) return { affected: 0 }
 
-		const { title, image, content, categories, post_date } = updatePostDto
+		const { title, image, content, categories, postDate } = updatePostDto
 
 		const post = await this.postRepository.findOne({
 			where: { id },
@@ -77,7 +77,7 @@ export class PostService {
 		post.title = title ?? post.title
 		post.image = image ?? post.image
 		post.content = content ?? post.content
-		post.post_date = post_date ? new Date(post_date) : post.post_date
+		post.postDate = postDate ? new Date(postDate) : post.postDate
 
 		if (categories) {
 			const categoryEntities = await this.postCategoryRepository.findBy({

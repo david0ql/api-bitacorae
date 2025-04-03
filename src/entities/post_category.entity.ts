@@ -1,20 +1,21 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany } from "typeorm";
-import { PostEntity } from "./post.entity";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { PostEntity } from './post.entity';
 
-@Entity({ name: "post_category", schema: "dbbitacorae" })
+@Entity('post_category')
 export class PostCategoryEntity {
-	@PrimaryGeneratedColumn()
+	@PrimaryGeneratedColumn({ type: 'int', name: 'id' })
 	id: number;
 
-	@Column({ type: "varchar", length: 255 })
+	@Column({ type: 'varchar', length: 255, name: 'name' })
 	name: string;
 
-	@CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
-	created_at: Date;
+	@CreateDateColumn({ type: 'timestamp', name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
+	createdAt: Date;
 
-	@UpdateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP", onUpdate: "CURRENT_TIMESTAMP" })
-	updated_at: Date;
+	@UpdateDateColumn({ type: 'timestamp', name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+	updatedAt: Date;
 
+	//----------------------
 	@ManyToMany(() => PostEntity, (post) => post.categories)
 	posts: PostEntity[];
 }

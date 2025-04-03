@@ -1,32 +1,27 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { UserEntity } from "./user.entity";
-import { ConsultorTypeEntity } from "./consultor_type.entity";
-import { RolePermissionEntity } from "./role_permission.entity";
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { UserEntity } from './user.entity';
+import { ConsultorTypeEntity } from './consultor_type.entity';
+import { RolePermissionEntity } from './role_permission.entity';
 
-@Entity("role", { schema: "dbbitacorae" })
+@Entity('role')
 export class RoleEntity {
-	@PrimaryGeneratedColumn({ type: "int", name: "id" })
+	@PrimaryGeneratedColumn({ type: 'int', name: 'id' })
 	id: number;
 
-	@Column("varchar", { name: "name", length: 255 })
+	@Column({ type: 'varchar', name: 'name', length: 255 })
 	name: string;
 
-	@Column("timestamp", {
-		name: "created_at",
-		default: () => "CURRENT_TIMESTAMP",
-	})
+	@Column({ type: 'timestamp', name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
 	createdAt: Date;
 
-	@Column("timestamp", {
-		name: "updated_at",
-		default: () => "CURRENT_TIMESTAMP",
-	})
+	@Column({ type: 'timestamp', name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
 	updatedAt: Date;
 
-	@OneToMany(() => UserEntity, (userEntity) => userEntity.role)
+	//----------------------
+	@OneToMany(() => UserEntity, (user) => user.role)
 	users: UserEntity[];
 
-	@OneToMany(() => ConsultorTypeEntity, (consultorTypeEntity) => consultorTypeEntity.role)
+	@OneToMany(() => ConsultorTypeEntity, (consultorType) => consultorType.role)
 	consultorTypes: ConsultorTypeEntity[];
 
 	@OneToMany(() => RolePermissionEntity, (rolePermission) => rolePermission.role)

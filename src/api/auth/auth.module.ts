@@ -17,7 +17,7 @@ import envVars from 'src/config/env'
 		TypeOrmModule.forFeature([UserEntity]),
 		JwtModule.register({
 			secret: envVars.JWT_SECRET,
-			signOptions: { expiresIn: '1h' }
+			// signOptions: { expiresIn: '1h' }
 		})
 	],
 	controllers: [AuthController],

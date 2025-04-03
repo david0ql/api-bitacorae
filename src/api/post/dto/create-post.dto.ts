@@ -38,5 +38,5 @@ export class CreatePostDto {
 		example: '2021-07-01T00:00:00.000Z',
 	})
 	@IsString()
-	readonly post_date: string;
+	readonly postDate: string;
 }

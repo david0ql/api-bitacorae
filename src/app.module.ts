@@ -46,8 +46,13 @@ import { StrengtheningLevelEntity } from './entities/strengthening_level.entity'
 import { UserEntity } from 'src/entities/user.entity';
 import { PostEntity } from './entities/post.entity';
 import { PostCategoryEntity } from './entities/post_category.entity';
+import { AccompanimentEntity } from './entities/accompaniment.entity';
+import { SessionEntity } from './entities/session.entity';
+import { SessionStatusEntity } from './entities/session_status.entity';
+import { SessionPreparationFileEntity } from './entities/session_preparation_file.entity';
 
 import envVars from './config/env';
+import { AccompanimentModule } from './api/accompaniment/accompaniment.module';
 
 @Module({
 	imports: [
@@ -84,7 +89,11 @@ import envVars from './config/env';
 			StrengtheningLevelEntity,
 			UserEntity,
 			PostEntity,
-			PostCategoryEntity
+			PostCategoryEntity,
+			AccompanimentEntity,
+			SessionEntity,
+			SessionStatusEntity,
+			SessionPreparationFileEntity
 		]),
 		RedisModule,
 		AuthModule,
@@ -107,7 +116,8 @@ import envVars from './config/env';
 		StrengtheningLevelModule,
 		UserModule,
 		PostModule,
-		PostCategoryModule
+		PostCategoryModule,
+		AccompanimentModule
 	],
 	controllers: [],
 	providers: []

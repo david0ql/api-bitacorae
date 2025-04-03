@@ -1,29 +1,21 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { ContactInformationEntity } from "./contact_information.entity";
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { ContactInformationEntity } from './contact_information.entity';
 
-@Entity("gender", { schema: "dbbitacorae" })
+@Entity('gender')
 export class GenderEntity {
-  @PrimaryGeneratedColumn({ type: "int", name: "id" })
-  id: number;
+	@PrimaryGeneratedColumn({ type: 'int', name: 'id' })
+	id: number;
 
-  @Column("varchar", { name: "name", length: 255 })
-  name: string;
+	@Column({ type: 'varchar', name: 'name', length: 255 })
+	name: string;
 
-  @Column("timestamp", {
-    name: "created_at",
-    default: () => "CURRENT_TIMESTAMP",
-  })
-  createdAt: Date;
+	@Column({ type: 'timestamp', name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
+	createdAt: Date;
 
-  @Column("timestamp", {
-    name: "updated_at",
-    default: () => "CURRENT_TIMESTAMP",
-  })
-  updatedAt: Date;
+	@Column({ type: 'timestamp', name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+	updatedAt: Date;
 
-  @OneToMany(
-    () => ContactInformationEntity,
-    (contactInformationEntity) => contactInformationEntity.gender
-  )
-  contactInformations: ContactInformationEntity[];
+	//----------------------
+	@OneToMany(() => ContactInformationEntity, (contactInformation) => contactInformation.gender)
+	contactInformations: ContactInformationEntity[];
 }

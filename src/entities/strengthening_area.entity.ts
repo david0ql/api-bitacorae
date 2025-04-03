@@ -1,52 +1,44 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { ExpertEntity } from "./expert.entity";
-import { ContactInformationEntity } from "./contact_information.entity";
-import { BusinessEntity } from "./business.entity";
-import { StrengtheningLevelEntity } from "./strengthening_level.entity";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { ExpertEntity } from './expert.entity';
+import { ContactInformationEntity } from './contact_information.entity';
+import { BusinessEntity } from './business.entity';
+import { StrengtheningLevelEntity } from './strengthening_level.entity';
+import { AccompanimentEntity } from './accompaniment.entity';
 
-@Index("level_id", ["levelId"], {})
-@Entity("strengthening_area", { schema: "dbbitacorae" })
+@Entity('strengthening_area')
 export class StrengtheningAreaEntity {
-  @PrimaryGeneratedColumn({ type: "int", name: "id" })
-  id: number;
+	@PrimaryGeneratedColumn({ type: 'int', name: 'id' })
+	id: number;
 
-  @Column("varchar", { name: "name", length: 255 })
-  name: string;
+	@Column({ type: 'varchar', name: 'name', length: 255 })
+	name: string;
 
-  @Column("int", { name: "level_id" })
-  levelId: number;
+	@Column({ type: 'int', name: 'level_id' })
+	levelId: number;
 
-  @Column("timestamp", {
-    name: "created_at",
-    default: () => "CURRENT_TIMESTAMP",
-  })
-  createdAt: Date;
+	@Column({ type: 'timestamp', name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
+	createdAt: Date;
 
-  @Column("timestamp", {
-    name: "updated_at",
-    default: () => "CURRENT_TIMESTAMP",
-  })
-  updatedAt: Date;
+	@Column({ type: 'timestamp', name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+	updatedAt: Date;
 
-  @ManyToOne(() => StrengtheningLevelEntity, (strengtheningLevelEntity) => strengtheningLevelEntity.strengtheningAreas, {
-	onDelete: "RESTRICT",
-	onUpdate: "RESTRICT",
-	})
-  @JoinColumn([{ name: "level_id", referencedColumnName: "id" }])
-  level: StrengtheningLevelEntity;
 
-  @OneToMany(() => ExpertEntity, (expertEntity) => expertEntity.strengtheningArea)
-  experts: ExpertEntity[];
+	//----------------------
+	@ManyToOne(() => StrengtheningLevelEntity, (strengtheningLevel) => strengtheningLevel.strengtheningAreas, { onDelete: 'RESTRICT', onUpdate: 'RESTRICT' })
+	@JoinColumn({ name: 'level_id', referencedColumnName: 'id' })
+	level: StrengtheningLevelEntity;
 
-  @OneToMany(
-    () => ContactInformationEntity,
-    (contactInformationEntity) => contactInformationEntity.strengtheningArea
-  )
-  contactInformations: ContactInformationEntity[];
 
-  @OneToMany(
-    () => BusinessEntity,
-    (businessEntity) => businessEntity.strengtheningArea
-  )
-  businesses: BusinessEntity[];
+	//----------------------
+	@OneToMany(() => ExpertEntity, (expert) => expert.strengtheningArea)
+	experts: ExpertEntity[];
+
+	@OneToMany(() => ContactInformationEntity, (contactInformation) => contactInformation.strengtheningArea)
+	contactInformations: ContactInformationEntity[];
+
+	@OneToMany(() => BusinessEntity, (business) => business.strengtheningArea)
+	businesses: BusinessEntity[];
+
+	@OneToMany(() => AccompanimentEntity, (accompaniment) => accompaniment.strengtheningArea)
+	accompaniments: AccompanimentEntity[];
 }

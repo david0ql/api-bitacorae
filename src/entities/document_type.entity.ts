@@ -1,40 +1,29 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { ExpertEntity } from "./expert.entity";
-import { ContactInformationEntity } from "./contact_information.entity";
-import { BusinessEntity } from "./business.entity";
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { ExpertEntity } from './expert.entity';
+import { ContactInformationEntity } from './contact_information.entity';
+import { BusinessEntity } from './business.entity';
 
-@Entity("document_type", { schema: "dbbitacorae" })
+@Entity('document_type')
 export class DocumentTypeEntity {
-  @PrimaryGeneratedColumn({ type: "int", name: "id" })
-  id: number;
+	@PrimaryGeneratedColumn({ type: 'int', name: 'id' })
+	id: number;
 
-  @Column("varchar", { name: "name", length: 255 })
-  name: string;
+	@Column({ type: 'varchar', name: 'name', length: 255 })
+	name: string;
 
-  @Column("timestamp", {
-    name: "created_at",
-    default: () => "CURRENT_TIMESTAMP",
-  })
-  createdAt: Date;
+	@Column({ type: 'timestamp', name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
+	createdAt: Date;
 
-  @Column("timestamp", {
-    name: "updated_at",
-    default: () => "CURRENT_TIMESTAMP",
-  })
-  updatedAt: Date;
+	@Column({ type: 'timestamp', name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+	updatedAt: Date;
 
-  @OneToMany(() => ExpertEntity, (expertEntity) => expertEntity.documentType)
-  experts: ExpertEntity[];
+	//----------------------
+	@OneToMany(() => ExpertEntity, (expert) => expert.documentType)
+	experts: ExpertEntity[];
 
-  @OneToMany(
-    () => ContactInformationEntity,
-    (contactInformationEntity) => contactInformationEntity.documentType
-  )
-  contactInformations: ContactInformationEntity[];
+	@OneToMany(() => ContactInformationEntity, (contactInformation) => contactInformation.documentType)
+	contactInformations: ContactInformationEntity[];
 
-  @OneToMany(
-    () => BusinessEntity,
-    (businessEntity) => businessEntity.documentType
-  )
-  businesses: BusinessEntity[];
+	@OneToMany(() => BusinessEntity, (business) => business.documentType)
+	businesses: BusinessEntity[];
 }

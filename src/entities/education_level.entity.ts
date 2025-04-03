@@ -1,33 +1,26 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { ExpertEntity } from "./expert.entity";
-import { ContactInformationEntity } from "./contact_information.entity";
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 
-@Entity("education_level", { schema: "dbbitacorae" })
+import { ExpertEntity } from './expert.entity';
+import { ContactInformationEntity } from './contact_information.entity';
+
+@Entity('education_level')
 export class EducationLevelEntity {
-  @PrimaryGeneratedColumn({ type: "int", name: "id" })
-  id: number;
+	@PrimaryGeneratedColumn({ type: 'int', name: 'id' })
+	id: number;
 
-  @Column("varchar", { name: "name", length: 255 })
-  name: string;
+	@Column({ type: 'varchar', name: 'name', length: 255 })
+	name: string;
 
-  @Column("timestamp", {
-    name: "created_at",
-    default: () => "CURRENT_TIMESTAMP",
-  })
-  createdAt: Date;
+	@Column({ type: 'timestamp', name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
+	createdAt: Date;
 
-  @Column("timestamp", {
-    name: "updated_at",
-    default: () => "CURRENT_TIMESTAMP",
-  })
-  updatedAt: Date;
+	@Column({ type: 'timestamp', name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+	updatedAt: Date;
 
-  @OneToMany(() => ExpertEntity, (expertEntity) => expertEntity.educationLevel)
-  experts: ExpertEntity[];
+	//----------------------
+	@OneToMany(() => ExpertEntity, (expert) => expert.educationLevel)
+	experts: ExpertEntity[];
 
-  @OneToMany(
-    () => ContactInformationEntity,
-    (contactInformationEntity) => contactInformationEntity.educationLevel
-  )
-  contactInformations: ContactInformationEntity[];
+	@OneToMany(() => ContactInformationEntity, (contactInformation) => contactInformation.educationLevel)
+	contactInformations: ContactInformationEntity[];
 }
