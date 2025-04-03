@@ -1,9 +1,9 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { StrengthingAreaEntity } from "./strengthing_area.entity";
+import { StrengtheningAreaEntity } from "./strengthening_area.entity";
 import { ServiceEntity } from "./service.entity";
 
-@Entity("strengthing_level", { schema: "dbbitacorae" })
-export class StrengthingLevelEntity {
+@Entity("strengthening_level", { schema: "dbbitacorae" })
+export class StrengtheningLevelEntity {
 	@PrimaryGeneratedColumn({ type: "int", name: "id" })
 	id: number;
 
@@ -22,9 +22,9 @@ export class StrengthingLevelEntity {
 	})
 	updatedAt: Date;
 
-	@OneToMany(() => StrengthingAreaEntity, (strengthingAreaEntity) => strengthingAreaEntity.level)
-	strengthingAreas: StrengthingAreaEntity[];
+	@OneToMany(() => StrengtheningAreaEntity, (strengtheningAreaEntity) => strengtheningAreaEntity.level)
+	strengtheningAreas: StrengtheningAreaEntity[];
 
 	@OneToMany(() => ServiceEntity, (serviceEntity) => serviceEntity.level)
-	services: StrengthingAreaEntity[];
+	services: StrengtheningAreaEntity[];
 }

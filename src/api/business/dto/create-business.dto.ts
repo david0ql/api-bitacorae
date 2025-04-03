@@ -203,12 +203,12 @@ export class CreateBusinessDto {
 	readonly businessSegmentation: string
 
 	@ApiProperty({
-		description: 'Strengthing area ID',
+		description: 'Strengthening area ID',
 		example: 1
 	})
 	@IsNotEmpty()
 	@IsNumber()
-	readonly strengthingAreaId: number
+	readonly strengtheningAreaId: number
 
 	@ApiProperty({
 		description: 'Assigned hours',

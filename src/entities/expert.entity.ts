@@ -9,13 +9,13 @@ import {
 import { UserEntity } from "./user.entity";
 import { DocumentTypeEntity } from "./document_type.entity";
 import { ConsultorTypeEntity } from "./consultor_type.entity";
-import { StrengthingAreaEntity } from "./strengthing_area.entity";
+import { StrengtheningAreaEntity } from "./strengthening_area.entity";
 import { EducationLevelEntity } from "./education_level.entity";
 
 @Index("user_id", ["userId"], {})
 @Index("document_type_id", ["documentTypeId"], {})
 @Index("consultor_type_id", ["consultorTypeId"], {})
-@Index("strengthing_area_id", ["strengthingAreaId"], {})
+@Index("strengthening_area_id", ["strengtheningAreaId"], {})
 @Index("education_level_id", ["educationLevelId"], {})
 @Entity("expert", { schema: "dbbitacorae" })
 export class ExpertEntity {
@@ -55,8 +55,8 @@ export class ExpertEntity {
   @Column("int", { name: "experience_years", nullable: true })
   experienceYears: number | null;
 
-  @Column("int", { name: "strengthing_area_id", nullable: true })
-  strengthingAreaId: number | null;
+  @Column("int", { name: "strengthening_area_id", nullable: true })
+  strengtheningAreaId: number | null;
 
   @Column("int", { name: "education_level_id", nullable: true })
   educationLevelId: number | null;
@@ -115,12 +115,12 @@ export class ExpertEntity {
   consultorType: ConsultorTypeEntity;
 
   @ManyToOne(
-    () => StrengthingAreaEntity,
-    (strengthingAreaEntity) => strengthingAreaEntity.experts,
+    () => StrengtheningAreaEntity,
+    (strengtheningAreaEntity) => strengtheningAreaEntity.experts,
     { onDelete: "RESTRICT", onUpdate: "RESTRICT" }
   )
-  @JoinColumn([{ name: "strengthing_area_id", referencedColumnName: "id" }])
-  strengthingArea: StrengthingAreaEntity;
+  @JoinColumn([{ name: "strengthening_area_id", referencedColumnName: "id" }])
+  strengtheningArea: StrengtheningAreaEntity;
 
   @ManyToOne(
     () => EducationLevelEntity,

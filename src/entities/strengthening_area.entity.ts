@@ -2,11 +2,11 @@ import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryGenerat
 import { ExpertEntity } from "./expert.entity";
 import { ContactInformationEntity } from "./contact_information.entity";
 import { BusinessEntity } from "./business.entity";
-import { StrengthingLevelEntity } from "./strengthing_level.entity";
+import { StrengtheningLevelEntity } from "./strengthening_level.entity";
 
 @Index("level_id", ["levelId"], {})
-@Entity("strengthing_area", { schema: "dbbitacorae" })
-export class StrengthingAreaEntity {
+@Entity("strengthening_area", { schema: "dbbitacorae" })
+export class StrengtheningAreaEntity {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;
 
@@ -28,25 +28,25 @@ export class StrengthingAreaEntity {
   })
   updatedAt: Date;
 
-  @ManyToOne(() => StrengthingLevelEntity, (strengthingLevelEntity) => strengthingLevelEntity.strengthingAreas, {
+  @ManyToOne(() => StrengtheningLevelEntity, (strengtheningLevelEntity) => strengtheningLevelEntity.strengtheningAreas, {
 	onDelete: "RESTRICT",
 	onUpdate: "RESTRICT",
 	})
   @JoinColumn([{ name: "level_id", referencedColumnName: "id" }])
-  level: StrengthingLevelEntity;
+  level: StrengtheningLevelEntity;
 
-  @OneToMany(() => ExpertEntity, (expertEntity) => expertEntity.strengthingArea)
+  @OneToMany(() => ExpertEntity, (expertEntity) => expertEntity.strengtheningArea)
   experts: ExpertEntity[];
 
   @OneToMany(
     () => ContactInformationEntity,
-    (contactInformationEntity) => contactInformationEntity.strengthingArea
+    (contactInformationEntity) => contactInformationEntity.strengtheningArea
   )
   contactInformations: ContactInformationEntity[];
 
   @OneToMany(
     () => BusinessEntity,
-    (businessEntity) => businessEntity.strengthingArea
+    (businessEntity) => businessEntity.strengtheningArea
   )
   businesses: BusinessEntity[];
 }

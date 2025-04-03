@@ -1,5 +1,5 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { StrengthingLevelEntity } from "./strengthing_level.entity";
+import { StrengtheningLevelEntity } from "./strengthening_level.entity";
 
 @Index("level_id", ["levelId"], {})
 @Entity("service", { schema: "dbbitacorae" })
@@ -25,10 +25,10 @@ export class ServiceEntity {
 	})
 	updatedAt: Date;
 
-	@ManyToOne(() => StrengthingLevelEntity, (strengthingLevelEntity) => strengthingLevelEntity.services, {
+	@ManyToOne(() => StrengtheningLevelEntity, (strengtheningLevelEntity) => strengtheningLevelEntity.services, {
 		onDelete: "RESTRICT",
 		onUpdate: "RESTRICT",
 	})
 	@JoinColumn([{ name: "level_id", referencedColumnName: "id" }])
-	level: StrengthingLevelEntity;
+	level: StrengtheningLevelEntity;
 }

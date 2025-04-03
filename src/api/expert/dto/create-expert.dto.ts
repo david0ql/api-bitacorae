@@ -84,7 +84,7 @@ export class CreateExpertDto {
 		example: 1,
 	})
 	@IsNumber()
-	readonly strengthingAreaId: number;
+	readonly strengtheningAreaId: number;
 
 	@ApiProperty({
 		description: 'Education level ID',

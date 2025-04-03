@@ -15,7 +15,7 @@ import { BusinessSizeEntity } from "./business_size.entity";
 import { PositionEntity } from "./position.entity";
 import { ProductStatusEntity } from "./product_status.entity";
 import { MarketScopeEntity } from "./market_scope.entity";
-import { StrengthingAreaEntity } from "./strengthing_area.entity";
+import { StrengtheningAreaEntity } from "./strengthening_area.entity";
 import { CohortEntity } from "./cohort.entity";
 
 @Index("user_id", ["userId"], {})
@@ -25,7 +25,7 @@ import { CohortEntity } from "./cohort.entity";
 @Index("position_id", ["positionId"], {})
 @Index("product_status_id", ["productStatusId"], {})
 @Index("market_scope_id", ["marketScopeId"], {})
-@Index("strengthing_area_id", ["strengthingAreaId"], {})
+@Index("strengthening_area_id", ["strengtheningAreaId"], {})
 @Index("cohort_id", ["cohortId"], {})
 @Entity("business", { schema: "dbbitacorae" })
 export class BusinessEntity {
@@ -110,8 +110,8 @@ export class BusinessEntity {
   @Column("longtext", { name: "business_segmentation", nullable: true })
   businessSegmentation: string | null;
 
-  @Column("int", { name: "strengthing_area_id" })
-  strengthingAreaId: number;
+  @Column("int", { name: "strengthening_area_id" })
+  strengtheningAreaId: number;
 
   @Column("int", { name: "assigned_hours" })
   assignedHours: number;
@@ -199,12 +199,12 @@ export class BusinessEntity {
   marketScope: MarketScopeEntity;
 
   @ManyToOne(
-    () => StrengthingAreaEntity,
-    (strengthingAreaEntity) => strengthingAreaEntity.businesses,
+    () => StrengtheningAreaEntity,
+    (strengtheningAreaEntity) => strengtheningAreaEntity.businesses,
     { onDelete: "RESTRICT", onUpdate: "RESTRICT" }
   )
-  @JoinColumn([{ name: "strengthing_area_id", referencedColumnName: "id" }])
-  strengthingArea: StrengthingAreaEntity;
+  @JoinColumn([{ name: "strengthening_area_id", referencedColumnName: "id" }])
+  strengtheningArea: StrengtheningAreaEntity;
 
   @ManyToOne(() => CohortEntity, (cohortEntity) => cohortEntity.businesses, {
     onDelete: "RESTRICT",

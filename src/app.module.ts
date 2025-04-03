@@ -18,8 +18,8 @@ import { PositionModule } from './api/position/position.module';
 import { ProductoStatusModule } from './api/producto-status/producto-status.module';
 import { RoleModule } from './api/role/role.module';
 import { ServiceModule } from './api/service/service.module';
-import { StrengthingAreaModule } from './api/strengthing_area/strengthing_area.module';
-import { StrengthingLevelModule } from './api/strengthing_level/strengthing_level.module';
+import { StrengtheningAreaModule } from './api/strengthening_area/strengthening_area.module';
+import { StrengtheningLevelModule } from './api/strengthening_level/strengthening_level.module';
 import { UserModule } from './api/user/user.module';
 import { PostModule } from './api/post/post.module';
 import { PostCategoryModule } from './api/post-category/post-category.module';
@@ -41,8 +41,8 @@ import { RoleEntity } from 'src/entities/role.entity';
 import { RolePermissionEntity } from './entities/role_permission.entity';
 import { PermissionEntity } from './entities/permission.entity';
 import { ServiceEntity } from './entities/service.entity';
-import { StrengthingAreaEntity } from 'src/entities/strengthing_area.entity';
-import { StrengthingLevelEntity } from './entities/strengthing_level.entity';
+import { StrengtheningAreaEntity } from 'src/entities/strengthening_area.entity';
+import { StrengtheningLevelEntity } from './entities/strengthening_level.entity';
 import { UserEntity } from 'src/entities/user.entity';
 import { PostEntity } from './entities/post.entity';
 import { PostCategoryEntity } from './entities/post_category.entity';
@@ -80,8 +80,8 @@ import envVars from './config/env';
 			RolePermissionEntity,
 			PermissionEntity,
 			ServiceEntity,
-			StrengthingAreaEntity,
-			StrengthingLevelEntity,
+			StrengtheningAreaEntity,
+			StrengtheningLevelEntity,
 			UserEntity,
 			PostEntity,
 			PostCategoryEntity
@@ -103,8 +103,8 @@ import envVars from './config/env';
 		ProductoStatusModule,
 		RoleModule,
 		ServiceModule,
-		StrengthingAreaModule,
-		StrengthingLevelModule,
+		StrengtheningAreaModule,
+		StrengtheningLevelModule,
 		UserModule,
 		PostModule,
 		PostCategoryModule

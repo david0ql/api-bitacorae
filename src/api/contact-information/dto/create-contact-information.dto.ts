@@ -83,12 +83,12 @@ export class CreateContactInformationDto {
 	readonly experienceYears: number
 
 	@ApiProperty({
-		description: 'Strengthing area ID',
+		description: 'Strengthening area ID',
 		example: 1
 	})
 	@IsOptional()
 	@IsNumber()
-	readonly strengthingAreaId: number
+	readonly strengtheningAreaId: number
 
 	@ApiProperty({
 		description: 'Education level ID',

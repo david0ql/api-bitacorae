@@ -2,26 +2,26 @@ import { Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { StrengthingLevelEntity } from 'src/entities/strengthing_level.entity'
+import { StrengtheningLevelEntity } from 'src/entities/strengthening_level.entity'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 
 @Injectable()
-export class StrengthingLevelService {
+export class StrengtheningLevelService {
 	constructor(
-		@InjectRepository(StrengthingLevelEntity)
-		private readonly strengthingLevelRepository: Repository<StrengthingLevelEntity>
+		@InjectRepository(StrengtheningLevelEntity)
+		private readonly strengtheningLevelRepository: Repository<StrengtheningLevelEntity>
 	) {}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<StrengthingLevelEntity>> {
-		const queryBuilder = this.strengthingLevelRepository.createQueryBuilder('strengthing_level')
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<StrengtheningLevelEntity>> {
+		const queryBuilder = this.strengtheningLevelRepository.createQueryBuilder('strengthening_level')
 		.select([
-			'strengthing_level.id',
-			'strengthing_level.name'
+			'strengthening_level.id',
+			'strengthening_level.name'
 		])
-		.orderBy('strengthing_level.id', pageOptionsDto.order)
+		.orderBy('strengthening_level.id', pageOptionsDto.order)
 		.skip(pageOptionsDto.skip)
 		.take(pageOptionsDto.take)
 
