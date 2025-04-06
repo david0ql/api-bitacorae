@@ -3,9 +3,9 @@ import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import * as bcrypt from 'bcrypt'
 
-import { UserEntity } from 'src/entities/user.entity'
-import { ExpertEntity } from 'src/entities/expert.entity'
-import { ConsultorTypeEntity } from 'src/entities/consultor_type.entity'
+import { User } from 'src/entities/User'
+import { Expert } from 'src/entities/Expert'
+import { ConsultorType } from 'src/entities/ConsultorType'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -16,14 +16,14 @@ import { UpdateExpertDto } from './dto/update-expert.dto'
 @Injectable()
 export class ExpertService {
 	constructor(
-		@InjectRepository(ExpertEntity)
-		private readonly expertRepository: Repository<ExpertEntity>,
+		@InjectRepository(Expert)
+		private readonly expertRepository: Repository<Expert>,
 
-		@InjectRepository(UserEntity)
-		private readonly userRepository: Repository<UserEntity>,
+		@InjectRepository(User)
+		private readonly userRepository: Repository<User>,
 
-		@InjectRepository(ConsultorTypeEntity)
-		private readonly consultorTypeRepository: Repository<ConsultorTypeEntity>
+		@InjectRepository(ConsultorType)
+		private readonly consultorTypeRepository: Repository<ConsultorType>
 	) {}
 
 	async create(createExpertDto: CreateExpertDto) {
@@ -94,7 +94,7 @@ export class ExpertService {
 		return this.expertRepository.save(expert)
 	}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<ExpertEntity>> {
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Expert>> {
 		const queryBuilder = this.expertRepository.createQueryBuilder('expert')
 		.select([
 			'expert.id',

@@ -3,12 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { DocumentTypeService } from './document-type.service'
 import { DocumentTypeController } from './document-type.controller'
-import { DocumentTypeEntity } from 'src/entities/document_type.entity'
+import { DocumentType } from 'src/entities/DocumentType'
 
 @Module({
 	controllers: [DocumentTypeController],
 	providers: [DocumentTypeService],
-	imports: [TypeOrmModule.forFeature([DocumentTypeEntity])]
+	imports: [TypeOrmModule.forFeature([DocumentType])]
 })
 
 export class DocumentTypeModule {}

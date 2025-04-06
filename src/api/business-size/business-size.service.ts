@@ -2,7 +2,7 @@ import { Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { BusinessSizeEntity } from 'src/entities/business_size.entity'
+import { BusinessSize } from 'src/entities/BusinessSize'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -11,11 +11,11 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 @Injectable()
 export class BusinessSizeService {
  	constructor(
-		@InjectRepository(BusinessSizeEntity)
-		private readonly businessSizeRepository: Repository<BusinessSizeEntity>
+		@InjectRepository(BusinessSize)
+		private readonly businessSizeRepository: Repository<BusinessSize>
 	) {}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<BusinessSizeEntity>> {
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<BusinessSize>> {
 		const queryBuilder = this.businessSizeRepository.createQueryBuilder('business_size')
 		.select([
 			'business_size.id',

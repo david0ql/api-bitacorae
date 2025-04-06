@@ -2,7 +2,7 @@ import { Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { PostCategoryEntity } from 'src/entities/post_category.entity'
+import { PostCategory } from 'src/entities/PostCategory'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -13,8 +13,8 @@ import { UpdatePostCategoryDto } from './dto/update-post-category.dto'
 @Injectable()
 export class PostCategoryService {
 	constructor(
-		@InjectRepository(PostCategoryEntity)
-		private readonly postCategoryRepository: Repository<PostCategoryEntity>
+		@InjectRepository(PostCategory)
+		private readonly postCategoryRepository: Repository<PostCategory>
 	) {}
 
 	create(createPostCategoryDto: CreatePostCategoryDto) {
@@ -25,7 +25,7 @@ export class PostCategoryService {
 		return this.postCategoryRepository.save(postCategory)
 	}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<PostCategoryEntity>> {
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<PostCategory>> {
 		const queryBuilder = this.postCategoryRepository.createQueryBuilder('post_category')
 		.select([
 			'post_category.id',

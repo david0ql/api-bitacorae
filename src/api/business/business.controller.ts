@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { BusinessService } from './business.service'
-import { BusinessEntity } from 'src/entities/business.entity'
+import { Business } from 'src/entities/Business'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -26,7 +26,7 @@ export class BusinessController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<BusinessEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Business>> {
 		return this.businessService.findAll(pageOptionsDto)
 	}
 

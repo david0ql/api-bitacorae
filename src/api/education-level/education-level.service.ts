@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { EducationLevelEntity } from 'src/entities/education_level.entity'
+import { EducationLevel } from 'src/entities/EducationLevel'
 import { Repository } from 'typeorm'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { PageDto } from 'src/dto/page.dto'
@@ -9,11 +9,11 @@ import { PageMetaDto } from 'src/dto/page-meta.dto'
 @Injectable()
 export class EducationLevelService {
   	constructor(
-		@InjectRepository(EducationLevelEntity)
-		private readonly educationLevelRepository: Repository<EducationLevelEntity>
+		@InjectRepository(EducationLevel)
+		private readonly educationLevelRepository: Repository<EducationLevel>
 	) {}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<EducationLevelEntity>> {
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<EducationLevel>> {
 		const queryBuilder = this.educationLevelRepository.createQueryBuilder('education_level')
 		.select([
 			'education_level.id',

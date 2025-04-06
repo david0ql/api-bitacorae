@@ -24,32 +24,32 @@ import { UserModule } from './api/user/user.module';
 import { PostModule } from './api/post/post.module';
 import { PostCategoryModule } from './api/post-category/post-category.module';
 
-import { BusinessEntity } from 'src/entities/business.entity';
-import { BusinessSizeEntity } from './entities/business_size.entity';
-import { CohortEntity } from './entities/cohort.entity';
-import { ConsultorTypeEntity } from './entities/consultor_type.entity';
-import { ContactInformationEntity } from 'src/entities/contact_information.entity';
-import { DocumentTypeEntity } from 'src/entities/document_type.entity';
-import { EconomicActivityEntity } from 'src/entities/economic_activity.entity';
-import { EducationLevelEntity } from 'src/entities/education_level.entity';
-import { ExpertEntity } from 'src/entities/expert.entity';
-import { GenderEntity } from 'src/entities/gender.entity';
-import { MarketScopeEntity } from './entities/market_scope.entity';
-import { PositionEntity } from './entities/position.entity';
-import { ProductStatusEntity } from './entities/product_status.entity';
-import { RoleEntity } from 'src/entities/role.entity';
-import { RolePermissionEntity } from './entities/role_permission.entity';
-import { PermissionEntity } from './entities/permission.entity';
-import { ServiceEntity } from './entities/service.entity';
-import { StrengtheningAreaEntity } from 'src/entities/strengthening_area.entity';
-import { StrengtheningLevelEntity } from './entities/strengthening_level.entity';
-import { UserEntity } from 'src/entities/user.entity';
-import { PostEntity } from './entities/post.entity';
-import { PostCategoryEntity } from './entities/post_category.entity';
-import { AccompanimentEntity } from './entities/accompaniment.entity';
-import { SessionEntity } from './entities/session.entity';
-import { SessionStatusEntity } from './entities/session_status.entity';
-import { SessionPreparationFileEntity } from './entities/session_preparation_file.entity';
+import { Business } from 'src/entities/Business';
+import { BusinessSize } from './entities/BusinessSize';
+import { Cohort } from './entities/Cohort';
+import { ConsultorType } from './entities/ConsultorType';
+import { ContactInformation } from 'src/entities/ContactInformation';
+import { DocumentType } from 'src/entities/DocumentType';
+import { EconomicActivity } from 'src/entities/EconomicActivity';
+import { EducationLevel } from 'src/entities/EducationLevel';
+import { Expert } from 'src/entities/Expert';
+import { Gender } from 'src/entities/Gender';
+import { MarketScope } from './entities/MarketScope';
+import { Position } from './entities/Position';
+import { ProductStatus } from './entities/ProductStatus';
+import { Role } from 'src/entities/Role';
+import { RolePermission } from './entities/RolePermission';
+import { Permission } from './entities/Permission';
+import { Service } from './entities/Service';
+import { StrengtheningArea } from 'src/entities/StrengtheningArea';
+import { StrengtheningLevel } from './entities/StrengtheningLevel';
+import { User } from 'src/entities/User';
+import { Post } from './entities/Post';
+import { PostCategory } from './entities/PostCategory';
+import { Accompaniment } from './entities/Accompaniment';
+import { Session } from './entities/Session';
+import { SessionStatus } from './entities/SessionStatus';
+import { SessionPreparationFile } from './entities/SessionPreparationFile';
 
 import envVars from './config/env';
 import { AccompanimentModule } from './api/accompaniment/accompaniment.module';
@@ -68,32 +68,32 @@ import { AccompanimentModule } from './api/accompaniment/accompaniment.module';
 			timezone: 'Z'
 		}),
 		TypeOrmModule.forFeature([
-			BusinessEntity,
-			BusinessSizeEntity,
-			CohortEntity,
-			ConsultorTypeEntity,
-			ContactInformationEntity,
-			DocumentTypeEntity,
-			EconomicActivityEntity,
-			EducationLevelEntity,
-			ExpertEntity,
-			GenderEntity,
-			MarketScopeEntity,
-			PositionEntity,
-			ProductStatusEntity,
-			RoleEntity,
-			RolePermissionEntity,
-			PermissionEntity,
-			ServiceEntity,
-			StrengtheningAreaEntity,
-			StrengtheningLevelEntity,
-			UserEntity,
-			PostEntity,
-			PostCategoryEntity,
-			AccompanimentEntity,
-			SessionEntity,
-			SessionStatusEntity,
-			SessionPreparationFileEntity
+			Business,
+			BusinessSize,
+			Cohort,
+			ConsultorType,
+			ContactInformation,
+			DocumentType,
+			EconomicActivity,
+			EducationLevel,
+			Expert,
+			Gender,
+			MarketScope,
+			Position,
+			ProductStatus,
+			Role,
+			RolePermission,
+			Permission,
+			Service,
+			StrengtheningArea,
+			StrengtheningLevel,
+			User,
+			Post,
+			PostCategory,
+			Accompaniment,
+			Session,
+			SessionStatus,
+			SessionPreparationFile
 		]),
 		RedisModule,
 		AuthModule,

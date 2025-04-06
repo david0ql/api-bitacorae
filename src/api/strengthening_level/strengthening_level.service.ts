@@ -2,7 +2,7 @@ import { Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { StrengtheningLevelEntity } from 'src/entities/strengthening_level.entity'
+import { StrengtheningLevel } from 'src/entities/StrengtheningLevel'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -11,11 +11,11 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 @Injectable()
 export class StrengtheningLevelService {
 	constructor(
-		@InjectRepository(StrengtheningLevelEntity)
-		private readonly strengtheningLevelRepository: Repository<StrengtheningLevelEntity>
+		@InjectRepository(StrengtheningLevel)
+		private readonly strengtheningLevelRepository: Repository<StrengtheningLevel>
 	) {}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<StrengtheningLevelEntity>> {
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<StrengtheningLevel>> {
 		const queryBuilder = this.strengtheningLevelRepository.createQueryBuilder('strengthening_level')
 		.select([
 			'strengthening_level.id',

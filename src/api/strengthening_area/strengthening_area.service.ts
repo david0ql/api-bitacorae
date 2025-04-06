@@ -2,7 +2,7 @@ import { Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { StrengtheningAreaEntity } from 'src/entities/strengthening_area.entity'
+import { StrengtheningArea } from 'src/entities/StrengtheningArea'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -13,8 +13,8 @@ import { UpdateStrengtheningAreaDto } from './dto/update-strengthening-area.dto'
 @Injectable()
 export class StrengtheningAreaService {
 	constructor(
-		@InjectRepository(StrengtheningAreaEntity)
-		private readonly strengtheningAreaRepository: Repository<StrengtheningAreaEntity>
+		@InjectRepository(StrengtheningArea)
+		private readonly strengtheningAreaRepository: Repository<StrengtheningArea>
 	) { }
 
 	create(createStrengtheningAreaDto: CreateStrengtheningAreaDto) {
@@ -25,7 +25,7 @@ export class StrengtheningAreaService {
 		return this.strengtheningAreaRepository.save(strengtheningArea)
 	}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<StrengtheningAreaEntity>> {
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<StrengtheningArea>> {
 		const queryBuilder = this.strengtheningAreaRepository.createQueryBuilder('strengthening_area')
 		.select([
 			'strengthening_area.id',

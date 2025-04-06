@@ -3,15 +3,15 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { AccompanimentService } from './accompaniment.service'
 import { AccompanimentController } from './accompaniment.controller'
-import { AccompanimentEntity } from 'src/entities/accompaniment.entity'
-import { BusinessEntity } from 'src/entities/business.entity'
-import { ExpertEntity } from 'src/entities/expert.entity'
-import { StrengtheningAreaEntity } from 'src/entities/strengthening_area.entity'
+import { Accompaniment } from 'src/entities/Accompaniment'
+import { Business } from 'src/entities/Business'
+import { Expert } from 'src/entities/Expert'
+import { StrengtheningArea } from 'src/entities/StrengtheningArea'
 
 @Module({
 	controllers: [AccompanimentController],
 	providers: [AccompanimentService],
-	imports: [TypeOrmModule.forFeature([AccompanimentEntity, BusinessEntity, ExpertEntity, StrengtheningAreaEntity])]
+	imports: [TypeOrmModule.forFeature([Accompaniment, Business, Expert, StrengtheningArea])]
 })
 
 export class AccompanimentModule {}

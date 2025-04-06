@@ -2,7 +2,7 @@ import { Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { EconomicActivityEntity } from 'src/entities/economic_activity.entity'
+import { EconomicActivity } from 'src/entities/EconomicActivity'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -13,8 +13,8 @@ import { UpdateEconomicActivityDto } from './dto/update-economic-activity.dto'
 @Injectable()
 export class EconomicActivityService {
 	constructor(
-		@InjectRepository(EconomicActivityEntity)
-		private readonly economicRepository: Repository<EconomicActivityEntity>
+		@InjectRepository(EconomicActivity)
+		private readonly economicRepository: Repository<EconomicActivity>
 	) {}
 
 	create(createEconomicActivityDto: CreateEconomicActivityDto) {
@@ -25,7 +25,7 @@ export class EconomicActivityService {
 		return this.economicRepository.save(economicActivity)
 	}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<EconomicActivityEntity>> {
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<EconomicActivity>> {
 		const queryBuilder = this.economicRepository.createQueryBuilder('economic_activity')
 		.select([
 			'economic_activity.id',

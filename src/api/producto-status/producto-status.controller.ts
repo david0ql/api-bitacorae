@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { ProductoStatusService } from './producto-status.service'
-import { ProductStatusEntity } from 'src/entities/product_status.entity'
+import { ProductStatus } from 'src/entities/ProductStatus'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -18,7 +18,7 @@ export class ProductoStatusController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<ProductStatusEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<ProductStatus>> {
 		return this.productoStatusService.findAll(pageOptionsDto)
 	}
 }

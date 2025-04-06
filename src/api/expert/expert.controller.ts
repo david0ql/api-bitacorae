@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { ExpertService } from './expert.service'
-import { ExpertEntity } from 'src/entities/expert.entity'
+import { Expert } from 'src/entities/Expert'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -26,7 +26,7 @@ export class ExpertController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<ExpertEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Expert>> {
 		return this.expertService.findAll(pageOptionsDto)
 	}
 

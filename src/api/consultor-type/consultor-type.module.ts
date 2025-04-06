@@ -3,12 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { ConsultorTypeService } from './consultor-type.service'
 import { ConsultorTypeController } from './consultor-type.controller'
-import { ConsultorTypeEntity } from 'src/entities/consultor_type.entity'
+import { ConsultorType } from 'src/entities/ConsultorType'
 
 @Module({
 	controllers: [ConsultorTypeController],
 	providers: [ConsultorTypeService],
-	imports: [TypeOrmModule.forFeature([ConsultorTypeEntity])]
+	imports: [TypeOrmModule.forFeature([ConsultorType])]
 })
 
 export class ConsultorTypeModule {}

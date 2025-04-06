@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { PostCategoryService } from './post-category.service'
-import { PostCategoryEntity } from 'src/entities/post_category.entity'
+import { PostCategory } from 'src/entities/PostCategory'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -26,7 +26,7 @@ export class PostCategoryController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<PostCategoryEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<PostCategory>> {
 		return this.postCategoryService.findAll(pageOptionsDto)
 	}
 

@@ -1,8 +1,8 @@
 import { DataSource } from 'typeorm'
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common'
 
-import { RolePermissionEntity } from 'src/entities/role_permission.entity'
-import { PermissionEntity } from 'src/entities/permission.entity'
+import { RolePermission } from 'src/entities/RolePermission'
+import { Permission } from 'src/entities/Permission'
 import { RedisService } from 'src/services/redis/redis.service'
 
 @Injectable()
@@ -33,9 +33,9 @@ export class PermissionsGuard implements CanActivate {
 		// 	permissions = JSON.parse(cachedPermissions)
 		// } else {
 		// 	permissions = await this.dataSource
-		// 		.getRepository(RolePermissionEntity)
+		// 		.getRepository(RolePermission)
 		// 		.createQueryBuilder('rp')
-		// 		.innerJoinAndSelect(PermissionEntity, 'p', 'rp.permission_id = p.id')
+		// 		.innerJoinAndSelect(Permission, 'p', 'rp.permission_id = p.id')
 		// 		.where('rp.role_id = :roleId', { roleId })
 		// 		.select(['p.endpoint AS endpoint', 'p.method AS method'])
 		// 		.getRawMany()

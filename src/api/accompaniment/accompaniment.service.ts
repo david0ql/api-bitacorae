@@ -2,31 +2,31 @@ import { Repository } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { AccompanimentEntity } from 'src/entities/accompaniment.entity'
+import { Accompaniment } from 'src/entities/Accompaniment'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateAccompanimentDto } from './dto/create-accompaniment.dto'
 import { UpdateAccompanimentDto } from './dto/update-accompaniment.dto'
-import { BusinessEntity } from 'src/entities/business.entity'
-import { ExpertEntity } from 'src/entities/expert.entity'
-import { StrengtheningAreaEntity } from 'src/entities/strengthening_area.entity'
+import { Business } from 'src/entities/Business'
+import { Expert } from 'src/entities/Expert'
+import { StrengtheningArea } from 'src/entities/StrengtheningArea'
 
 @Injectable()
 export class AccompanimentService {
 	constructor(
-		@InjectRepository(AccompanimentEntity)
-		private readonly accompanimentRepository: Repository<AccompanimentEntity>,
+		@InjectRepository(Accompaniment)
+		private readonly accompanimentRepository: Repository<Accompaniment>,
 
-		@InjectRepository(BusinessEntity)
-		private readonly businessRepository: Repository<BusinessEntity>,
+		@InjectRepository(Business)
+		private readonly businessRepository: Repository<Business>,
 
-		@InjectRepository(ExpertEntity)
-		private readonly expertRepository: Repository<ExpertEntity>,
+		@InjectRepository(Expert)
+		private readonly expertRepository: Repository<Expert>,
 
-		@InjectRepository(StrengtheningAreaEntity)
-		private readonly strengtheningAreaRepository: Repository<StrengtheningAreaEntity>
+		@InjectRepository(StrengtheningArea)
+		private readonly strengtheningAreaRepository: Repository<StrengtheningArea>
 	) {}
 
 	async create(createAccompanimentDto: CreateAccompanimentDto) {
@@ -72,7 +72,7 @@ export class AccompanimentService {
 		return this.accompanimentRepository.save(accompaniment)
 	}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<AccompanimentEntity>> {
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
 		const queryBuilder = this.accompanimentRepository.createQueryBuilder('business')
 		.select([
 			'business.id AS id',

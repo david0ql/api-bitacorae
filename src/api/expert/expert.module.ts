@@ -3,14 +3,14 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { ExpertService } from './expert.service'
 import { ExpertController } from './expert.controller'
-import { ExpertEntity } from 'src/entities/expert.entity'
-import { UserEntity } from 'src/entities/user.entity'
-import { ConsultorTypeEntity } from 'src/entities/consultor_type.entity'
+import { Expert } from 'src/entities/Expert'
+import { User } from 'src/entities/User'
+import { ConsultorType } from 'src/entities/ConsultorType'
 
 @Module({
 	controllers: [ExpertController],
 	providers: [ExpertService],
-	imports: [TypeOrmModule.forFeature([ExpertEntity, UserEntity, ConsultorTypeEntity])]
+	imports: [TypeOrmModule.forFeature([Expert, User, ConsultorType])]
 })
 
 export class ExpertModule {}

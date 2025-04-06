@@ -3,12 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { CohortService } from './cohort.service'
 import { CohortController } from './cohort.controller'
-import { CohortEntity } from 'src/entities/cohort.entity'
+import { Cohort } from 'src/entities/Cohort'
 
 @Module({
 	controllers: [CohortController],
 	providers: [CohortService],
-	imports: [TypeOrmModule.forFeature([CohortEntity])]
+	imports: [TypeOrmModule.forFeature([Cohort])]
 })
 
 export class CohortModule {}

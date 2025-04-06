@@ -2,7 +2,7 @@ import { Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { ServiceEntity } from 'src/entities/service.entity'
+import { Service } from 'src/entities/Service'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -13,8 +13,8 @@ import { UpdateServiceDto } from './dto/update-service.dto'
 @Injectable()
 export class ServiceService {
 	constructor(
-		@InjectRepository(ServiceEntity)
-		private readonly serviceRepository: Repository<ServiceEntity>
+		@InjectRepository(Service)
+		private readonly serviceRepository: Repository<Service>
 	) { }
 
 	create(createServiceDto: CreateServiceDto) {
@@ -25,7 +25,7 @@ export class ServiceService {
 		return this.serviceRepository.save(service)
 	}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<ServiceEntity>> {
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Service>> {
 		const queryBuilder = this.serviceRepository.createQueryBuilder('service')
 		.select([
 			'service.id',

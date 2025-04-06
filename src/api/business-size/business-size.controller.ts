@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { BusinessSizeService } from './business-size.service'
-import { BusinessSizeEntity } from 'src/entities/business_size.entity'
+import { BusinessSize } from 'src/entities/BusinessSize'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -18,7 +18,7 @@ export class BusinessSizeController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<BusinessSizeEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<BusinessSize>> {
 		return this.businessSizeService.findAll(pageOptionsDto)
 	}
 }

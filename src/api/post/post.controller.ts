@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { PostService } from './post.service'
-import { PostEntity } from 'src/entities/post.entity'
+import { Post as PostEntity } from 'src/entities/Post'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'

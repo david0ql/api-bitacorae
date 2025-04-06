@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { StrengtheningLevelService } from './strengthening_level.service'
-import { StrengtheningLevelEntity } from 'src/entities/strengthening_level.entity'
+import { StrengtheningLevel } from 'src/entities/StrengtheningLevel'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -18,7 +18,7 @@ export class StrengtheningLevelController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<StrengtheningLevelEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<StrengtheningLevel>> {
 		return this.strengtheningLevelService.findAll(pageOptionsDto)
 	}
 }

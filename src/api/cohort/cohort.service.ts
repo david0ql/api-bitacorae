@@ -2,7 +2,7 @@ import { Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { CohortEntity } from 'src/entities/cohort.entity'
+import { Cohort } from 'src/entities/Cohort'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -13,8 +13,8 @@ import { UpdateCohortDto } from './dto/update-cohort.dto'
 @Injectable()
 export class CohortService {
 	constructor(
-		@InjectRepository(CohortEntity)
-		private readonly cohortRepository: Repository<CohortEntity>
+		@InjectRepository(Cohort)
+		private readonly cohortRepository: Repository<Cohort>
 	) {}
 
 	create(createCohortDto: CreateCohortDto) {
@@ -25,7 +25,7 @@ export class CohortService {
 		return this.cohortRepository.save(cohort)
 	}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<CohortEntity>> {
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Cohort>> {
 		const queryBuilder = this.cohortRepository.createQueryBuilder('cohort')
 		.select([
 			'cohort.id',

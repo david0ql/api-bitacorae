@@ -3,12 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { StrengtheningLevelService } from './strengthening_level.service'
 import { StrengtheningLevelController } from './strengthening_level.controller'
-import { StrengtheningLevelEntity } from 'src/entities/strengthening_level.entity'
+import { StrengtheningLevel } from 'src/entities/StrengtheningLevel'
 
 @Module({
 	controllers: [StrengtheningLevelController],
 	providers: [StrengtheningLevelService],
-	imports: [TypeOrmModule.forFeature([StrengtheningLevelEntity])]
+	imports: [TypeOrmModule.forFeature([StrengtheningLevel])]
 })
 
 export class StrengtheningLevelModule {}

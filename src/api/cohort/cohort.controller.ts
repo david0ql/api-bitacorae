@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { CohortService } from './cohort.service'
-import { CohortEntity } from 'src/entities/cohort.entity'
+import { Cohort } from 'src/entities/Cohort'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -26,7 +26,7 @@ export class CohortController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<CohortEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Cohort>> {
 		return this.cohortService.findAll(pageOptionsDto)
 	}
 

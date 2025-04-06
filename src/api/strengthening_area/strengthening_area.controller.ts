@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 
 import { StrengtheningAreaService } from './strengthening_area.service'
-import { StrengtheningAreaEntity } from 'src/entities/strengthening_area.entity'
+import { StrengtheningArea } from 'src/entities/StrengtheningArea'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -26,7 +26,7 @@ export class StrengtheningAreaController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<StrengtheningAreaEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<StrengtheningArea>> {
 		return this.strengtheningAreaService.findAll(pageOptionsDto)
 	}
 

@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { AccompanimentService } from './accompaniment.service'
-import { AccompanimentEntity } from 'src/entities/accompaniment.entity'
+import { Accompaniment } from 'src/entities/Accompaniment'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -26,7 +26,7 @@ export class AccompanimentController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<AccompanimentEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
 		return this.accompanimentService.findAll(pageOptionsDto)
 	}
 

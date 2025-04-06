@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { ConsultorTypeService } from './consultor-type.service'
-import { ConsultorTypeEntity } from 'src/entities/consultor_type.entity'
+import { ConsultorType } from 'src/entities/ConsultorType'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -26,7 +26,7 @@ export class ConsultorTypeController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<ConsultorTypeEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<ConsultorType>> {
 		return this.consultorTypeService.findAll(pageOptionsDto)
 	}
 

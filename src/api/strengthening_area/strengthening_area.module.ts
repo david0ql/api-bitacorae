@@ -3,12 +3,12 @@ import { Module } from '@nestjs/common'
 
 import { StrengtheningAreaService } from './strengthening_area.service'
 import { StrengtheningAreaController } from './strengthening_area.controller'
-import { StrengtheningAreaEntity } from 'src/entities/strengthening_area.entity'
+import { StrengtheningArea } from 'src/entities/StrengtheningArea'
 
 @Module({
 	controllers: [StrengtheningAreaController],
 	providers: [StrengtheningAreaService],
-	imports: [TypeOrmModule.forFeature([StrengtheningAreaEntity])]
+	imports: [TypeOrmModule.forFeature([StrengtheningArea])]
 })
 
 export class StrengtheningAreaModule { }

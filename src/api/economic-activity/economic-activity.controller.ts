@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { EconomicActivityService } from './economic-activity.service'
-import { EconomicActivityEntity } from 'src/entities/economic_activity.entity'
+import { EconomicActivity } from 'src/entities/EconomicActivity'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -26,7 +26,7 @@ export class EconomicActivityController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<EconomicActivityEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<EconomicActivity>> {
 		return this.economicActivityService.findAll(pageOptionsDto)
 	}
 

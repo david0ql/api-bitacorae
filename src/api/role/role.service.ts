@@ -2,7 +2,7 @@ import { Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { RoleEntity } from 'src/entities/role.entity'
+import { Role } from 'src/entities/Role'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -11,11 +11,11 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 @Injectable()
 export class RoleService {
 	constructor(
-		@InjectRepository(RoleEntity)
-		private readonly rolRepository: Repository<RoleEntity>
+		@InjectRepository(Role)
+		private readonly rolRepository: Repository<Role>
 	) {}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<RoleEntity>> {
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Role>> {
 		const queryBuilder = this.rolRepository.createQueryBuilder('role')
 		.select([
 			'role.id',

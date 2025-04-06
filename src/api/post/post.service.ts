@@ -2,23 +2,23 @@ import { In, Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { PostEntity } from 'src/entities/post.entity'
+import { Post } from 'src/entities/Post'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreatePostDto } from './dto/create-post.dto'
 import { UpdatePostDto } from './dto/update-post.dto'
-import { PostCategoryEntity } from 'src/entities/post_category.entity'
+import { PostCategory } from 'src/entities/PostCategory'
 
 @Injectable()
 export class PostService {
 	constructor(
-		@InjectRepository(PostEntity)
-		private readonly postRepository: Repository<PostEntity>,
+		@InjectRepository(Post)
+		private readonly postRepository: Repository<Post>,
 
-		@InjectRepository(PostCategoryEntity)
-		private readonly postCategoryRepository: Repository<PostCategoryEntity>
+		@InjectRepository(PostCategory)
+		private readonly postCategoryRepository: Repository<PostCategory>
 	) {}
 
 	async create(createPostDto: CreatePostDto) {
@@ -33,13 +33,13 @@ export class PostService {
 			image,
 			content,
 			postDate,
-			categories: categoryEntities
+			postCategories: categoryEntities
 		})
 
 		return await this.postRepository.save(newPost)
 	}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<PostEntity>> {
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Post>> {
 		const queryBuilder = this.postRepository.createQueryBuilder('post')
 		.select([
 			'post.id',
@@ -84,7 +84,7 @@ export class PostService {
 				id: In(categories),
 			})
 
-			post.categories = categoryEntities.length > 0 ? categoryEntities : []
+			post.postCategories = categoryEntities.length > 0 ? categoryEntities : []
 		}
 
 		await this.postRepository.save(post)

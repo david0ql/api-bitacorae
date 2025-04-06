@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { RoleService } from './role.service'
-import { RoleEntity } from 'src/entities/role.entity'
+import { Role } from 'src/entities/Role'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -18,7 +18,7 @@ export class RoleController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<RoleEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Role>> {
 		return this.roleService.findAll(pageOptionsDto)
 	}
 }

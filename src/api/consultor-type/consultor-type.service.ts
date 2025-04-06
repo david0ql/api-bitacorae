@@ -2,7 +2,7 @@ import { Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { ConsultorTypeEntity } from 'src/entities/consultor_type.entity'
+import { ConsultorType } from 'src/entities/ConsultorType'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -13,8 +13,8 @@ import { UpdateConsultorTypeDto } from './dto/update-consultor-type.dto'
 @Injectable()
 export class ConsultorTypeService {
 	constructor(
-		@InjectRepository(ConsultorTypeEntity)
-		private readonly consultorRepository: Repository<ConsultorTypeEntity>
+		@InjectRepository(ConsultorType)
+		private readonly consultorRepository: Repository<ConsultorType>
 	) {}
 
 	create(createConsultorTypeDto: CreateConsultorTypeDto) {
@@ -25,7 +25,7 @@ export class ConsultorTypeService {
 		return this.consultorRepository.save(consultor)
 	}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<ConsultorTypeEntity>> {
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<ConsultorType>> {
 		const queryBuilder = this.consultorRepository.createQueryBuilder('consultor_type')
 		.select([
 			'consultor_type.id',

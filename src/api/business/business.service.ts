@@ -3,8 +3,8 @@ import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import * as bcrypt from 'bcrypt'
 
-import { UserEntity } from 'src/entities/user.entity'
-import { BusinessEntity } from 'src/entities/business.entity'
+import { User } from 'src/entities/User'
+import { Business } from 'src/entities/Business'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -15,11 +15,11 @@ import { UpdateBusinessDto } from './dto/update-business.dto'
 @Injectable()
 export class BusinessService {
 	constructor(
-		@InjectRepository(BusinessEntity)
-		private readonly businessRepository: Repository<BusinessEntity>,
+		@InjectRepository(Business)
+		private readonly businessRepository: Repository<Business>,
 
-		@InjectRepository(UserEntity)
-		private readonly userRepository: Repository<UserEntity>
+		@InjectRepository(User)
+		private readonly userRepository: Repository<User>
 	) {}
 
 	async create(createBusinessDto: CreateBusinessDto) {
@@ -109,7 +109,7 @@ export class BusinessService {
 		return this.businessRepository.save(business)
 	}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<BusinessEntity>> {
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Business>> {
 		const queryBuilder = this.businessRepository.createQueryBuilder('business')
 		.select([
 			'business.id AS id',

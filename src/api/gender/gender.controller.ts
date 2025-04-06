@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { GenderService } from './gender.service'
-import { GenderEntity } from 'src/entities/gender.entity'
+import { Gender } from 'src/entities/Gender'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -18,7 +18,7 @@ export class GenderController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<GenderEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Gender>> {
 		return this.genderService.findAll(pageOptionsDto)
 	}
 }

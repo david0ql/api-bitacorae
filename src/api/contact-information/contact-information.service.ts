@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common'
 import { CreateContactInformationDto } from './dto/create-contact-information.dto'
 import { UpdateContactInformationDto } from './dto/update-contact-information.dto'
-import { ContactInformationEntity } from 'src/entities/contact_information.entity'
+import { ContactInformation } from 'src/entities/ContactInformation'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 
 @Injectable()
 export class ContactInformationService {
 	constructor(
-		@InjectRepository(ContactInformationEntity)
-		private readonly contactInformationRepository: Repository<ContactInformationEntity>
+		@InjectRepository(ContactInformation)
+		private readonly contactInformationRepository: Repository<ContactInformation>
 	) {}
 
 	create(createContactInformationDto: CreateContactInformationDto) {

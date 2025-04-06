@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { MarketScopeService } from './market-scope.service'
-import { MarketScopeEntity } from 'src/entities/market_scope.entity'
+import { MarketScope } from 'src/entities/MarketScope'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -18,7 +18,7 @@ export class MarketScopeController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<MarketScopeEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<MarketScope>> {
 		return this.marketScopeService.findAll(pageOptionsDto)
 	}
 }

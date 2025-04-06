@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { PositionService } from './position.service'
-import { PositionEntity } from 'src/entities/position.entity'
+import { Position } from 'src/entities/Position'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -17,7 +17,7 @@ export class PositionController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<PositionEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Position>> {
 		return this.positionService.findAll(pageOptionsDto)
 	}
 }

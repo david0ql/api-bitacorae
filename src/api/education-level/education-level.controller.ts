@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, Query, UseGuards } from '@nestjs/common'
 
 import { EducationLevelService } from './education-level.service'
-import { EducationLevelEntity } from 'src/entities/education_level.entity'
+import { EducationLevel } from 'src/entities/EducationLevel'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
@@ -18,7 +18,7 @@ export class EducationLevelController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<EducationLevelEntity>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<EducationLevel>> {
 		return this.educationLevelService.findAll(pageOptionsDto)
 	}
 }

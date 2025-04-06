@@ -3,12 +3,12 @@ import { Module } from '@nestjs/common'
 
 import { ServiceService } from './service.service'
 import { ServiceController } from './service.controller'
-import { ServiceEntity } from 'src/entities/service.entity'
+import { Service } from 'src/entities/Service'
 
 @Module({
 	controllers: [ServiceController],
 	providers: [ServiceService],
-	imports: [TypeOrmModule.forFeature([ServiceEntity])]
+	imports: [TypeOrmModule.forFeature([Service])]
 })
 
 export class ServiceModule { }
