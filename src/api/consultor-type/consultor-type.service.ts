@@ -48,9 +48,7 @@ export class ConsultorTypeService {
 
 		const { name, role } = updateConsultorTypeDto
 
-		const consultor = this.consultorRepository.create({ name, roleId: role })
-
-		return this.consultorRepository.update(id, consultor)
+		return this.consultorRepository.update(id, { name, roleId: role })
 	}
 
 	remove(id: number) {

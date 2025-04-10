@@ -47,9 +47,7 @@ export class PostCategoryService {
 
 		const { name } = updatePostCategoryDto
 
-		const postCategory = this.postCategoryRepository.create({ name })
-
-		return this.postCategoryRepository.update(id, postCategory)
+		return this.postCategoryRepository.update(id, { name })
 	}
 
 	remove(id: number) {

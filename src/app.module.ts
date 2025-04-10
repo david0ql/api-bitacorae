@@ -23,6 +23,8 @@ import { StrengtheningLevelModule } from './api/strengthening_level/strengthenin
 import { UserModule } from './api/user/user.module';
 import { PostModule } from './api/post/post.module';
 import { PostCategoryModule } from './api/post-category/post-category.module';
+import { AccompanimentModule } from './api/accompaniment/accompaniment.module';
+import { SessionModule } from './api/session/session.module';
 
 import { Business } from 'src/entities/Business';
 import { BusinessSize } from './entities/BusinessSize';
@@ -52,7 +54,6 @@ import { SessionStatus } from './entities/SessionStatus';
 import { SessionPreparationFile } from './entities/SessionPreparationFile';
 
 import envVars from './config/env';
-import { AccompanimentModule } from './api/accompaniment/accompaniment.module';
 
 @Module({
 	imports: [
@@ -117,7 +118,8 @@ import { AccompanimentModule } from './api/accompaniment/accompaniment.module';
 		UserModule,
 		PostModule,
 		PostCategoryModule,
-		AccompanimentModule
+		AccompanimentModule,
+		SessionModule
 	],
 	controllers: [],
 	providers: []

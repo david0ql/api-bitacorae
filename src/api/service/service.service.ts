@@ -48,9 +48,7 @@ export class ServiceService {
 
 		const { name, level } = updateServiceDto
 
-		const service = this.serviceRepository.create({ name, levelId: level })
-
-		return this.serviceRepository.update(id, service)
+		return this.serviceRepository.update(id, { name, levelId: level })
 	}
 
 	remove(id: number) {

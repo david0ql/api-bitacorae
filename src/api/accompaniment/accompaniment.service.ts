@@ -3,15 +3,15 @@ import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
 import { Accompaniment } from 'src/entities/Accompaniment'
+import { Business } from 'src/entities/Business'
+import { Expert } from 'src/entities/Expert'
+import { StrengtheningArea } from 'src/entities/StrengtheningArea'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateAccompanimentDto } from './dto/create-accompaniment.dto'
 import { UpdateAccompanimentDto } from './dto/update-accompaniment.dto'
-import { Business } from 'src/entities/Business'
-import { Expert } from 'src/entities/Expert'
-import { StrengtheningArea } from 'src/entities/StrengtheningArea'
 
 @Injectable()
 export class AccompanimentService {
@@ -73,22 +73,25 @@ export class AccompanimentService {
 	}
 
 	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
-		const queryBuilder = this.accompanimentRepository.createQueryBuilder('business')
-		.select([
-			'business.id AS id',
-			'business.socialReason AS socialReason',
-			'business.documentTypeId AS documentTypeId',
-			'business.documentNumber AS documentNumber',
-			'business.created_at AS createdAt',
-			'user.active AS userActive',
-			"CONCAT(contact.first_name, ' ', contact.last_name, ' - ', business.email) AS userInfo",
-			"'100%' AS progress"
-		])
-		.innerJoin('business.user', 'user')
-		.leftJoin('business.contactInformations', 'contact')
-		.orderBy('business.id', pageOptionsDto.order)
-		.skip(pageOptionsDto.skip)
-		.take(pageOptionsDto.take)
+		const queryBuilder = this.businessRepository.createQueryBuilder('business')
+			.select([
+				'business.id AS id',
+				'business.socialReason AS socialReason',
+				'business.documentTypeId AS documentTypeId',
+				'business.documentNumber AS documentNumber',
+				'business.created_at AS createdAt',
+				'user.active AS userActive',
+				"CONCAT(contact.first_name, ' ', contact.last_name, ' - ', business.email) AS userInfo",
+				"IFNULL(ROUND((SUM(CASE WHEN session.status_id = 3 THEN TIMESTAMPDIFF(HOUR, session.start_datetime, session.end_datetime) ELSE 0 END) / business.assigned_hours) * 100, 2), 0) AS progress"
+			])
+			.innerJoin('business.user', 'user')
+			.leftJoin('business.contactInformations', 'contact')
+			.leftJoin('business.accompaniments', 'accompaniment')
+			.leftJoin('accompaniment.sessions', 'session')
+			.groupBy('business.id')
+			.orderBy('business.id', pageOptionsDto.order)
+			.skip(pageOptionsDto.skip)
+			.take(pageOptionsDto.take)
 
 		const [ items, totalCount ] = await Promise.all([
 			queryBuilder.getRawMany(),
@@ -103,9 +106,9 @@ export class AccompanimentService {
 	async findOne(id: number) {
 		if(!id) return {}
 
-		const accoAccompaniment = await this.accompanimentRepository.findOne({ where: { id } })
+		const accompaniment = await this.accompanimentRepository.findOne({ where: { id } })
 
-		return accoAccompaniment || {}
+		return accompaniment || {}
 	}
 
 	async update(id: number, updateAccompanimentDto: UpdateAccompanimentDto) {
@@ -149,15 +152,13 @@ export class AccompanimentService {
 			}
 		}
 
-		const accompaniment = this.accompanimentRepository.create({
+		return this.accompanimentRepository.update(id, {
 			businessId,
 			expertId,
 			totalHours,
 			maxHoursPerSession,
 			strengtheningAreaId
 		})
-
-		return this.accompanimentRepository.update(id, accompaniment)
 	}
 
 	async remove(id: number) {

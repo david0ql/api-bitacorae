@@ -21,10 +21,7 @@ export class Post {
   @Column("longtext", { name: "content" })
   content: string;
 
-  @Column("timestamp", {
-    name: "post_date",
-    default: () => "CURRENT_TIMESTAMP",
-  })
+  @Column("datetime", { name: "post_date" })
   postDate: Date;
 
   @Column("timestamp", {

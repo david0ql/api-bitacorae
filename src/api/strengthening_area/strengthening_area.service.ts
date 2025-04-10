@@ -48,9 +48,7 @@ export class StrengtheningAreaService {
 
 		const { name, level } = updateStrengtheningAreaDto
 
-		const strengtheningArea = this.strengtheningAreaRepository.create({ name, levelId: level })
-
-		return this.strengtheningAreaRepository.update(id, strengtheningArea)
+		return this.strengtheningAreaRepository.update(id, { name, levelId: level })
 	}
 
 	remove(id: number) {

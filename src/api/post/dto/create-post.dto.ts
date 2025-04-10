@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger"
-import { ArrayNotEmpty, IsArray, IsNumber, IsOptional, IsString } from "class-validator"
+import { ArrayNotEmpty, IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator"
 
 export class CreatePostDto {
 	@ApiProperty({
@@ -35,8 +35,9 @@ export class CreatePostDto {
 
 	@ApiProperty({
 		description: 'The date of the post',
-		example: '2021-07-01T00:00:00.000Z',
+		example: '2021-07-01T00:00:00.000',
 	})
 	@IsString()
+	@IsNotEmpty()
 	readonly postDate: string;
 }

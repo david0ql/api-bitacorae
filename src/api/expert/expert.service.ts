@@ -166,7 +166,7 @@ export class ExpertService {
 			where: { id: consultorTypeId }
 		})
 
-		const expert = this.expertRepository.create({
+		const result = await this.expertRepository.update(id, {
 			firstName,
 			lastName,
 			email,
@@ -187,22 +187,18 @@ export class ExpertService {
 			profile
 		})
 
-		const result = await this.expertRepository.update(id, expert)
-
 		const expertData = await this.expertRepository.findOne({
 			select: { userId: true },
 			where: { id }
 		})
 
 		if(expertData) {
-			const user = this.userRepository.create({
+			await this.userRepository.update(expertData.userId, {
 				roleId: consultorType?.roleId,
 				active,
 				name: firstName,
 				email
 			})
-
-			await this.userRepository.update(expertData.userId, user)
 		}
 
 		return result

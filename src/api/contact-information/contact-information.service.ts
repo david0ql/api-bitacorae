@@ -90,7 +90,7 @@ export class ContactInformationService {
 			profile
 		} = updateContactInformationDto
 
-		const contactInformation = this.contactInformationRepository.create({
+		return this.contactInformationRepository.update(id, {
 			businessId,
 			firstName,
 			lastName,
@@ -110,7 +110,5 @@ export class ContactInformationService {
 			linkedin,
 			profile
 		})
-
-		return this.contactInformationRepository.update(id, contactInformation)
 	}
 }

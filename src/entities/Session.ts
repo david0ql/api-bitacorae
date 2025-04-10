@@ -36,7 +36,7 @@ export class Session {
   @Column("longtext", { name: "preparation_notes", nullable: true })
   preparationNotes: string | null;
 
-  @Column("int", { name: "status_id" })
+  @Column("int", { name: "status_id", default: () => "'1'" })
   statusId: number;
 
   @Column("timestamp", {

@@ -111,21 +111,24 @@ export class BusinessService {
 
 	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Business>> {
 		const queryBuilder = this.businessRepository.createQueryBuilder('business')
-		.select([
-			'business.id AS id',
-			'business.socialReason AS socialReason',
-			'business.documentTypeId AS documentTypeId',
-			'business.documentNumber AS documentNumber',
-			'business.created_at AS createdAt',
-			'user.active AS userActive',
-			"CONCAT(contact.first_name, ' ', contact.last_name, ' - ', business.email) AS userInfo",
-			"'100%' AS progress"
-		])
-		.innerJoin('business.user', 'user')
-		.leftJoin('business.contactInformations', 'contact')
-		.orderBy('business.id', pageOptionsDto.order)
-		.skip(pageOptionsDto.skip)
-		.take(pageOptionsDto.take)
+			.select([
+				'business.id AS id',
+				'business.socialReason AS socialReason',
+				'business.documentTypeId AS documentTypeId',
+				'business.documentNumber AS documentNumber',
+				'business.created_at AS createdAt',
+				'user.active AS userActive',
+				"CONCAT(contact.first_name, ' ', contact.last_name, ' - ', business.email) AS userInfo",
+				"IFNULL(ROUND((SUM(CASE WHEN session.status_id = 3 THEN TIMESTAMPDIFF(HOUR, session.start_datetime, session.end_datetime) ELSE 0 END) / business.assigned_hours) * 100, 2), 0) AS progress"
+			])
+			.innerJoin('business.user', 'user')
+			.leftJoin('business.contactInformations', 'contact')
+			.leftJoin('business.accompaniments', 'accompaniment')
+			.leftJoin('accompaniment.sessions', 'session')
+			.groupBy('business.id')
+			.orderBy('business.id', pageOptionsDto.order)
+			.skip(pageOptionsDto.skip)
+			.take(pageOptionsDto.take)
 
 		const [ items, totalCount ] = await Promise.all([
 			queryBuilder.getRawMany(),
@@ -182,12 +185,15 @@ export class BusinessService {
 			evidence
 		} = updateBusinessDto
 
-		const existingUser = await this.userRepository.findOne({ where: { email } })
-		if(existingUser && existingUser.id != id) {
-			throw new BadRequestException('Email already exists')
+		if(email) {
+			const existingUser = await this.userRepository.findOne({ where: { email } })
+			if(existingUser && existingUser.id != id) {
+				console.log(existingUser, id);
+				throw new BadRequestException('Email already exists')
+			}
 		}
 
-		const business = this.businessRepository.create({
+		const result = this.businessRepository.update(id, {
 			socialReason,
 			documentTypeId,
 			documentNumber,
@@ -220,21 +226,17 @@ export class BusinessService {
 			evidence
 		})
 
-		const result = this.businessRepository.update(id, business)
-
 		const businessData = await this.businessRepository.findOne({
 			select: { userId: true },
 			where: { id }
 		})
 
 		if(businessData) {
-			const user = this.userRepository.create({
+			await this.userRepository.update(businessData.userId, {
 				active,
 				name: socialReason,
 				email
 			})
-
-			await this.userRepository.update(businessData.userId, user)
 		}
 
 		return { result }

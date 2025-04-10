@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber } from "class-validator";
 
 export class CreateAccompanimentDto {
 	@ApiProperty({ description: 'ID del negocio', example: 1 })

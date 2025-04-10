@@ -50,9 +50,7 @@ export class CohortService {
 
 		const { name, order, startDate, endDate } = updateCohortDto
 
-		const cohort = this.cohortRepository.create({ name, order, startDate, endDate })
-
-		return this.cohortRepository.update(id, cohort)
+		return this.cohortRepository.update(id, { name, order, startDate, endDate })
 	}
 
 	remove(id: number) {
