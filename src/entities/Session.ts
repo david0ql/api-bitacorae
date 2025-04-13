@@ -11,6 +11,7 @@ import {
 import { Accompaniment } from "./Accompaniment";
 import { SessionStatus } from "./SessionStatus";
 import { SessionActivity } from "./SessionActivity";
+import { SessionAttachment } from "./SessionAttachment";
 import { SessionPreparationFile } from "./SessionPreparationFile";
 import { Chat } from "./Chat";
 
@@ -79,6 +80,12 @@ export class Session {
     (sessionActivity) => sessionActivity.session
   )
   sessionActivities: SessionActivity[];
+
+  @OneToMany(
+    () => SessionAttachment,
+    (sessionAttachment) => sessionAttachment.session
+  )
+  sessionAttachments: SessionAttachment[];
 
   @OneToMany(
     () => SessionPreparationFile,

@@ -27,16 +27,16 @@ export class CohortService {
 
 	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Cohort>> {
 		const queryBuilder = this.cohortRepository.createQueryBuilder('cohort')
-		.select([
-			'cohort.id',
-			'cohort.name',
-			'cohort.order',
-			'cohort.startDate',
-			'cohort.endDate'
-		])
-		.orderBy('cohort.name', pageOptionsDto.order)
-		.skip(pageOptionsDto.skip)
-		.take(pageOptionsDto.take)
+			.select([
+				'cohort.id',
+				'cohort.name',
+				'cohort.order',
+				'cohort.startDate',
+				'cohort.endDate'
+			])
+			.orderBy('cohort.name', pageOptionsDto.order)
+			.skip(pageOptionsDto.skip)
+			.take(pageOptionsDto.take)
 
 		const [ items, totalCount ] = await queryBuilder.getManyAndCount()
 

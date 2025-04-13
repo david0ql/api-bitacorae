@@ -28,6 +28,7 @@ import { SessionModule } from './api/session/session.module';
 import { MenuModule } from './api/menu/menu.module';
 import { ChatModule } from './api/chat/chat.module';
 import { SessionActivityModule } from './api/session_activity/session_activity.module';
+import { SessionAttachmentModule } from './api/session_attachment/session_attachment.module';
 
 import { Business } from 'src/entities/Business';
 import { BusinessSize } from './entities/BusinessSize';
@@ -58,10 +59,11 @@ import { SessionPreparationFile } from './entities/SessionPreparationFile';
 import { Menu } from './entities/Menu';
 import { Chat } from './entities/Chat';
 import { ChatMessage } from './entities/ChatMessage';
-
-import envVars from './config/env';
 import { SessionActivity } from './entities/SessionActivity';
 import { SessionActivityResponse } from './entities/SessionActivityResponse';
+import { SessionAttachment } from './entities/SessionAttachment';
+
+import envVars from './config/env';
 
 @Module({
 	imports: [
@@ -107,7 +109,8 @@ import { SessionActivityResponse } from './entities/SessionActivityResponse';
 			Chat,
 			ChatMessage,
 			SessionActivity,
-			SessionActivityResponse
+			SessionActivityResponse,
+			SessionAttachment
 		]),
 		RedisModule,
 		AuthModule,
@@ -135,7 +138,8 @@ import { SessionActivityResponse } from './entities/SessionActivityResponse';
 		SessionModule,
 		MenuModule,
 		ChatModule,
-		SessionActivityModule
+		SessionActivityModule,
+		SessionAttachmentModule
 	],
 	controllers: [],
 	providers: []

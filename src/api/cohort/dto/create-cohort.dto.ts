@@ -6,6 +6,7 @@ export class CreateCohortDto {
 		description: 'Name of the cohort',
 		example: 'example',
 	})
+	@IsNotEmpty()
 	@IsString()
 	readonly name: string
 
@@ -13,6 +14,7 @@ export class CreateCohortDto {
 		description: 'Order of the cohort',
 		example: 1,
 	})
+	@IsNotEmpty()
 	@IsNumber()
 	readonly order: number
 
