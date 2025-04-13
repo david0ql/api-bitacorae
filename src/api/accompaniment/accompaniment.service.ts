@@ -13,6 +13,7 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateAccompanimentDto } from './dto/create-accompaniment.dto'
 import { UpdateAccompanimentDto } from './dto/update-accompaniment.dto'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
+
 @Injectable()
 export class AccompanimentService {
 	constructor(

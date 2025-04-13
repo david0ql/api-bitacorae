@@ -20,7 +20,7 @@ export class CreateSessiontDto {
 
 	@ApiProperty({
 		description: 'Start date and time of the session',
-		example: '2023-10-01T10:00:00'
+		example: '2023-10-01T10:00:00Z'
 	})
 	@IsNotEmpty()
 	@IsString()
@@ -28,7 +28,7 @@ export class CreateSessiontDto {
 
 	@ApiProperty({
 		description: 'End date and time of the session',
-		example: '2023-10-01T12:00:00'
+		example: '2023-10-01T12:00:00Z'
 	})
 	@IsNotEmpty()
 	@IsString()

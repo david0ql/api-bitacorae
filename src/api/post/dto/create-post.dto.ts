@@ -35,7 +35,7 @@ export class CreatePostDto {
 
 	@ApiProperty({
 		description: 'The date of the post',
-		example: '2021-07-01T00:00:00.000',
+		example: '2021-07-01T00:00:00.000Z',
 	})
 	@IsString()
 	@IsNotEmpty()

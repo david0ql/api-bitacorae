@@ -10,6 +10,7 @@ import {
 } from "typeorm";
 import { Accompaniment } from "./Accompaniment";
 import { SessionStatus } from "./SessionStatus";
+import { SessionActivity } from "./SessionActivity";
 import { SessionPreparationFile } from "./SessionPreparationFile";
 import { Chat } from "./Chat";
 
@@ -72,6 +73,12 @@ export class Session {
   })
   @JoinColumn([{ name: "status_id", referencedColumnName: "id" }])
   status: SessionStatus;
+
+  @OneToMany(
+    () => SessionActivity,
+    (sessionActivity) => sessionActivity.session
+  )
+  sessionActivities: SessionActivity[];
 
   @OneToMany(
     () => SessionPreparationFile,

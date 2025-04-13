@@ -7,8 +7,10 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
+import { SessionActivity } from "./SessionActivity";
 import { Expert } from "./Expert";
 import { Role } from "./Role";
+import { SessionActivityResponse } from "./SessionActivityResponse";
 import { ChatMessage } from "./ChatMessage";
 import { Business } from "./Business";
 
@@ -46,6 +48,12 @@ export class User {
   })
   updatedAt: Date;
 
+  @OneToMany(
+    () => SessionActivity,
+    (sessionActivity) => sessionActivity.createdByUser
+  )
+  sessionActivities: SessionActivity[];
+
   @OneToMany(() => Expert, (expert) => expert.user)
   experts: Expert[];
 
@@ -55,6 +63,12 @@ export class User {
   })
   @JoinColumn([{ name: "role_id", referencedColumnName: "id" }])
   role: Role;
+
+  @OneToMany(
+    () => SessionActivityResponse,
+    (sessionActivityResponse) => sessionActivityResponse.respondedByUser
+  )
+  sessionActivityResponses: SessionActivityResponse[];
 
   @OneToMany(() => ChatMessage, (chatMessage) => chatMessage.senderUser)
   chatMessages: ChatMessage[];

@@ -27,6 +27,7 @@ import { AccompanimentModule } from './api/accompaniment/accompaniment.module';
 import { SessionModule } from './api/session/session.module';
 import { MenuModule } from './api/menu/menu.module';
 import { ChatModule } from './api/chat/chat.module';
+import { SessionActivityModule } from './api/session_activity/session_activity.module';
 
 import { Business } from 'src/entities/Business';
 import { BusinessSize } from './entities/BusinessSize';
@@ -59,6 +60,8 @@ import { Chat } from './entities/Chat';
 import { ChatMessage } from './entities/ChatMessage';
 
 import envVars from './config/env';
+import { SessionActivity } from './entities/SessionActivity';
+import { SessionActivityResponse } from './entities/SessionActivityResponse';
 
 @Module({
 	imports: [
@@ -71,7 +74,7 @@ import envVars from './config/env';
 			database: envVars.DB_NAME,
 			synchronize: false,
 			autoLoadEntities: true,
-			timezone: 'Z'
+			timezone: '-05:00'
 		}),
 		TypeOrmModule.forFeature([
 			Business,
@@ -102,7 +105,9 @@ import envVars from './config/env';
 			SessionPreparationFile,
 			Menu,
 			Chat,
-			ChatMessage
+			ChatMessage,
+			SessionActivity,
+			SessionActivityResponse
 		]),
 		RedisModule,
 		AuthModule,
@@ -129,7 +134,8 @@ import envVars from './config/env';
 		AccompanimentModule,
 		SessionModule,
 		MenuModule,
-		ChatModule
+		ChatModule,
+		SessionActivityModule
 	],
 	controllers: [],
 	providers: []

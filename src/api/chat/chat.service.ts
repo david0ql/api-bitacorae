@@ -1,14 +1,16 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
-import { CreateChatDto } from './dto/create-chat.dto'
-import { JwtUser } from '../auth/interfaces/jwt-user.interface'
-import { PageOptionsDto } from 'src/dto/page-options.dto'
-import { PageDto } from 'src/dto/page.dto'
-import { Chat } from 'src/entities/Chat'
 import { Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
+import { BadRequestException, Injectable } from '@nestjs/common'
+
+import { Chat } from 'src/entities/Chat'
 import { ChatMessage } from 'src/entities/ChatMessage'
 import { Session } from 'src/entities/Session'
+
+import { PageDto } from 'src/dto/page.dto'
+import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
+import { CreateChatDto } from './dto/create-chat.dto'
+import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 
 @Injectable()
 export class ChatService {
