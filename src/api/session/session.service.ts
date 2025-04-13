@@ -51,12 +51,12 @@ export class SessionService {
 	async findAll(id: number, pageOptionsDto: PageOptionsDto): Promise<PageDto<Session>> {
 		const queryBuilder = this.sessionRepository.createQueryBuilder('session')
 		.select([
-			'session.id',
-			'session.title',
-			'session.startDatetime',
-			'session.endDatetime',
-			'TIMESTAMPDIFF(MINUTE, session.startDatetime, session.endDatetime) as duration',
-			'status.name'
+			'session.id AS id',
+			'session.title AS title',
+			'session.startDatetime AS startDatetime',
+			'session.endDatetime AS endDatetime',
+			'TIMESTAMPDIFF(MINUTE, session.startDatetime, session.endDatetime) AS duration',
+			'status.name AS status'
 		])
 		.innerJoin('session.status', 'status')
 		.where('session.accompanimentId = :id', { id })
@@ -64,7 +64,10 @@ export class SessionService {
 		.skip(pageOptionsDto.skip)
 		.take(pageOptionsDto.take)
 
-		const [ items, totalCount ] = await queryBuilder.getManyAndCount()
+		const [items, totalCount] = await Promise.all([
+			queryBuilder.getRawMany(),
+			queryBuilder.getCount()
+		])
 
 		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 

@@ -25,6 +25,7 @@ import { PostModule } from './api/post/post.module';
 import { PostCategoryModule } from './api/post-category/post-category.module';
 import { AccompanimentModule } from './api/accompaniment/accompaniment.module';
 import { SessionModule } from './api/session/session.module';
+import { Menu } from './entities/Menu';
 
 import { Business } from 'src/entities/Business';
 import { BusinessSize } from './entities/BusinessSize';
@@ -52,6 +53,7 @@ import { Accompaniment } from './entities/Accompaniment';
 import { Session } from './entities/Session';
 import { SessionStatus } from './entities/SessionStatus';
 import { SessionPreparationFile } from './entities/SessionPreparationFile';
+import { MenuModule } from './api/menu/menu.module';
 
 import envVars from './config/env';
 
@@ -94,7 +96,8 @@ import envVars from './config/env';
 			Accompaniment,
 			Session,
 			SessionStatus,
-			SessionPreparationFile
+			SessionPreparationFile,
+			Menu
 		]),
 		RedisModule,
 		AuthModule,
@@ -119,7 +122,8 @@ import envVars from './config/env';
 		PostModule,
 		PostCategoryModule,
 		AccompanimentModule,
-		SessionModule
+		SessionModule,
+		MenuModule
 	],
 	controllers: [],
 	providers: []

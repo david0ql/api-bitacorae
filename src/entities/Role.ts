@@ -1,7 +1,15 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 import { ConsultorType } from "./ConsultorType";
 import { User } from "./User";
 import { RolePermission } from "./RolePermission";
+import { Menu } from "./Menu";
 
 @Entity("role", { schema: "dbbitacorae" })
 export class Role {
@@ -31,4 +39,13 @@ export class Role {
 
   @OneToMany(() => RolePermission, (rolePermission) => rolePermission.role)
   rolePermissions: RolePermission[];
+
+  @ManyToMany(() => Menu, (menu) => menu.roles)
+  @JoinTable({
+    name: "role_menu",
+    joinColumns: [{ name: "role_id", referencedColumnName: "id" }],
+    inverseJoinColumns: [{ name: "menu_id", referencedColumnName: "id" }],
+    schema: "dbbitacorae",
+  })
+  menus: Menu[];
 }

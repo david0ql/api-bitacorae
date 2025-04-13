@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm'
+import { DataSource, Repository } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import * as bcrypt from 'bcrypt'
@@ -19,7 +19,9 @@ export class BusinessService {
 		private readonly businessRepository: Repository<Business>,
 
 		@InjectRepository(User)
-		private readonly userRepository: Repository<User>
+		private readonly userRepository: Repository<User>,
+
+		private readonly dataSource: DataSource
 	) {}
 
 	async create(createBusinessDto: CreateBusinessDto) {
@@ -110,31 +112,37 @@ export class BusinessService {
 	}
 
 	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Business>> {
-		const queryBuilder = this.businessRepository.createQueryBuilder('business')
-			.select([
-				'business.id AS id',
-				'business.socialReason AS socialReason',
-				'business.documentTypeId AS documentTypeId',
-				'business.documentNumber AS documentNumber',
-				'business.created_at AS createdAt',
-				'user.active AS userActive',
-				"CONCAT(contact.first_name, ' ', contact.last_name, ' - ', business.email) AS userInfo",
-				"IFNULL(ROUND((SUM(CASE WHEN session.status_id = 3 THEN TIMESTAMPDIFF(HOUR, session.start_datetime, session.end_datetime) ELSE 0 END) / business.assigned_hours) * 100, 2), 0) AS progress"
-			])
-			.innerJoin('business.user', 'user')
-			.leftJoin('business.contactInformations', 'contact')
-			.leftJoin('business.accompaniments', 'accompaniment')
-			.leftJoin('accompaniment.sessions', 'session')
-			.groupBy('business.id')
-			.orderBy('business.id', pageOptionsDto.order)
-			.skip(pageOptionsDto.skip)
-			.take(pageOptionsDto.take)
+		const { take, skip, order } = pageOptionsDto
 
-		const [ items, totalCount ] = await Promise.all([
-			queryBuilder.getRawMany(),
-			queryBuilder.getCount()
+		const sql = `
+			SELECT
+				b.id AS id,
+				b.social_reason AS socialReason,
+				b.document_type_id AS documentTypeId,
+				b.document_number AS documentNumber,
+				b.created_at AS createdAt,
+				u.active AS userActive,
+				CONCAT(c.first_name, ' ', c.last_name, ' - ', b.email) AS userInfo,
+				IFNULL(ROUND((SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END) / b.assigned_hours) * 100, 2), 0) AS progress
+			FROM
+				business b
+				INNER JOIN user u ON u.id = b.user_id
+				LEFT JOIN contact_information c ON c.business_id = b.id
+				LEFT JOIN accompaniment a ON a.business_id = b.id
+				LEFT JOIN session s ON s.accompaniment_id = a.id
+			GROUP BY b.id
+			ORDER BY b.id ${order}
+			LIMIT ${take} OFFSET ${skip}
+		`
+
+		const countSql = `SELECT COUNT(DISTINCT b.id) as total FROM business b`
+
+		const [items, countResult] = await Promise.all([
+			this.dataSource.query(sql),
+			this.dataSource.query(countSql)
 		])
 
+		const totalCount = Number(countResult[0]?.total) ?? 0
 		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 
 		return new PageDto(items, pageMetaDto)
@@ -188,7 +196,6 @@ export class BusinessService {
 		if(email) {
 			const existingUser = await this.userRepository.findOne({ where: { email } })
 			if(existingUser && existingUser.id != id) {
-				console.log(existingUser, id);
 				throw new BadRequestException('Email already exists')
 			}
 		}

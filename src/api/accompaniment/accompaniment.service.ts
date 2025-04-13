@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm'
+import { DataSource, Repository } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
@@ -12,7 +12,7 @@ import { PageMetaDto } from 'src/dto/page-meta.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateAccompanimentDto } from './dto/create-accompaniment.dto'
 import { UpdateAccompanimentDto } from './dto/update-accompaniment.dto'
-
+import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 @Injectable()
 export class AccompanimentService {
 	constructor(
@@ -26,7 +26,9 @@ export class AccompanimentService {
 		private readonly expertRepository: Repository<Expert>,
 
 		@InjectRepository(StrengtheningArea)
-		private readonly strengtheningAreaRepository: Repository<StrengtheningArea>
+		private readonly strengtheningAreaRepository: Repository<StrengtheningArea>,
+
+		private readonly dataSource: DataSource
 	) {}
 
 	async create(createAccompanimentDto: CreateAccompanimentDto) {
@@ -72,28 +74,86 @@ export class AccompanimentService {
 		return this.accompanimentRepository.save(accompaniment)
 	}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
-		const queryBuilder = this.businessRepository.createQueryBuilder('business')
+	async findAll(user: JwtUser, pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
+		const { id, roleId } = user
+		const { take, skip, order } = pageOptionsDto
+
+		let whereConditions: string[] = []
+		let params: any[] = []
+
+		if (roleId === 2) {
+			const expert = await this.expertRepository.findOne({ where: { userId: id }, select: ['id'] })
+			if (!expert) throw new BadRequestException(`Expert with userId ${id} not found`)
+			whereConditions.push(`a.expert_id = ?`)
+			params.push(expert.id)
+		}
+
+		if (roleId === 4) {
+			const business = await this.businessRepository.findOne({ where: { userId: id }, select: ['id'] })
+			if (!business) throw new BadRequestException(`Business with userId ${id} not found`)
+			whereConditions.push(`b.id = ?`)
+			params.push(business.id)
+		}
+
+		const whereClause = whereConditions.length ? `WHERE ${whereConditions.join(' AND ')}` : ''
+
+		const sql = `
+			SELECT
+				b.id AS id,
+				b.social_reason AS socialReason,
+				CONCAT(c.first_name, ' ', c.last_name) AS name,
+				bs.name AS size,
+				sa.name AS strengthening,
+				b.assigned_hours AS assignedHours,
+				IFNULL(COUNT(s.id), 0) AS scheduledSessions,
+				IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
+			FROM
+				business b
+				INNER JOIN business_size bs ON bs.id = b.business_size_id
+				INNER JOIN strengthening_area sa ON sa.id = b.strengthening_area_id
+				LEFT JOIN contact_information c ON c.business_id = b.id
+				LEFT JOIN accompaniment a ON a.business_id = b.id
+				LEFT JOIN session s ON s.accompaniment_id = a.id
+			${whereClause}
+			GROUP BY b.id
+			ORDER BY b.id ${order}
+			LIMIT ${take} OFFSET ${skip}
+		`
+
+		const countSql = `
+			SELECT COUNT(DISTINCT b.id) as total
+			FROM business b
+			LEFT JOIN accompaniment a ON a.business_id = b.id
+			${whereClause}
+		`
+
+		const [items, countResult] = await Promise.all([
+			this.dataSource.query(sql, params),
+			this.dataSource.query(countSql, params)
+		])
+
+		const totalCount = Number(countResult[0]?.total) ?? 0
+		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
+
+		return new PageDto(items, pageMetaDto)
+	}
+
+	async findAllByBusiness(id: number, pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
+		const queryBuilder = this.accompanimentRepository.createQueryBuilder('accompaniment')
 			.select([
-				'business.id AS id',
-				'business.socialReason AS socialReason',
-				'business.documentTypeId AS documentTypeId',
-				'business.documentNumber AS documentNumber',
-				'business.created_at AS createdAt',
-				'user.active AS userActive',
-				"CONCAT(contact.first_name, ' ', contact.last_name, ' - ', business.email) AS userInfo",
-				"IFNULL(ROUND((SUM(CASE WHEN session.status_id = 3 THEN TIMESTAMPDIFF(HOUR, session.start_datetime, session.end_datetime) ELSE 0 END) / business.assigned_hours) * 100, 2), 0) AS progress"
+				'accompaniment.id AS id',
+				'accompaniment.businessId AS businessId',
+				'CONCAT(expert.firstName, " ", expert.lastName) AS expertName',
+				'accompaniment.totalHours AS totalHours',
+				'accompaniment.maxHoursPerSession AS maxHoursPerSession'
 			])
-			.innerJoin('business.user', 'user')
-			.leftJoin('business.contactInformations', 'contact')
-			.leftJoin('business.accompaniments', 'accompaniment')
-			.leftJoin('accompaniment.sessions', 'session')
-			.groupBy('business.id')
-			.orderBy('business.id', pageOptionsDto.order)
+			.innerJoin('accompaniment.expert', 'expert')
+			.where('accompaniment.businessId = :id', { id })
+			.orderBy('accompaniment.id', pageOptionsDto.order)
 			.skip(pageOptionsDto.skip)
 			.take(pageOptionsDto.take)
 
-		const [ items, totalCount ] = await Promise.all([
+		const [items, totalCount] = await Promise.all([
 			queryBuilder.getRawMany(),
 			queryBuilder.getCount()
 		])

@@ -11,6 +11,8 @@ import { UpdateAccompanimentDto } from './dto/update-accompaniment.dto'
 import { ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { CurrentUser } from '../auth/decorators/current-user.decorator'
+import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 
 @Controller('accompaniment')
 @ApiBearerAuth()
@@ -26,8 +28,14 @@ export class AccompanimentController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
-		return this.accompanimentService.findAll(pageOptionsDto)
+	findAll(@CurrentUser() user: JwtUser, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
+		return this.accompanimentService.findAll(user, pageOptionsDto)
+	}
+
+	@Get('/byBusiness/:id')
+	@HttpCode(200)
+	findAllByBusiness(@Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
+		return this.accompanimentService.findAllByBusiness(+id, pageOptionsDto)
 	}
 
 	@Get(':id')
