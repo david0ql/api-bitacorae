@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger"
+import { Type } from "class-transformer"
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator"
 
 export class CreateSessionAttachmentDto {
@@ -15,14 +16,23 @@ export class CreateSessionAttachmentDto {
 		example: 2,
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly sessionId: number;
 
 	@ApiProperty({
 		description: 'External path of the session attachment',
 		example: 'https://example.com/file.pdf',
+		required: false,
 	})
 	@IsOptional()
 	@IsString()
 	readonly externalPath?: string
+
+	@ApiProperty({
+		type: 'string',
+		format: 'binary',
+		required: false
+	})
+  	file?: any
 }

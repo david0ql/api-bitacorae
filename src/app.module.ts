@@ -1,5 +1,7 @@
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Module } from '@nestjs/common';
+import { ServeStaticModule } from '@nestjs/serve-static'
+import { join } from 'path'
 
 import { RedisModule } from './services/redis/redis.module';
 import { AuthModule } from './api/auth/auth.module';
@@ -67,6 +69,10 @@ import envVars from './config/env';
 
 @Module({
 	imports: [
+		ServeStaticModule.forRoot({
+			rootPath: join(__dirname, '..', envVars.UPLOADS_DIR),
+			serveRoot: `/${envVars.UPLOADS_DIR}`
+		}),
 		TypeOrmModule.forRoot({
 			type: 'mysql',
 			host: envVars.DB_HOST,

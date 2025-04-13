@@ -11,6 +11,8 @@ interface EnvVars {
 	PORT: number;
 	REDIS_HOST: string;
 	REDIS_PORT: number;
+	UPLOADS_DIR: string;
+	APP_URL: string;
 }
 
 const envSchema = joi
@@ -24,6 +26,8 @@ const envSchema = joi
 		PORT: joi.number().required(),
 		REDIS_HOST: joi.string().required(),
 		REDIS_PORT: joi.number().required(),
+		UPLOADS_DIR: joi.string().required(),
+		APP_URL: joi.string().required()
   	})
 	.unknown(true)
 	.required()

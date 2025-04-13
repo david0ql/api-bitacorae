@@ -9,7 +9,9 @@ import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateSessionAttachmentDto } from './dto/create-session_attachment.dto'
-import { UpdateSessionAttachmentDto } from './dto/update-session_attachment.dto'
+import { FileUploadService } from 'src/services/file-upload/file-upload.service'
+
+import envVars from 'src/config/env'
 
 @Injectable()
 export class SessionAttachmentService {
@@ -17,57 +19,77 @@ export class SessionAttachmentService {
 		@InjectRepository(SessionAttachment)
 		private readonly sessionAttachmentRepository: Repository<SessionAttachment>,
 
-		@InjectRepository(SessionAttachment)
+		@InjectRepository(Session)
 		private readonly sessionRepository: Repository<Session>,
+
+		private readonly fileUploadService: FileUploadService
 	) {}
 
-	create(createSessionAttachmentDto: CreateSessionAttachmentDto) {
+	async create(createSessionAttachmentDto: CreateSessionAttachmentDto, file?: Express.Multer.File) {
 		const { name, sessionId, externalPath } = createSessionAttachmentDto
+		const fullPath = file ? this.fileUploadService.getFullPath('session-attachments', file.filename) : undefined
 
-		const session = this.sessionRepository.findOneBy({ id: sessionId })
+		const session = await this.sessionRepository.findOneBy({ id: sessionId })
 		if (!session) {
+			if (file && fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
 			throw new BadRequestException(`Session with id ${sessionId} not found`)
 		}
 
-		const sessionAttachment = this.sessionAttachmentRepository.create({
-			name,
-			sessionId,
-			externalPath
-		})
+		if (!file && !externalPath) {
+			throw new BadRequestException('Must provide either a file or an external path')
+		}
 
-		return this.sessionAttachmentRepository.save(sessionAttachment)
+		try {
+			const sessionAttachment = this.sessionAttachmentRepository.create({
+				name,
+				sessionId,
+				externalPath: externalPath || undefined,
+				filePath: fullPath
+			})
+
+			return await this.sessionAttachmentRepository.save(sessionAttachment)
+
+		} catch (error) {
+			if (file && fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			throw error
+		}
 	}
 
 	async findAll(sessionId: number, pageOptionsDto: PageOptionsDto): Promise<PageDto<SessionAttachment>> {
 		const queryBuilder = this.sessionAttachmentRepository.createQueryBuilder('sessionAttachment')
 			.select([
-				'sessionAttachment.id',
-				'sessionAttachment.sessionId',
-				'sessionAttachment.name',
-				'sessionAttachment.filePath',
-				'sessionAttachment.externalPath'
+				'sessionAttachment.id AS id',
+				'sessionAttachment.sessionId AS sessionId',
+				'sessionAttachment.name AS name',
+				"CONCAT(:appUrl, '/', sessionAttachment.filePath) AS fileUrl",
+				'sessionAttachment.externalPath AS externalPath'
 			])
 			.where('sessionAttachment.sessionId = :sessionId', { sessionId })
 			.orderBy('sessionAttachment.id', pageOptionsDto.order)
 			.skip(pageOptionsDto.skip)
 			.take(pageOptionsDto.take)
+			.setParameters({appUrl: envVars.APP_URL})
 
-		const [ items, totalCount ] = await queryBuilder.getManyAndCount()
+		const [items, totalCount] = await Promise.all([
+			queryBuilder.getRawMany(),
+			queryBuilder.getCount()
+		])
 
 		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 		return new PageDto(items, pageMetaDto)
 	}
 
-	async update(id: number, updateSessionAttachmentDto: UpdateSessionAttachmentDto) {
-		if(!id) return { affected: 0 }
-
-		const { name, externalPath } = updateSessionAttachmentDto
-
-		return this.sessionAttachmentRepository.update(id, { name, externalPath })
-	}
-
 	async remove(id: number) {
-		if(!id) return { affected: 0 }
+		const existing = await this.sessionAttachmentRepository.findOneBy({ id })
+		if (!existing) return { affected: 0 }
+
+		if (existing.filePath) {
+			this.fileUploadService.deleteFile(existing.filePath)
+		}
 
 		return this.sessionAttachmentRepository.delete(id)
 	}
