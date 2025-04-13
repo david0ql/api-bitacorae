@@ -138,7 +138,17 @@ export class AccompanimentService {
 		return new PageDto(items, pageMetaDto)
 	}
 
-	async findAllByBusiness(id: number, pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
+	async findAllByBusiness(user: JwtUser, id: number, pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
+		const { id: userId, roleId } = user
+		let expertId: number | undefined
+
+		if (roleId === 2) {
+			const expert = await this.expertRepository.findOne({ where: { userId }, select: ['id'] })
+			if (!expert) throw new BadRequestException(`Expert with userId ${id} not found`)
+
+			expertId = expert.id
+		}
+
 		const queryBuilder = this.accompanimentRepository.createQueryBuilder('accompaniment')
 			.select([
 				'accompaniment.id AS id',
@@ -152,6 +162,10 @@ export class AccompanimentService {
 			.orderBy('accompaniment.id', pageOptionsDto.order)
 			.skip(pageOptionsDto.skip)
 			.take(pageOptionsDto.take)
+
+		if (expertId) {
+			queryBuilder.andWhere('accompaniment.expertId = :expertId', { expertId })
+		}
 
 		const [items, totalCount] = await Promise.all([
 			queryBuilder.getRawMany(),

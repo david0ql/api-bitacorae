@@ -34,8 +34,8 @@ export class AccompanimentController {
 
 	@Get('/byBusiness/:id')
 	@HttpCode(200)
-	findAllByBusiness(@Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
-		return this.accompanimentService.findAllByBusiness(+id, pageOptionsDto)
+	findAllByBusiness(@CurrentUser() user: JwtUser, @Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
+		return this.accompanimentService.findAllByBusiness(user, +id, pageOptionsDto)
 	}
 
 	@Get(':id')
