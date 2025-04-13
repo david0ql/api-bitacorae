@@ -5,11 +5,13 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
 import { Accompaniment } from "./Accompaniment";
 import { SessionStatus } from "./SessionStatus";
 import { SessionPreparationFile } from "./SessionPreparationFile";
+import { Chat } from "./Chat";
 
 @Index("accompaniment_id", ["accompanimentId"], {})
 @Index("session_session_status_FK", ["statusId"], {})
@@ -35,6 +37,12 @@ export class Session {
 
   @Column("longtext", { name: "preparation_notes", nullable: true })
   preparationNotes: string | null;
+
+  @Column("longtext", { name: "session_notes", nullable: true })
+  sessionNotes: string | null;
+
+  @Column("longtext", { name: "conclusions_commitments", nullable: true })
+  conclusionsCommitments: string | null;
 
   @Column("int", { name: "status_id", default: () => "'1'" })
   statusId: number;
@@ -70,4 +78,7 @@ export class Session {
     (sessionPreparationFile) => sessionPreparationFile.session
   )
   sessionPreparationFiles: SessionPreparationFile[];
+
+  @OneToOne(() => Chat, (chat) => chat.session)
+  chat: Chat;
 }

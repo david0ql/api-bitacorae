@@ -25,7 +25,8 @@ import { PostModule } from './api/post/post.module';
 import { PostCategoryModule } from './api/post-category/post-category.module';
 import { AccompanimentModule } from './api/accompaniment/accompaniment.module';
 import { SessionModule } from './api/session/session.module';
-import { Menu } from './entities/Menu';
+import { MenuModule } from './api/menu/menu.module';
+import { ChatModule } from './api/chat/chat.module';
 
 import { Business } from 'src/entities/Business';
 import { BusinessSize } from './entities/BusinessSize';
@@ -53,7 +54,9 @@ import { Accompaniment } from './entities/Accompaniment';
 import { Session } from './entities/Session';
 import { SessionStatus } from './entities/SessionStatus';
 import { SessionPreparationFile } from './entities/SessionPreparationFile';
-import { MenuModule } from './api/menu/menu.module';
+import { Menu } from './entities/Menu';
+import { Chat } from './entities/Chat';
+import { ChatMessage } from './entities/ChatMessage';
 
 import envVars from './config/env';
 
@@ -97,7 +100,9 @@ import envVars from './config/env';
 			Session,
 			SessionStatus,
 			SessionPreparationFile,
-			Menu
+			Menu,
+			Chat,
+			ChatMessage
 		]),
 		RedisModule,
 		AuthModule,
@@ -123,7 +128,8 @@ import envVars from './config/env';
 		PostCategoryModule,
 		AccompanimentModule,
 		SessionModule,
-		MenuModule
+		MenuModule,
+		ChatModule
 	],
 	controllers: [],
 	providers: []

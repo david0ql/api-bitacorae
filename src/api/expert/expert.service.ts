@@ -52,16 +52,11 @@ export class ExpertService {
 		const existingUser = await this.userRepository.findOne({ where: { email } })
 		if(existingUser) throw new BadRequestException('Email already exists')
 
-		const consultorType = await this.consultorTypeRepository.findOne({
-			select: { roleId: true },
-			where: { id: consultorTypeId }
-		})
-
 		const salt = bcrypt.genSaltSync(10)
 		const hash = bcrypt.hashSync(password, salt)
 
 		const user = this.userRepository.create({
-			roleId: consultorType?.roleId,
+			roleId: 3,
 			name: firstName,
 			email,
 			password: hash
@@ -161,11 +156,6 @@ export class ExpertService {
 			throw new BadRequestException('Email already exists')
 		}
 
-		const consultorType = await this.consultorTypeRepository.findOne({
-			select: { roleId: true },
-			where: { id: consultorTypeId }
-		})
-
 		const result = await this.expertRepository.update(id, {
 			firstName,
 			lastName,
@@ -194,7 +184,6 @@ export class ExpertService {
 
 		if(expertData) {
 			await this.userRepository.update(expertData.userId, {
-				roleId: consultorType?.roleId,
 				active,
 				name: firstName,
 				email

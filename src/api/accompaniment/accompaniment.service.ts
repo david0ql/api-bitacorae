@@ -81,7 +81,7 @@ export class AccompanimentService {
 		let whereConditions: string[] = []
 		let params: any[] = []
 
-		if (roleId === 2) {
+		if (roleId === 3) {
 			const expert = await this.expertRepository.findOne({ where: { userId: id }, select: ['id'] })
 			if (!expert) throw new BadRequestException(`Expert with userId ${id} not found`)
 			whereConditions.push(`a.expert_id = ?`)
@@ -142,7 +142,7 @@ export class AccompanimentService {
 		const { id: userId, roleId } = user
 		let expertId: number | undefined
 
-		if (roleId === 2) {
+		if (roleId === 3) {
 			const expert = await this.expertRepository.findOne({ where: { userId }, select: ['id'] })
 			if (!expert) throw new BadRequestException(`Expert with userId ${id} not found`)
 

@@ -9,6 +9,7 @@ import {
 } from "typeorm";
 import { Expert } from "./Expert";
 import { Role } from "./Role";
+import { ChatMessage } from "./ChatMessage";
 import { Business } from "./Business";
 
 @Index("email_unique", ["email"], { unique: true })
@@ -54,6 +55,9 @@ export class User {
   })
   @JoinColumn([{ name: "role_id", referencedColumnName: "id" }])
   role: Role;
+
+  @OneToMany(() => ChatMessage, (chatMessage) => chatMessage.senderUser)
+  chatMessages: ChatMessage[];
 
   @OneToMany(() => Business, (business) => business.user)
   businesses: Business[];
