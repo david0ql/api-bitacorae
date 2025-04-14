@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger"
-import { ArrayNotEmpty, IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator"
+import { Transform } from "class-transformer";
+import { ArrayNotEmpty, IsArray, IsNotEmpty, IsNumber, IsString } from "class-validator"
 
 export class CreatePostDto {
 	@ApiProperty({
@@ -8,14 +9,6 @@ export class CreatePostDto {
 	})
 	@IsString()
 	readonly title: string;
-
-	@ApiProperty({
-		description: 'The url of the associated image',
-		example: 'http://example.com/image.jpg',
-	})
-	@IsString()
-	@IsOptional()
-	readonly image: string;
 
 	@ApiProperty({
 		description: 'The content of the post',
@@ -27,6 +20,14 @@ export class CreatePostDto {
 	@ApiProperty({
 		description: 'The categories associated with the post',
 		example: [1, 2],
+	})
+	@Transform(({ value }) => {
+		try {
+			if (typeof value === 'string') return value.split(',').map(Number);
+			return value;
+		} catch {
+			return [];
+		}
 	})
 	@IsArray()
 	@ArrayNotEmpty()
@@ -40,4 +41,11 @@ export class CreatePostDto {
 	@IsString()
 	@IsNotEmpty()
 	readonly postDate: string;
+
+	@ApiProperty({
+		type: 'string',
+		format: 'binary',
+		required: false
+	})
+  	file?: any
 }

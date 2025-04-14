@@ -15,8 +15,8 @@ export class Post {
   @Column("varchar", { name: "title", length: 255 })
   title: string;
 
-  @Column("varchar", { name: "image", nullable: true, length: 255 })
-  image: string | null;
+  @Column("varchar", { name: "file_path", nullable: true, length: 255 })
+  filePath: string | null;
 
   @Column("longtext", { name: "content" })
   content: string;

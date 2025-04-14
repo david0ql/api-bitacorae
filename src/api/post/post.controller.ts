@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common'
 
 import { PostService } from './post.service'
 import { Post as PostEntity } from 'src/entities/Post'
@@ -8,9 +8,12 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreatePostDto } from './dto/create-post.dto'
 import { UpdatePostDto } from './dto/update-post.dto'
 
-import { ApiBearerAuth } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
+import { CurrentUser } from '../auth/decorators/current-user.decorator'
+import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 
 @Controller('post')
 @ApiBearerAuth()
@@ -20,20 +23,26 @@ export class PostController {
 
 	@Post()
 	@HttpCode(200)
-	create(@Body() createPostDto: CreatePostDto) {
-		return this.postService.create(createPostDto)
+	@UseInterceptors(FileUploadInterceptor('file', 'post'))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({ type: CreatePostDto })
+	create(@Body() createPostDto: CreatePostDto, @UploadedFile() file?: Express.Multer.File) {
+		return this.postService.create(createPostDto, file)
 	}
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<PostEntity>> {
-		return this.postService.findAll(pageOptionsDto)
+	findAll(@CurrentUser() user: JwtUser, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<PostEntity>> {
+		return this.postService.findAll(user, pageOptionsDto)
 	}
 
 	@Patch(':id')
 	@HttpCode(200)
-	update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
-		return this.postService.update(+id, updatePostDto)
+	@UseInterceptors(FileUploadInterceptor('file', 'post'))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({ type: UpdatePostDto })
+	update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto, @UploadedFile() file?: Express.Multer.File) {
+		return this.postService.update(+id, updatePostDto, file)
 	}
 
 	@Delete(':id')

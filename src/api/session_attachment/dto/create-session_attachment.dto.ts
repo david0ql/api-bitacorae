@@ -23,7 +23,7 @@ export class CreateSessionAttachmentDto {
 	@ApiProperty({
 		description: 'External path of the session attachment',
 		example: 'https://example.com/file.pdf',
-		required: false,
+		required: false
 	})
 	@IsOptional()
 	@IsString()
