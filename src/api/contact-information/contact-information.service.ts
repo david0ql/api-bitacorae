@@ -1,18 +1,24 @@
 import { Injectable } from '@nestjs/common'
+import { Repository } from 'typeorm'
+import { InjectRepository } from '@nestjs/typeorm'
+
+import { ContactInformation } from 'src/entities/ContactInformation'
 import { CreateContactInformationDto } from './dto/create-contact-information.dto'
 import { UpdateContactInformationDto } from './dto/update-contact-information.dto'
-import { ContactInformation } from 'src/entities/ContactInformation'
-import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { FileUploadService } from 'src/services/file-upload/file-upload.service'
+
+import envVars from 'src/config/env'
 
 @Injectable()
 export class ContactInformationService {
 	constructor(
 		@InjectRepository(ContactInformation)
-		private readonly contactInformationRepository: Repository<ContactInformation>
+		private readonly contactInformationRepository: Repository<ContactInformation>,
+
+		private readonly fileUploadService: FileUploadService
 	) {}
 
-	create(createContactInformationDto: CreateContactInformationDto) {
+	create(createContactInformationDto: CreateContactInformationDto, file?: Express.Multer.File) {
 		const {
 			businessId,
 			firstName,
@@ -21,7 +27,6 @@ export class ContactInformationService {
 			phone,
 			documentTypeId,
 			documentNumber,
-			photo,
 			genderId,
 			experienceYears,
 			strengtheningAreaId,
@@ -34,40 +39,81 @@ export class ContactInformationService {
 			profile
 		} = createContactInformationDto
 
-		const contactInformation = this.contactInformationRepository.create({
-			businessId,
-			firstName,
-			lastName,
-			email,
-			phone,
-			documentTypeId,
-			documentNumber,
-			photo,
-			genderId,
-			experienceYears,
-			strengtheningAreaId,
-			educationLevelId,
-			facebook,
-			instagram,
-			twitter,
-			website,
-			linkedin,
-			profile
-		})
+		const fullPath = file ? this.fileUploadService.getFullPath('contact-information', file.filename) : undefined
 
-		return this.contactInformationRepository.save(contactInformation)
+		try {
+			const contactInformation = this.contactInformationRepository.create({
+				businessId,
+				firstName,
+				lastName,
+				email,
+				phone,
+				documentTypeId,
+				documentNumber,
+				photo: fullPath,
+				genderId,
+				experienceYears,
+				strengtheningAreaId,
+				educationLevelId,
+				facebook,
+				instagram,
+				twitter,
+				website,
+				linkedin,
+				profile
+			})
+
+			return this.contactInformationRepository.save(contactInformation)
+		} catch (error) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			throw error
+		}
 	}
 
-	async findOne(id: number) {
+	async findOneByBusiness(id: number) {
 		if(!id) return {}
 
-		const contactInformation = await this.contactInformationRepository.findOne({ where: { id } })
+		const contactInformation = await this.contactInformationRepository
+			.createQueryBuilder('ci')
+			.select([
+				'ci.id AS id',
+				'ci.businessId AS businessId',
+				'ci.firstName AS firstName',
+				'ci.lastName AS lastName',
+				'ci.email AS email',
+				'ci.phone AS phone',
+				'ci.documentTypeId AS documentTypeId',
+				'ci.documentNumber AS documentNumber',
+				'CONCAT(:appUrl, "/", ci.photo) AS photo',
+				'ci.genderId AS genderId',
+				'ci.experienceYears AS experienceYears',
+				'ci.strengtheningAreaId AS strengtheningAreaId',
+				'ci.educationLevelId AS educationLevelId',
+				'ci.facebook AS facebook',
+				'ci.instagram AS instagram',
+				'ci.twitter AS twitter',
+				'ci.website AS website',
+				'ci.linkedin AS linkedin',
+				'ci.profile AS profile'
+			])
+			.where('ci.businessId = :businessId', { businessId: id })
+			.setParameters({appUrl: envVars.APP_URL})
+			.getRawOne()
 
 		return contactInformation || {}
 	}
 
-	update(id: number, updateContactInformationDto: UpdateContactInformationDto) {
-		if(!id) return { affected: 0 }
+	update(id: number, updateContactInformationDto: UpdateContactInformationDto, file?: Express.Multer.File) {
+		const fullPath = file ? this.fileUploadService.getFullPath('contact-information', file.filename) : undefined
+
+		if(!id) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			return { affected: 0 }
+		}
 
 		const {
 			businessId,
@@ -77,7 +123,6 @@ export class ContactInformationService {
 			phone,
 			documentTypeId,
 			documentNumber,
-			photo,
 			genderId,
 			experienceYears,
 			strengtheningAreaId,
@@ -98,7 +143,7 @@ export class ContactInformationService {
 			phone,
 			documentTypeId,
 			documentNumber,
-			photo,
+			photo: fullPath,
 			genderId,
 			experienceYears,
 			strengtheningAreaId,

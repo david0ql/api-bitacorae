@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { Type } from "class-transformer";
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateContactInformationDto {
@@ -7,6 +8,7 @@ export class CreateContactInformationDto {
 		example: 1
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly businessId: number
 
@@ -36,7 +38,8 @@ export class CreateContactInformationDto {
 
 	@ApiProperty({
 		description: 'Phone number',
-		example: '1234567890'
+		example: '1234567890',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -44,63 +47,67 @@ export class CreateContactInformationDto {
 
 	@ApiProperty({
 		description: 'Document type ID',
-		example: 1
+		example: 1,
+		required: false
 	})
 	@IsOptional()
+	@Type(() => Number)
 	@IsNumber()
 	readonly documentTypeId: number
 
 	@ApiProperty({
 		description: 'Document number',
-		example: '123456789'
+		example: '123456789',
+		required: false
 	})
 	@IsOptional()
 	@IsString()
 	readonly documentNumber: string
 
 	@ApiProperty({
-		description: 'Photo URL',
-		example: 'http://example.com/photo.jpg'
-	})
-	@IsString()
-	@IsOptional()
-	readonly photo: string;
-
-	@ApiProperty({
 		description: 'Gender ID',
-		example: 1
+		example: 1,
+		required: false
 	})
 	@IsOptional()
+	@Type(() => Number)
 	@IsNumber()
 	readonly genderId: number
 
 	@ApiProperty({
 		description: 'Experience years',
-		example: 1
+		example: 1,
+		required: false
 	})
 	@IsOptional()
+	@Type(() => Number)
 	@IsNumber()
 	readonly experienceYears: number
 
 	@ApiProperty({
 		description: 'Strengthening area ID',
-		example: 1
+		example: 1,
+		required: false
 	})
 	@IsOptional()
+	@Type(() => Number)
 	@IsNumber()
 	readonly strengtheningAreaId: number
 
 	@ApiProperty({
 		description: 'Education level ID',
-		example: 1
+		example: 1,
+		required: false
 	})
 	@IsOptional()
+	@Type(() => Number)
 	@IsNumber()
 	readonly educationLevelId: number
 
 	@ApiProperty({
 		description: 'Facebook URL',
-		example: 'http://facebook.com/example'
+		example: 'http://facebook.com/example',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -108,7 +115,8 @@ export class CreateContactInformationDto {
 
 	@ApiProperty({
 		description: 'Instagram URL',
-		example: 'http://instagram.com/example'
+		example: 'http://instagram.com/example',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -116,7 +124,8 @@ export class CreateContactInformationDto {
 
 	@ApiProperty({
 		description: 'Twitter URL',
-		example: 'http://twitter.com/example'
+		example: 'http://twitter.com/example',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -124,7 +133,8 @@ export class CreateContactInformationDto {
 
 	@ApiProperty({
 		description: 'Website URL',
-		example: 'http://example.com'
+		example: 'http://example.com',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -132,7 +142,8 @@ export class CreateContactInformationDto {
 
 	@ApiProperty({
 		description: 'LinkedIn URL',
-		example: 'http://linkedin.com/in/example'
+		example: 'http://linkedin.com/in/example',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -140,9 +151,17 @@ export class CreateContactInformationDto {
 
 	@ApiProperty({
 		description: 'Profile',
-		example: 'This is an example profile'
+		example: 'This is an example profile',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
 	readonly profile: string
+
+	@ApiProperty({
+		type: 'string',
+		format: 'binary',
+		required: false
+	})
+  	file?: any
 }

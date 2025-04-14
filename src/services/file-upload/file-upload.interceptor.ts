@@ -1,9 +1,9 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor, Type, mixin } from '@nestjs/common'
-import { FileInterceptor } from '@nestjs/platform-express'
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express'
 import { ModuleRef, ContextIdFactory } from '@nestjs/core'
 import { FileUploadService } from './file-upload.service'
 
-export function FileUploadInterceptor(fieldName = 'file', folder = ''): Type<NestInterceptor> {
+export function FileUploadInterceptor(fieldName = 'file', folder = '', multiple = false, maxCount = 10): Type<NestInterceptor> {
 	@Injectable()
 	class MixinInterceptor implements NestInterceptor {
 		constructor(private readonly moduleRef: ModuleRef) {}
@@ -14,9 +14,15 @@ export function FileUploadInterceptor(fieldName = 'file', folder = ''): Type<Nes
 
 			const fileUploadService = await this.moduleRef.resolve(FileUploadService, contextId)
 
-			const multerInterceptor = FileInterceptor(fieldName, {
-				storage: fileUploadService.getMulterStorage(folder),
-			})
+			let multerInterceptor: any
+
+			const storage = fileUploadService.getMulterStorage(folder)
+
+			if (multiple) {
+				multerInterceptor = FilesInterceptor(fieldName, maxCount, { storage })
+			} else {
+				multerInterceptor = FileInterceptor(fieldName, { storage })
+			}
 
 			const interceptorInstance = new (multerInterceptor as any)()
 

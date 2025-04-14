@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common'
 
 import { BusinessService } from './business.service'
 import { Business } from 'src/entities/Business'
@@ -8,9 +8,10 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateBusinessDto } from './dto/create-business.dto'
 import { UpdateBusinessDto } from './dto/update-business.dto'
 
-import { ApiBearerAuth } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
 
 @Controller('business')
 @ApiBearerAuth()
@@ -20,8 +21,11 @@ export class BusinessController {
 
 	@Post()
 	@HttpCode(200)
-	create(@Body() createBusinessDto: CreateBusinessDto) {
-		return this.businessService.create(createBusinessDto)
+	@UseInterceptors(FileUploadInterceptor('file', 'business'))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({ type: CreateBusinessDto })
+	create(@Body() createBusinessDto: CreateBusinessDto, @UploadedFile() file?: Express.Multer.File) {
+		return this.businessService.create(createBusinessDto, file)
 	}
 
 	@Get()
@@ -38,8 +42,11 @@ export class BusinessController {
 
 	@Patch(':id')
 	@HttpCode(200)
-	update(@Param('id') id: string, @Body() updateBusinessDto: UpdateBusinessDto) {
-		return this.businessService.update(+id, updateBusinessDto)
+	@UseInterceptors(FileUploadInterceptor('file', 'business'))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({ type: UpdateBusinessDto })
+	update(@Param('id') id: string, @Body() updateBusinessDto: UpdateBusinessDto, @UploadedFile() file?: Express.Multer.File) {
+		return this.businessService.update(+id, updateBusinessDto, file)
 	}
 
 	@Delete(':id')

@@ -11,6 +11,9 @@ import { PageMetaDto } from 'src/dto/page-meta.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateBusinessDto } from './dto/create-business.dto'
 import { UpdateBusinessDto } from './dto/update-business.dto'
+import { FileUploadService } from 'src/services/file-upload/file-upload.service'
+
+import envVars from 'src/config/env'
 
 @Injectable()
 export class BusinessService {
@@ -21,10 +24,11 @@ export class BusinessService {
 		@InjectRepository(User)
 		private readonly userRepository: Repository<User>,
 
-		private readonly dataSource: DataSource
+		private readonly dataSource: DataSource,
+		private readonly fileUploadService: FileUploadService
 	) {}
 
-	async create(createBusinessDto: CreateBusinessDto) {
+	async create(createBusinessDto: CreateBusinessDto, file?: Express.Multer.File) {
 		const {
 			socialReason,
 			documentTypeId,
@@ -55,60 +59,73 @@ export class BusinessService {
 			assignedHours,
 			cohortId,
 			diagnostic,
-			evidence,
 			password
 		} = createBusinessDto
 
+		const fullPath = file ? this.fileUploadService.getFullPath('business', file.filename) : undefined
+
 		const existingUser = await this.userRepository.findOne({ where: { email } })
-		if(existingUser) throw new BadRequestException('Email already exists')
+		if(existingUser) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			throw new BadRequestException('Email already exists')
+		}
 
-		const salt = bcrypt.genSaltSync(10)
-		const hash = bcrypt.hashSync(password, salt)
+		try {
+			const salt = bcrypt.genSaltSync(10)
+			const hash = bcrypt.hashSync(password, salt)
 
-		const user = this.userRepository.create({
-			roleId: 4,
-			name: socialReason,
-			email,
-			password: hash
-		})
+			const user = this.userRepository.create({
+				roleId: 4,
+				name: socialReason,
+				email,
+				password: hash
+			})
 
-		const newUser = await this.userRepository.save(user)
+			const newUser = await this.userRepository.save(user)
 
-		const business = this.businessRepository.create({
-			userId: newUser.id,
-			socialReason,
-			documentTypeId,
-			documentNumber,
-			address,
-			phone,
-			email,
-			economicActivityId,
-			businessSizeId,
-			numberOfEmployees,
-			lastYearSales,
-			twoYearsAgoSales,
-			threeYearsAgoSales,
-			facebook,
-			instagram,
-			twitter,
-			website,
-			linkedin,
-			positionId,
-			hasFoundedBefore,
-			observation,
-			numberOfPeopleLeading,
-			productStatusId,
-			marketScopeId,
-			businessPlan,
-			businessSegmentation,
-			strengtheningAreaId,
-			assignedHours,
-			cohortId,
-			diagnostic,
-			evidence
-		})
+			const business = this.businessRepository.create({
+				userId: newUser.id,
+				socialReason,
+				documentTypeId,
+				documentNumber,
+				address,
+				phone,
+				email,
+				economicActivityId,
+				businessSizeId,
+				numberOfEmployees,
+				lastYearSales,
+				twoYearsAgoSales,
+				threeYearsAgoSales,
+				facebook,
+				instagram,
+				twitter,
+				website,
+				linkedin,
+				positionId,
+				hasFoundedBefore,
+				observation,
+				numberOfPeopleLeading,
+				productStatusId,
+				marketScopeId,
+				businessPlan,
+				businessSegmentation,
+				strengtheningAreaId,
+				assignedHours,
+				cohortId,
+				diagnostic,
+				evidence: fullPath
+			})
 
-		return this.businessRepository.save(business)
+			return this.businessRepository.save(business)
+		} catch (error) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			throw error
+		}
 	}
 
 	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Business>> {
@@ -151,13 +168,56 @@ export class BusinessService {
 	async findOne(id: number) {
 		if(!id) return {}
 
-		const business = await this.businessRepository.findOne({ where: { id } })
+		const business = await this.businessRepository
+			.createQueryBuilder('b')
+			.select([
+				'b.id AS id',
+				'b.social_reason AS socialReason',
+				'b.document_type_id AS documentTypeId',
+				'b.document_number AS documentNumber',
+				'b.address AS address',
+				'b.phone AS phone',
+				'b.email AS email',
+				'b.economic_activity_id AS economicActivityId',
+				'b.business_size_id AS businessSizeId',
+				'b.number_of_employees AS numberOfEmployees',
+				'b.last_year_sales AS lastYearSales',
+				'b.two_years_ago_sales AS twoYearsAgoSales',
+				'b.three_years_ago_sales AS threeYearsAgoSales',
+				'b.facebook AS facebook',
+				'b.instagram AS instagram',
+				'b.twitter AS twitter',
+				'b.website AS website',
+				'b.linkedin AS linkedin',
+				'b.position_id AS positionId',
+				'b.has_founded_before AS hasFoundedBefore',
+				'b.observation AS observation',
+				'b.number_of_people_leading AS numberOfPeopleLeading',
+				'b.product_status_id AS productStatusId',
+				'b.market_scope_id AS marketScopeId',
+				'b.business_plan AS businessPlan',
+				'b.business_segmentation AS businessSegmentation',
+				'b.strengthening_area_id AS strengtheningAreaId',
+				'b.assigned_hours AS assignedHours',
+				'b.cohort_id AS cohortId',
+				'b.diagnostic AS diagnostic',
+				'CONCAT(:appUrl, "/", b.evidence) as evidence'
+			])
+			.where('b.id = :id', { id })
+			.setParameters({appUrl: envVars.APP_URL})
+			.getRawOne()
 
 		return business || {}
 	}
 
-	async update(id: number, updateBusinessDto: UpdateBusinessDto) {
-		if(!id) return { affected: 0 }
+	async update(id: number, updateBusinessDto: UpdateBusinessDto, file?: Express.Multer.File) {
+		const fullPath = file ? this.fileUploadService.getFullPath('business', file.filename) : undefined
+		if(!id) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			return { affected: 0 }
+		}
 
 		const {
 			active,
@@ -189,68 +249,78 @@ export class BusinessService {
 			strengtheningAreaId,
 			assignedHours,
 			cohortId,
-			diagnostic,
-			evidence
+			diagnostic
 		} = updateBusinessDto
 
 		if(email) {
 			const existingUser = await this.userRepository.findOne({ where: { email } })
 			if(existingUser && existingUser.id != id) {
+				if (fullPath) {
+					this.fileUploadService.deleteFile(fullPath)
+				}
 				throw new BadRequestException('Email already exists')
 			}
 		}
 
-		const result = this.businessRepository.update(id, {
-			socialReason,
-			documentTypeId,
-			documentNumber,
-			address,
-			phone,
-			email,
-			economicActivityId,
-			businessSizeId,
-			numberOfEmployees,
-			lastYearSales,
-			twoYearsAgoSales,
-			threeYearsAgoSales,
-			facebook,
-			instagram,
-			twitter,
-			website,
-			linkedin,
-			positionId,
-			hasFoundedBefore,
-			observation,
-			numberOfPeopleLeading,
-			productStatusId,
-			marketScopeId,
-			businessPlan,
-			businessSegmentation,
-			strengtheningAreaId,
-			assignedHours,
-			cohortId,
-			diagnostic,
-			evidence
-		})
-
-		const businessData = await this.businessRepository.findOne({
-			select: { userId: true },
-			where: { id }
-		})
-
-		if(businessData) {
-			await this.userRepository.update(businessData.userId, {
-				active,
-				name: socialReason,
-				email
+		try {
+			const result = this.businessRepository.update(id, {
+				socialReason,
+				documentTypeId,
+				documentNumber,
+				address,
+				phone,
+				email,
+				economicActivityId,
+				businessSizeId,
+				numberOfEmployees,
+				lastYearSales,
+				twoYearsAgoSales,
+				threeYearsAgoSales,
+				facebook,
+				instagram,
+				twitter,
+				website,
+				linkedin,
+				positionId,
+				hasFoundedBefore,
+				observation,
+				numberOfPeopleLeading,
+				productStatusId,
+				marketScopeId,
+				businessPlan,
+				businessSegmentation,
+				strengtheningAreaId,
+				assignedHours,
+				cohortId,
+				diagnostic,
+				evidence: fullPath
 			})
-		}
 
-		return { result }
+			const businessData = await this.businessRepository.findOne({
+				select: { userId: true },
+				where: { id }
+			})
+
+			if(businessData) {
+				await this.userRepository.update(businessData.userId, {
+					active,
+					name: socialReason,
+					email
+				})
+			}
+
+			return { result }
+		} catch (error) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			throw error
+		}
 	}
 
 	async remove(id: number) {
-		if(!id) return { affected: 0 }
+		const existing = await this.businessRepository.findOneBy({ id })
+		if (!existing) return { affected: 0 }
 
 		const business = await this.businessRepository.findOne({
 			select: { userId: true },
@@ -261,6 +331,10 @@ export class BusinessService {
 
 		if(business) {
 			await this.userRepository.delete(business.userId)
+		}
+
+		if (existing.evidence) {
+			this.fileUploadService.deleteFile(existing.evidence)
 		}
 
 		return result

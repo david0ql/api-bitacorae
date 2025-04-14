@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { Type } from "class-transformer";
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateSessiontDto {
@@ -7,6 +8,7 @@ export class CreateSessiontDto {
 		example: 1
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly accompanimentId: number;
 
@@ -36,7 +38,8 @@ export class CreateSessiontDto {
 
 	@ApiProperty({
 		description: 'Conference link for the session',
-		example: 'https://example.com/conference'
+		example: 'https://example.com/conference',
+		required: false
 	})
 	@IsOptional()
 	@IsString()
@@ -44,9 +47,19 @@ export class CreateSessiontDto {
 
 	@ApiProperty({
 		description: 'Preparation notes for the session',
-		example: 'Prepare the agenda and materials'
+		example: 'Prepare the agenda and materials',
+		required: false
 	})
 	@IsOptional()
 	@IsString()
 	readonly preparationNotes?: string;
+
+	@ApiProperty({
+		type: 'string',
+		format: 'binary',
+		isArray: true,
+		required: false,
+		description: 'Files for session preparation'
+	})
+  	files?: any;
 }

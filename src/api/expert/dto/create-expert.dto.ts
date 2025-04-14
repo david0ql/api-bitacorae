@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger"
+import { Type } from "class-transformer";
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator"
 
 export class CreateExpertDto {
@@ -38,6 +39,8 @@ export class CreateExpertDto {
 		description: 'Document type ID',
 		example: 1,
 	})
+	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly documentTypeId: number;
 
@@ -50,17 +53,11 @@ export class CreateExpertDto {
 	readonly documentNumber: string;
 
 	@ApiProperty({
-		description: 'Photo URL',
-		example: 'http://example.com/photo.jpg',
-	})
-	@IsString()
-	@IsOptional()
-	readonly photo: string;
-
-	@ApiProperty({
 		description: 'Consultor type ID',
 		example: 1,
 	})
+	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly consultorTypeId: number;
 
@@ -68,13 +65,17 @@ export class CreateExpertDto {
 		description: 'Gender ID',
 		example: 1,
 	})
+	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly genderId: number;
 
 	@ApiProperty({
 		description: 'Years of experience',
 		example: 5,
+		required: false
 	})
+	@Type(() => Number)
 	@IsNumber()
 	@IsOptional()
 	readonly experienceYears: number;
@@ -83,6 +84,8 @@ export class CreateExpertDto {
 		description: 'Strengthening area ID',
 		example: 1,
 	})
+	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly strengtheningAreaId: number;
 
@@ -90,12 +93,15 @@ export class CreateExpertDto {
 		description: 'Education level ID',
 		example: 1,
 	})
+	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly educationLevelId: number;
 
 	@ApiProperty({
 		description: 'Facebook profile URL',
 		example: 'http://facebook.com/example',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -104,6 +110,7 @@ export class CreateExpertDto {
 	@ApiProperty({
 		description: 'Instagram profile URL',
 		example: 'http://instagram.com/example',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -112,6 +119,7 @@ export class CreateExpertDto {
 	@ApiProperty({
 		description: 'Twitter profile URL',
 		example: 'http://twitter.com/example',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -120,6 +128,7 @@ export class CreateExpertDto {
 	@ApiProperty({
 		description: 'Website URL',
 		example: 'http://example.com',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -128,6 +137,7 @@ export class CreateExpertDto {
 	@ApiProperty({
 		description: 'LinkedIn profile URL',
 		example: 'http://linkedin.com/in/example',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -136,6 +146,7 @@ export class CreateExpertDto {
 	@ApiProperty({
 		description: 'Profile description',
 		example: 'This is a sample profile description.',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -148,4 +159,11 @@ export class CreateExpertDto {
 	@IsString()
 	@IsNotEmpty()
 	readonly password: string;
+
+	@ApiProperty({
+		type: 'string',
+		format: 'binary',
+		required: false
+	})
+  	file?: any
 }

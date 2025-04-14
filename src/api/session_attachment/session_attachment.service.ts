@@ -27,11 +27,11 @@ export class SessionAttachmentService {
 
 	async create(createSessionAttachmentDto: CreateSessionAttachmentDto, file?: Express.Multer.File) {
 		const { name, sessionId, externalPath } = createSessionAttachmentDto
-		const fullPath = file ? this.fileUploadService.getFullPath('session-attachments', file.filename) : undefined
+		const fullPath = file ? this.fileUploadService.getFullPath('session-attachment', file.filename) : undefined
 
 		const session = await this.sessionRepository.findOneBy({ id: sessionId })
 		if (!session) {
-			if (file && fullPath) {
+			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
 			throw new BadRequestException(`Session with id ${sessionId} not found`)
@@ -52,7 +52,7 @@ export class SessionAttachmentService {
 			return await this.sessionAttachmentRepository.save(sessionAttachment)
 
 		} catch (error) {
-			if (file && fullPath) {
+			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
 			throw error

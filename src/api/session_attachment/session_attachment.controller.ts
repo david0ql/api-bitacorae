@@ -30,7 +30,7 @@ export class SessionAttachmentController {
 
 	@Post()
 	@HttpCode(200)
-	@UseInterceptors(FileUploadInterceptor('file', 'session-attachments'))
+	@UseInterceptors(FileUploadInterceptor('file', 'session-attachment'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreateSessionAttachmentDto })
 	create(@Body() createDto: CreateSessionAttachmentDto, @UploadedFile() file?: Express.Multer.File) {

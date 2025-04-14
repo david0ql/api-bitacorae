@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common'
 
 import { ExpertService } from './expert.service'
 import { Expert } from 'src/entities/Expert'
@@ -8,9 +8,10 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateExpertDto } from './dto/create-expert.dto'
 import { UpdateExpertDto } from './dto/update-expert.dto'
 
-import { ApiBearerAuth } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
 
 @Controller('expert')
 @ApiBearerAuth()
@@ -20,8 +21,11 @@ export class ExpertController {
 
 	@Post()
 	@HttpCode(200)
-	create(@Body() createExpertDto: CreateExpertDto) {
-		return this.expertService.create(createExpertDto)
+	@UseInterceptors(FileUploadInterceptor('file', 'expert'))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({ type: CreateExpertDto })
+	create(@Body() createExpertDto: CreateExpertDto, @UploadedFile() file?: Express.Multer.File) {
+		return this.expertService.create(createExpertDto, file)
 	}
 
 	@Get()
@@ -30,10 +34,19 @@ export class ExpertController {
 		return this.expertService.findAll(pageOptionsDto)
 	}
 
+	@Get(':id')
+	@HttpCode(200)
+	findOne(@Param('id') id: string) {
+		return this.expertService.findOne(+id)
+	}
+
 	@Patch(':id')
 	@HttpCode(200)
-	update(@Param('id') id: string, @Body() updateExpertDto: UpdateExpertDto) {
-		return this.expertService.update(+id, updateExpertDto)
+	@UseInterceptors(FileUploadInterceptor('file', 'expert'))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({ type: UpdateExpertDto })
+	update(@Param('id') id: string, @Body() updateExpertDto: UpdateExpertDto, @UploadedFile() file?: Express.Multer.File) {
+		return this.expertService.update(+id, updateExpertDto, file)
 	}
 
 	@Delete(':id')

@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { Type } from "class-transformer";
 import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateBusinessDto {
@@ -15,6 +16,7 @@ export class CreateBusinessDto {
 		example: 1
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly documentTypeId: number
 
@@ -55,6 +57,7 @@ export class CreateBusinessDto {
 		example: 1
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly economicActivityId: number
 
@@ -63,6 +66,7 @@ export class CreateBusinessDto {
 		example: 1
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly businessSizeId: number
 
@@ -71,6 +75,7 @@ export class CreateBusinessDto {
 		example: 10
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly numberOfEmployees: number
 
@@ -79,6 +84,7 @@ export class CreateBusinessDto {
 		example: 1000000
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly lastYearSales: number
 
@@ -87,6 +93,7 @@ export class CreateBusinessDto {
 		example: 1000000
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly twoYearsAgoSales: number
 
@@ -95,12 +102,14 @@ export class CreateBusinessDto {
 		example: 1000000
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly threeYearsAgoSales: number
 
 	@ApiProperty({
 		description: 'Facebook profile URL',
-		example: 'http://facebook.com/example'
+		example: 'http://facebook.com/example',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -108,7 +117,8 @@ export class CreateBusinessDto {
 
 	@ApiProperty({
 		description: 'Instagram profile URL',
-		example: 'http://instagram.com/example'
+		example: 'http://instagram.com/example',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -116,7 +126,8 @@ export class CreateBusinessDto {
 
 	@ApiProperty({
 		description: 'Twitter profile URL',
-		example: 'http://twitter.com/example'
+		example: 'http://twitter.com/example',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -124,7 +135,8 @@ export class CreateBusinessDto {
 
 	@ApiProperty({
 		description: 'Website URL',
-		example: 'http://example.com'
+		example: 'http://example.com',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -132,7 +144,8 @@ export class CreateBusinessDto {
 
 	@ApiProperty({
 		description: 'LinkedIn profile URL',
-		example: 'http://linkedin.com/in/example'
+		example: 'http://linkedin.com/in/example',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -143,12 +156,14 @@ export class CreateBusinessDto {
 		example: 1
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly positionId: number
 
 	@ApiProperty({
 		description: 'Has the business been founded before',
-		example: true
+		example: true,
+		required: false
 	})
 	@IsBoolean()
 	@IsOptional()
@@ -156,7 +171,8 @@ export class CreateBusinessDto {
 
 	@ApiProperty({
 		description: 'Observation',
-		example: 'This is an observation'
+		example: 'This is an observation',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -167,6 +183,7 @@ export class CreateBusinessDto {
 		example: 1
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly numberOfPeopleLeading: number
 
@@ -175,6 +192,7 @@ export class CreateBusinessDto {
 		example: 1
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly productStatusId: number
 
@@ -183,12 +201,14 @@ export class CreateBusinessDto {
 		example: 1
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly marketScopeId: number
 
 	@ApiProperty({
 		description: 'Business plan',
-		example: 'This is a business plan'
+		example: 'This is a business plan',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -196,7 +216,8 @@ export class CreateBusinessDto {
 
 	@ApiProperty({
 		description: 'Business segmentation',
-		example: 'This is a business segmentation'
+		example: 'This is a business segmentation',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
@@ -207,6 +228,7 @@ export class CreateBusinessDto {
 		example: 1
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly strengtheningAreaId: number
 
@@ -215,6 +237,7 @@ export class CreateBusinessDto {
 		example: 1
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly assignedHours: number
 
@@ -223,24 +246,18 @@ export class CreateBusinessDto {
 		example: 1
 	})
 	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly cohortId: number
 
 	@ApiProperty({
 		description: 'Diagnostic',
-		example: 'This is a diagnostic'
+		example: 'This is a diagnostic',
+		required: false
 	})
 	@IsString()
 	@IsOptional()
 	readonly diagnostic: string
-
-	@ApiProperty({
-		description: 'Evidence',
-		example: 'This is an evidence'
-	})
-	@IsString()
-	@IsOptional()
-	readonly evidence: string
 
 	@ApiProperty({
 		description: 'Password',
@@ -249,4 +266,11 @@ export class CreateBusinessDto {
 	@IsString()
 	@IsNotEmpty()
 	readonly password: string
+
+	@ApiProperty({
+		type: 'string',
+		format: 'binary',
+		required: false
+	})
+  	file?: any
 }

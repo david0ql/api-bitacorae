@@ -1,15 +1,19 @@
-import { Repository } from 'typeorm'
+import { DataSource, Repository } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
-import { Accompaniment } from 'src/entities/Accompaniment'
 import { Session } from 'src/entities/Session'
+import { SessionPreparationFile } from 'src/entities/SessionPreparationFile'
+import { Accompaniment } from 'src/entities/Accompaniment'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateSessiontDto } from './dto/create-session.dto'
 import { UpdateSessionDto } from './dto/update-session.dto'
+import { FileUploadService } from 'src/services/file-upload/file-upload.service'
+
+import envVars from 'src/config/env'
 
 @Injectable()
 export class SessionService {
@@ -18,10 +22,16 @@ export class SessionService {
 		private readonly sessionRepository: Repository<Session>,
 
 		@InjectRepository(Accompaniment)
-		private readonly accompanimentRepository: Repository<Accompaniment>
+		private readonly accompanimentRepository: Repository<Accompaniment>,
+
+		@InjectRepository(SessionPreparationFile)
+		private readonly sessionPreparationFileRepository: Repository<SessionPreparationFile>,
+
+		private readonly dataSource: DataSource,
+		private readonly fileUploadService: FileUploadService
 	) {}
 
-	async create(createSessiontDto: CreateSessiontDto) {
+	async create(createSessiontDto: CreateSessiontDto, files?: Express.Multer.File[]) {
 		const {
 			accompanimentId,
 			title,
@@ -31,79 +41,196 @@ export class SessionService {
 			preparationNotes
 		} = createSessiontDto
 
+		const preparationFiles = files?.length ? files.map(file => {
+			return this.fileUploadService.getFullPath('session-preparation', file.filename)
+		}) : []
+
 		const accompaniment = await this.accompanimentRepository.findOne({ where: { id: accompanimentId } })
 		if (!accompaniment) {
+			preparationFiles.forEach(fullPath => {
+				this.fileUploadService.deleteFile(fullPath)
+			})
+
 			throw new BadRequestException(`Accompaniment with id ${accompanimentId} not found`)
 		}
 
-		const session = this.sessionRepository.create({
-			accompaniment,
-			title,
-			startDatetime,
-			endDatetime,
-			conferenceLink,
-			preparationNotes
-		})
+		try {
+			const session = this.sessionRepository.create({
+				accompaniment,
+				title,
+				startDatetime,
+				endDatetime,
+				conferenceLink,
+				preparationNotes
+			})
 
-		return this.sessionRepository.save(session)
+			const savedSession = await this.sessionRepository.save(session)
+
+			const sessionPreparationFiles = preparationFiles.map(fullPath => {
+				return this.sessionPreparationFileRepository.create({
+					sessionId: savedSession.id,
+					filePath: fullPath
+				})
+			})
+
+			await this.sessionPreparationFileRepository.save(sessionPreparationFiles)
+
+			return savedSession
+		} catch (error) {
+			preparationFiles.forEach(fullPath => {
+				this.fileUploadService.deleteFile(fullPath)
+			})
+			throw error
+		}
 	}
 
-	async findAll(id: number, pageOptionsDto: PageOptionsDto): Promise<PageDto<Session>> {
-		const queryBuilder = this.sessionRepository.createQueryBuilder('session')
-		.select([
-			'session.id AS id',
-			'session.title AS title',
-			'session.startDatetime AS startDatetime',
-			'session.endDatetime AS endDatetime',
-			'TIMESTAMPDIFF(MINUTE, session.startDatetime, session.endDatetime) AS duration',
-			'status.name AS status'
-		])
-		.innerJoin('session.status', 'status')
-		.where('session.accompanimentId = :id', { id })
-		.orderBy('session.startDatetime', pageOptionsDto.order)
-		.skip(pageOptionsDto.skip)
-		.take(pageOptionsDto.take)
+	async findAllByAccompaniment(accompanimentId: number, pageOptionsDto: PageOptionsDto): Promise<PageDto<Session>> {
+		const { take, skip, order } = pageOptionsDto
 
-		const [items, totalCount] = await Promise.all([
-			queryBuilder.getRawMany(),
-			queryBuilder.getCount()
+		const sql = `
+			SELECT
+				s.id AS id,
+				s.title AS title,
+				s.start_datetime AS startDatetime,
+				s.end_datetime AS endDatetime,
+				TIMESTAMPDIFF(MINUTE, s.start_datetime, s.end_datetime) AS duration,
+				ss.name AS status,
+				GROUP_CONCAT(CONCAT(?, "/", spf.file_path) SEPARATOR '||') AS preparationFiles
+			FROM
+				session s
+				INNER JOIN session_status ss ON s.status_id = ss.id
+				LEFT JOIN session_preparation_file spf ON spf.session_id = s.id
+			WHERE s.accompaniment_id = ?
+			GROUP BY s.id
+			ORDER BY s.start_datetime ${order}
+			LIMIT ${take} OFFSET ${skip}
+		`
+
+		const countSql = `
+			SELECT COUNT(DISTINCT s.id) AS total
+			FROM session s
+			WHERE s.accompaniment_id = ?
+		`
+
+		const [rawItems, countResult] = await Promise.all([
+			this.dataSource.query(sql, [envVars.APP_URL, accompanimentId]),
+			this.dataSource.query(countSql, [accompanimentId])
 		])
 
+		const items = rawItems.map(item => {
+			const preparationFiles = item.preparationFiles ? item.preparationFiles.split('||') : []
+
+			return { ...item, preparationFiles }
+		})
+
+		const totalCount = Number(countResult[0]?.total) ?? 0
 		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 
 		return new PageDto(items, pageMetaDto)
 	}
 
 	async findOne(id: number) {
-		if(!id) return {}
+		if (!id) return {}
 
-		const session = await this.sessionRepository.findOne({ where: { id } })
+		const rawSession = await this.sessionRepository
+			.createQueryBuilder('session')
+			.select([
+				'session.id AS id',
+				'session.accompanimentId AS accompanimentId',
+				'session.title AS title',
+				'session.startDatetime AS startDatetime',
+				'session.endDatetime AS endDatetime',
+				'session.conferenceLink AS conferenceLink',
+				'session.preparationNotes AS preparationNotes',
+				'session.sessionNotes AS sessionNotes',
+				'session.conclusionsCommitments AS conclusionsCommitments',
+				'status.id AS statusId',
+				`GROUP_CONCAT(CONCAT(:appUrl, "/", spf.file_path) SEPARATOR '||') AS preparationFiles`
+			])
+			.innerJoin('session.status', 'status')
+			.leftJoin('session_preparation_file', 'spf', 'spf.session_id = session.id')
+			.where('session.id = :id', { id })
+			.groupBy('session.id')
+			.setParameters({ appUrl: envVars.APP_URL })
+			.getRawOne()
 
-		return session || {}
+		if (!rawSession) return {}
+
+		return {
+			...rawSession,
+			preparationFiles: rawSession.preparationFiles ? rawSession.preparationFiles.split('||') : []
+		}
 	}
 
-	async update(id: number, updateSessionDto: UpdateSessionDto) {
-		if(!id) return { affected: 0 }
+	async update(id: number, updateSessionDto: UpdateSessionDto, files?: Express.Multer.File[]) {
+		const preparationFiles = files?.length ? files.map(file => {
+			return this.fileUploadService.getFullPath('session-preparation', file.filename)
+		}) : []
 
-		const {
-			title,
-			startDatetime,
-			endDatetime,
-			conferenceLink,
-			preparationNotes
-		} = updateSessionDto
+		if(!id) {
+			preparationFiles.forEach(fullPath => {
+				this.fileUploadService.deleteFile(fullPath)
+			})
+			return { affected: 0 }
+		}
 
-		return this.sessionRepository.update(id, {
-			title,
-			startDatetime,
-			endDatetime,
-			conferenceLink,
-			preparationNotes
-		})
+		const session = await this.sessionRepository.findOne({ where: { id } })
+		if (!session) {
+			preparationFiles.forEach(fullPath => {
+				this.fileUploadService.deleteFile(fullPath)
+			})
+
+			throw new BadRequestException(`Session with id ${id} not found`)
+		}
+
+		try {
+			const {
+				title,
+				startDatetime,
+				endDatetime,
+				conferenceLink,
+				preparationNotes,
+				sessionNotes,
+				conclusionsCommitments
+			} = updateSessionDto
+
+			const sessionPreparationFiles = preparationFiles.map(fullPath => {
+				return this.sessionPreparationFileRepository.create({
+					sessionId: id,
+					filePath: fullPath
+				})
+			})
+
+			await this.sessionPreparationFileRepository.save(sessionPreparationFiles)
+
+			return this.sessionRepository.update(id, {
+				title,
+				startDatetime,
+				endDatetime,
+				conferenceLink,
+				preparationNotes,
+				sessionNotes,
+				conclusionsCommitments
+			})
+		} catch (error) {
+			preparationFiles.forEach(fullPath => {
+				this.fileUploadService.deleteFile(fullPath)
+			})
+			throw error
+		}
 	}
 
 	async remove(id: number) {
-		if(!id) return { affected: 0 }
+		const session = await this.sessionRepository.findOne({ where: { id } })
+		if (!session) return { affected: 0 }
+
+		const sessionPreparationFiles = await this.sessionPreparationFileRepository.find({ where: { sessionId: id } })
+		if (sessionPreparationFiles) {
+			sessionPreparationFiles.forEach(file => {
+				this.fileUploadService.deleteFile(file.filePath)
+			})
+			await this.sessionPreparationFileRepository.delete({ sessionId: id })
+		}
 
 		return this.sessionRepository.delete(id)
 	}

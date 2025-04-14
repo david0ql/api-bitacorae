@@ -12,6 +12,9 @@ import { PageMetaDto } from 'src/dto/page-meta.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateExpertDto } from './dto/create-expert.dto'
 import { UpdateExpertDto } from './dto/update-expert.dto'
+import { FileUploadService } from 'src/services/file-upload/file-upload.service'
+
+import envVars from 'src/config/env'
 
 @Injectable()
 export class ExpertService {
@@ -22,11 +25,10 @@ export class ExpertService {
 		@InjectRepository(User)
 		private readonly userRepository: Repository<User>,
 
-		@InjectRepository(ConsultorType)
-		private readonly consultorTypeRepository: Repository<ConsultorType>
+		private readonly fileUploadService: FileUploadService
 	) {}
 
-	async create(createExpertDto: CreateExpertDto) {
+	async create(createExpertDto: CreateExpertDto, file?: Express.Multer.File) {
 		const {
 			firstName,
 			lastName,
@@ -34,7 +36,6 @@ export class ExpertService {
 			phone,
 			documentTypeId,
 			documentNumber,
-			photo,
 			consultorTypeId,
 			genderId,
 			experienceYears,
@@ -49,85 +50,144 @@ export class ExpertService {
 			password
 		} = createExpertDto
 
+		const fullPath = file ? this.fileUploadService.getFullPath('expert', file.filename) : undefined
+
 		const existingUser = await this.userRepository.findOne({ where: { email } })
-		if(existingUser) throw new BadRequestException('Email already exists')
+		if(existingUser) {
+			if(fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			throw new BadRequestException('Email already exists')
+		}
 
-		const salt = bcrypt.genSaltSync(10)
-		const hash = bcrypt.hashSync(password, salt)
+		try {
+			const salt = bcrypt.genSaltSync(10)
+			const hash = bcrypt.hashSync(password, salt)
 
-		const user = this.userRepository.create({
-			roleId: 3,
-			name: firstName,
-			email,
-			password: hash
-		})
+			const user = this.userRepository.create({
+				roleId: 3,
+				name: firstName,
+				email,
+				password: hash
+			})
 
-		const newUser = await this.userRepository.save(user)
+			const newUser = await this.userRepository.save(user)
 
-		const expert = this.expertRepository.create({
-			userId: newUser.id,
-			firstName,
-			lastName,
-			email,
-			phone,
-			documentTypeId,
-			documentNumber,
-			photo,
-			consultorTypeId,
-			genderId,
-			experienceYears,
-			strengtheningAreaId,
-			educationLevelId,
-			facebook,
-			instagram,
-			twitter,
-			website,
-			linkedin,
-			profile
-		})
+			const expert = this.expertRepository.create({
+				userId: newUser.id,
+				firstName,
+				lastName,
+				email,
+				phone,
+				documentTypeId,
+				documentNumber,
+				photo: fullPath,
+				consultorTypeId,
+				genderId,
+				experienceYears,
+				strengtheningAreaId,
+				educationLevelId,
+				facebook,
+				instagram,
+				twitter,
+				website,
+				linkedin,
+				profile
+			})
 
-		return this.expertRepository.save(expert)
+			return this.expertRepository.save(expert)
+		} catch (error) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			throw error
+		}
 	}
 
 	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Expert>> {
-		const queryBuilder = this.expertRepository.createQueryBuilder('expert')
-		.select([
-			'expert.id',
-			'expert.userId',
-			'expert.firstName',
-			'expert.lastName',
-			'expert.email',
-			'expert.phone',
-			'expert.documentTypeId',
-			'expert.documentNumber',
-			'expert.photo',
-			'expert.consultorTypeId',
-			'expert.genderId',
-			'expert.experienceYears',
-			'expert.strengtheningAreaId',
-			'expert.educationLevelId',
-			'expert.facebook',
-			'expert.instagram',
-			'expert.twitter',
-			'expert.website',
-			'expert.linkedin',
-			'expert.profile'
-		])
-		.addSelect('user.active')
-		.innerJoin('expert.user', 'user')
-		.orderBy('expert.id', pageOptionsDto.order)
-		.skip(pageOptionsDto.skip)
-		.take(pageOptionsDto.take)
+		const queryBuilder = this.expertRepository
+			.createQueryBuilder('e')
+			.select([
+				'e.id AS id',
+				'e.userId AS userId',
+				'e.firstName AS firstName',
+				'e.lastName AS lastName',
+				'e.email AS email',
+				'e.phone AS phone',
+				'e.documentTypeId AS documentTypeId',
+				'e.documentNumber AS documentNumber',
+				'CONCAT(:appUrl, "/", e.photo) AS photo',
+				'e.consultorTypeId AS consultorTypeId',
+				'e.genderId AS genderId',
+				'e.experienceYears AS experienceYears',
+				'e.strengtheningAreaId AS strengtheningAreaId',
+				'e.educationLevelId AS educationLevelId',
+				'e.facebook AS facebook',
+				'e.instagram AS instagram',
+				'e.twitter AS twitter',
+				'e.website AS website',
+				'e.linkedin AS linkedin',
+				'e.profile AS profile',
+				'user.active AS active'
+			])
+			.innerJoin('e.user', 'user')
+			.orderBy('e.id', pageOptionsDto.order)
+			.skip(pageOptionsDto.skip)
+			.take(pageOptionsDto.take)
+			.setParameters({appUrl: envVars.APP_URL})
 
-		const [ items, totalCount ] = await queryBuilder.getManyAndCount()
+		const [items, totalCount] = await Promise.all([
+			queryBuilder.getRawMany(),
+			queryBuilder.getCount()
+		])
 
 		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
-
 		return new PageDto(items, pageMetaDto)
 	}
 
-	async update(id: number, updateExpertDto: UpdateExpertDto) {
-		if(!id) return { affected: 0 }
+	async findOne(id: number) {
+		if(!id) return {}
+
+		const expert = await this.expertRepository
+			.createQueryBuilder('e')
+			.select([
+				'e.id AS id',
+				'e.userId AS userId',
+				'e.firstName AS firstName',
+				'e.lastName AS lastName',
+				'e.email AS email',
+				'e.phone AS phone',
+				'e.documentTypeId AS documentTypeId',
+				'e.documentNumber AS documentNumber',
+				'CONCAT(:appUrl, "/", e.photo) AS photo',
+				'e.consultorTypeId AS consultorTypeId',
+				'e.genderId AS genderId',
+				'e.experienceYears AS experienceYears',
+				'e.strengtheningAreaId AS strengtheningAreaId',
+				'e.educationLevelId AS educationLevelId',
+				'e.facebook AS facebook',
+				'e.instagram AS instagram',
+				'e.twitter AS twitter',
+				'e.website AS website',
+				'e.linkedin AS linkedin',
+				'e.profile AS profile',
+				'user.active AS active'
+			])
+			.innerJoin('e.user', 'user')
+			.setParameters({appUrl: envVars.APP_URL})
+			.getRawOne()
+
+		return expert || {}
+	}
+
+	async update(id: number, updateExpertDto: UpdateExpertDto, file?: Express.Multer.File) {
+		const fullPath = file ? this.fileUploadService.getFullPath('expert', file.filename) : undefined
+		if(!id) {
+			if(fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			return { affected: 0 }
+		}
 
 		const {
 			active,
@@ -137,7 +197,6 @@ export class ExpertService {
 			phone,
 			documentTypeId,
 			documentNumber,
-			photo,
 			consultorTypeId,
 			genderId,
 			experienceYears,
@@ -153,48 +212,59 @@ export class ExpertService {
 
 		const existingUser = await this.userRepository.findOne({ where: { email } })
 		if(existingUser && existingUser.id != id) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
 			throw new BadRequestException('Email already exists')
 		}
 
-		const result = await this.expertRepository.update(id, {
-			firstName,
-			lastName,
-			email,
-			phone,
-			documentTypeId,
-			documentNumber,
-			photo,
-			consultorTypeId,
-			genderId,
-			experienceYears,
-			strengtheningAreaId,
-			educationLevelId,
-			facebook,
-			instagram,
-			twitter,
-			website,
-			linkedin,
-			profile
-		})
-
-		const expertData = await this.expertRepository.findOne({
-			select: { userId: true },
-			where: { id }
-		})
-
-		if(expertData) {
-			await this.userRepository.update(expertData.userId, {
-				active,
-				name: firstName,
-				email
+		try {
+			const result = await this.expertRepository.update(id, {
+				firstName,
+				lastName,
+				email,
+				phone,
+				documentTypeId,
+				documentNumber,
+				photo: fullPath,
+				consultorTypeId,
+				genderId,
+				experienceYears,
+				strengtheningAreaId,
+				educationLevelId,
+				facebook,
+				instagram,
+				twitter,
+				website,
+				linkedin,
+				profile
 			})
-		}
 
-		return result
+			const expertData = await this.expertRepository.findOne({
+				select: { userId: true },
+				where: { id }
+			})
+
+			if(expertData) {
+				await this.userRepository.update(expertData.userId, {
+					active,
+					name: firstName,
+					email
+				})
+			}
+
+			return result
+		} catch (error) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			throw error
+		}
 	}
 
 	async remove(id: number) {
-		if(!id) return { affected: 0 }
+		const existing = await this.expertRepository.findOneBy({ id })
+		if (!existing) return { affected: 0 }
 
 		const expertData = await this.expertRepository.findOne({
 			select: { userId: true },
@@ -205,6 +275,10 @@ export class ExpertService {
 
 		if(expertData) {
 			await this.userRepository.delete(expertData.userId)
+		}
+
+		if (existing.photo) {
+			this.fileUploadService.deleteFile(existing.photo)
 		}
 
 		return result

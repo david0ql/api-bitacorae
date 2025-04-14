@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards, UseInterceptors, UploadedFiles } from '@nestjs/common'
 
 import { SessionService } from './session.service'
 import { Session } from 'src/entities/Session'
@@ -8,9 +8,10 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateSessiontDto } from './dto/create-session.dto'
 import { UpdateSessionDto } from './dto/update-session.dto'
 
-import { ApiBearerAuth } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
 
 @Controller('session')
 @ApiBearerAuth()
@@ -20,14 +21,17 @@ export class SessionController {
 
 	@Post()
 	@HttpCode(200)
-	create(@Body() createSessiontDto: CreateSessiontDto) {
-		return this.sessionService.create(createSessiontDto)
+	@UseInterceptors(FileUploadInterceptor('files', 'session-preparation', true))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({ type: CreateSessiontDto })
+	create(@Body() createSessiontDto: CreateSessiontDto, @UploadedFiles() files?: Express.Multer.File[]) {
+		return this.sessionService.create(createSessiontDto, files)
 	}
 
 	@Get('/byAccompaniment/:id')
 	@HttpCode(200)
-	findAll(@Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Session>> {
-		return this.sessionService.findAll(+id, pageOptionsDto)
+	findAllByAccompaniment(@Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Session>> {
+		return this.sessionService.findAllByAccompaniment(+id, pageOptionsDto)
 	}
 
 	@Get(':id')
@@ -38,8 +42,11 @@ export class SessionController {
 
 	@Patch(':id')
 	@HttpCode(200)
-	update(@Param('id') id: string, @Body() updateSessionDto: UpdateSessionDto) {
-		return this.sessionService.update(+id, updateSessionDto)
+	@UseInterceptors(FileUploadInterceptor('files', 'session-preparation', true))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({ type: UpdateSessionDto })
+	update(@Param('id') id: string, @Body() updateSessionDto: UpdateSessionDto, @UploadedFiles() files?: Express.Multer.File[]) {
+		return this.sessionService.update(+id, updateSessionDto, files)
 	}
 
 	@Delete(':id')

@@ -17,11 +17,8 @@ export class SessionPreparationFile {
   @Column("int", { name: "session_id" })
   sessionId: number;
 
-  @Column("varchar", { name: "file_name", length: 255 })
-  fileName: string;
-
-  @Column("varchar", { name: "file_url", length: 500 })
-  fileUrl: string;
+  @Column("varchar", { name: "file_path", length: 500 })
+  filePath: string;
 
   @Column("timestamp", {
     name: "created_at",
