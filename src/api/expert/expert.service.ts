@@ -12,7 +12,9 @@ import { PageMetaDto } from 'src/dto/page-meta.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateExpertDto } from './dto/create-expert.dto'
 import { UpdateExpertDto } from './dto/update-expert.dto'
+
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
+import { MailService } from 'src/services/mail/mail.service'
 
 import envVars from 'src/config/env'
 
@@ -25,7 +27,8 @@ export class ExpertService {
 		@InjectRepository(User)
 		private readonly userRepository: Repository<User>,
 
-		private readonly fileUploadService: FileUploadService
+		private readonly fileUploadService: FileUploadService,
+		private readonly mailService: MailService
 	) {}
 
 	async create(createExpertDto: CreateExpertDto, file?: Express.Multer.File) {
@@ -95,7 +98,19 @@ export class ExpertService {
 				profile
 			})
 
-			return this.expertRepository.save(expert)
+			const savedExpert = await this.expertRepository.save(expert)
+
+			try {
+				await this.mailService.sendWelcomeEmail({
+					name: firstName,
+					email,
+					password
+				})
+			} catch (error) {
+				console.error('Error sending welcome email:', error)
+			}
+
+			return savedExpert
 		} catch (error) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)

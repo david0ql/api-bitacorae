@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, HttpCode, UseGuards, Query } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, HttpCode, UseGuards, Query, UseInterceptors, UploadedFile } from '@nestjs/common'
 
 import { SessionActivityService } from './session_activity.service'
 import { SessionActivity } from 'src/entities/SessionActivity'
@@ -9,11 +9,12 @@ import { CreateSessionActivityDto } from './dto/create-session_activity.dto'
 import { RespondSessionActivityDto } from './dto/respond-session_activity.dto'
 import { RateSessionActivityDto } from './dto/rate-session_activity.dto'
 
-import { ApiBearerAuth } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
+import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
 
 @Controller('session-activity')
 @ApiBearerAuth()
@@ -23,8 +24,11 @@ export class SessionActivityController {
 
 	@Post()
 	@HttpCode(200)
-	create(@CurrentUser() user: JwtUser, @Body() createSessionActivityDto: CreateSessionActivityDto) {
-		return this.sessionActivityService.create(user, createSessionActivityDto)
+	@UseInterceptors(FileUploadInterceptor('file', 'session-activity'))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({ type: CreateSessionActivityDto })
+	create(@CurrentUser() user: JwtUser, @Body() createSessionActivityDto: CreateSessionActivityDto, @UploadedFile() file?: Express.Multer.File) {
+		return this.sessionActivityService.create(user, createSessionActivityDto, file)
 	}
 
 	@Get('/bySession/:id')
@@ -35,8 +39,11 @@ export class SessionActivityController {
 
 	@Patch(':id/respond')
 	@HttpCode(200)
-	respond(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() respondDto: RespondSessionActivityDto) {
-		return this.sessionActivityService.respond(user, +id, respondDto)
+	@UseInterceptors(FileUploadInterceptor('file', 'session-activity'))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({ type: RespondSessionActivityDto })
+	respond(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() respondDto: RespondSessionActivityDto, @UploadedFile() file?: Express.Multer.File) {
+		return this.sessionActivityService.respond(user, +id, respondDto, file)
 	}
 
 	@Patch(':id/rate')

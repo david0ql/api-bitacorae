@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
+import { Type } from 'class-transformer'
 import { IsNotEmpty, IsString, IsBoolean, IsDateString, IsNumber } from 'class-validator'
 
 export class CreateSessionActivityDto {
@@ -22,6 +23,7 @@ export class CreateSessionActivityDto {
 		description: '¿Requiere entregable?',
 		example: true,
 	})
+	@Type(() => Boolean)
 	@IsBoolean()
 	readonly requiresDeliverable: boolean
 
@@ -36,6 +38,15 @@ export class CreateSessionActivityDto {
 		description: 'ID de la sesión a la que pertenece la actividad',
 		example: 42,
 	})
+	@IsNotEmpty()
+	@Type(() => Number)
 	@IsNumber()
 	readonly sessionId: number
+
+	@ApiProperty({
+		type: 'string',
+		format: 'binary',
+		required: false
+	})
+  	file?: any
 }

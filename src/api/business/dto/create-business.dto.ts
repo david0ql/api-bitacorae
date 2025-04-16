@@ -165,6 +165,7 @@ export class CreateBusinessDto {
 		example: true,
 		required: false
 	})
+	@Type(() => Boolean)
 	@IsBoolean()
 	@IsOptional()
 	readonly hasFoundedBefore: boolean

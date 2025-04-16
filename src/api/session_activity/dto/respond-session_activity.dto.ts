@@ -9,4 +9,11 @@ export class RespondSessionActivityDto {
 	@IsString()
 	@IsNotEmpty()
 	readonly deliverableDescription: string
+
+	@ApiProperty({
+		type: 'string',
+		format: 'binary',
+		required: false
+	})
+  	file?: any
 }

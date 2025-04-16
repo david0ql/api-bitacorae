@@ -1,5 +1,5 @@
 import { In, Repository } from 'typeorm'
-import { BadRequestException, Injectable } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
 import { Post } from 'src/entities/Post'
@@ -11,9 +11,9 @@ import { CreatePostDto } from './dto/create-post.dto'
 import { UpdatePostDto } from './dto/update-post.dto'
 import { PostCategory } from 'src/entities/PostCategory'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
+import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 
 import envVars from 'src/config/env'
-import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 
 @Injectable()
 export class PostService {

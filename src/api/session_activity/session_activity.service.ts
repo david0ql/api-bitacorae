@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm'
+import { DataSource, Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
 
@@ -13,6 +13,9 @@ import { CreateSessionActivityDto } from './dto/create-session_activity.dto'
 import { RespondSessionActivityDto } from './dto/respond-session_activity.dto'
 import { RateSessionActivityDto } from './dto/rate-session_activity.dto'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
+import { FileUploadService } from 'src/services/file-upload/file-upload.service'
+
+import envVars from 'src/config/env'
 
 @Injectable()
 export class SessionActivityService {
@@ -24,67 +27,140 @@ export class SessionActivityService {
 		private readonly sessionActivityResponseRepository: Repository<SessionActivityResponse>,
 
 		@InjectRepository(Session)
-		private readonly sessionRepository: Repository<Session>
+		private readonly sessionRepository: Repository<Session>,
+		
+		private readonly dataSource: DataSource,
+		private readonly fileUploadService: FileUploadService
 	) {}
 
-	async create(user: JwtUser, createSessionActivityDto: CreateSessionActivityDto) {
+	async create(user: JwtUser, createSessionActivityDto: CreateSessionActivityDto, file?: Express.Multer.File) {
 		const { title, description, dueDatetime, requiresDeliverable, sessionId } = createSessionActivityDto
 		const { id } = user
 
+		const fullPath = file ? this.fileUploadService.getFullPath('session-activity', file.filename) : undefined
+
 		const session = await this.sessionRepository.findOne({ where: { id: sessionId } })
 		if (!session) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
 			throw new BadRequestException(`Session with id ${sessionId} not found`)
 		}
 
-		const sessionActivity = this.sessionActivityRepository.create({
-			sessionId,
-			createdByUserId: id,
-			title,
-			description,
-			requiresDeliverable,
-			dueDatetime
-		})
+		try {
+			const sessionActivity = this.sessionActivityRepository.create({
+				sessionId,
+				createdByUserId: id,
+				title,
+				description,
+				requiresDeliverable,
+				dueDatetime,
+				attachmentPath: fullPath
+			})
 
-		return this.sessionActivityRepository.save(sessionActivity)
+			return this.sessionActivityRepository.save(sessionActivity)
+		} catch (error) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			throw error
+		}
 	}
 
 	async findAll(sessionId: number, pageOptionsDto: PageOptionsDto): Promise<PageDto<SessionActivity>> {
-		const queryBuilder = this.sessionActivityRepository.createQueryBuilder('activity')
-			.leftJoinAndSelect('activity.sessionActivityResponses', 'response')
-			.where('activity.sessionId = :sessionId', { sessionId })
-			.orderBy('activity.createdAt', pageOptionsDto.order)
-			.skip(pageOptionsDto.skip)
-			.take(pageOptionsDto.take)
+		const { take, skip, order } = pageOptionsDto
 
-		const [items, totalCount] = await queryBuilder.getManyAndCount()
+		const sql = `
+			SELECT
+				a.id AS id,
+				a.session_id AS sessionId,
+				a.created_by_user_id AS createdByUserId,
+				a.title AS title,
+				a.description AS description,
+				a.requires_deliverable AS requiresDeliverable,
+				a.due_datetime AS dueDatetime,
+				CONCAT(?, '/', a.attachment_path) AS fileUrl,
+				a.created_at AS createdAt,
+				CONCAT('[', GROUP_CONCAT(JSON_OBJECT(
+					'id', r.id,
+					'sessionActivityId', r.session_activity_id,
+					'respondedByUserId', r.responded_by_user_id,
+					'deliverableFilePath', CONCAT(?, '/', r.deliverable_file_path),
+					'respondedDatetime', r.responded_datetime,
+					'grade', r.grade,
+					'gradedDatetime', r.graded_datetime
+				)),
+				']') AS responses
+			FROM
+				session_activity a
+				LEFT JOIN session_activity_response r ON a.id = r.session_activity_id
+			WHERE a.session_id = ?
+			GROUP BY a.id
+			ORDER BY a.created_at ${order}
+			LIMIT ${take} OFFSET ${skip}
+		`
 
+		const countSql = `SELECT COUNT(DISTINCT a.id) as total FROM session_activity a WHERE a.session_id = ?`
+
+		const [rawItems, countResult] = await Promise.all([
+			this.dataSource.query(sql, [envVars.APP_URL, envVars.APP_URL, sessionId]),
+			this.dataSource.query(countSql, [sessionId])
+		])
+
+		const items = rawItems.map(item => {
+			const responses = item.responses ? JSON.parse(item.responses) : []
+			return { ...item, responses }
+		})
+
+		const totalCount = Number(countResult[0]?.total) ?? 0
 		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
+
 		return new PageDto(items, pageMetaDto)
 	}
 
-	async respond(user: JwtUser, id: number, respondSessionActivityDto: RespondSessionActivityDto) {
-		if(!id) return { affected: 0 }
+	async respond(user: JwtUser, id: number, respondSessionActivityDto: RespondSessionActivityDto, file?: Express.Multer.File) {
+		const fullPath = file ? this.fileUploadService.getFullPath('session-activity', file.filename) : undefined
+		if(!id) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			return { affected: 0 }
+		}
 
 		const { deliverableDescription } = respondSessionActivityDto
 		const { id: userId } = user
 
 		const sessionActivity = await this.sessionActivityRepository.findOne({ where: { id } })
 		if (!sessionActivity) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
 			throw new BadRequestException(`Session activity with id ${id} not found`)
 		}
 
 		const existingResponse = await this.sessionActivityResponseRepository.findOne({ where: { sessionActivityId: id } })
 		if (existingResponse) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
 			throw new BadRequestException(`Session activity with id ${id} already responded`)
 		}
 
-		const sessionActivityResponse = this.sessionActivityResponseRepository.create({
-			sessionActivityId: id,
-			respondedByUserId: userId,
-			deliverableDescription
-		})
+		try {
+			const sessionActivityResponse = this.sessionActivityResponseRepository.create({
+				sessionActivityId: id,
+				respondedByUserId: userId,
+				deliverableDescription,
+				deliverableFilePath: fullPath
+			})
 
-		return this.sessionActivityResponseRepository.save(sessionActivityResponse)
+			return this.sessionActivityResponseRepository.save(sessionActivityResponse)
+		} catch (error) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			throw error
+		}
 	}
 
 	async rate(id: number, rateSessionActivityDto: RateSessionActivityDto) {
