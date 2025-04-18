@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsString } from "class-validator";
+import { IsBoolean, IsNotEmpty, IsString } from "class-validator";
 
 export class ApprovedSessiontDto {
 	@ApiProperty({
@@ -9,4 +9,12 @@ export class ApprovedSessiontDto {
 	@IsNotEmpty()
 	@IsString()
 	readonly signature: string;
+
+	@ApiProperty({
+		description: 'Status of the session',
+		example: true
+	})
+	@IsNotEmpty()
+	@IsBoolean()
+	readonly status: boolean;
 }
