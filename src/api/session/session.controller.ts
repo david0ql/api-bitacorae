@@ -58,11 +58,8 @@ export class SessionController {
 
 	@Patch('/approved/:id')
 	@HttpCode(200)
-	@UseInterceptors(FileUploadInterceptor('file', 'approved-session'))
-	@ApiConsumes('multipart/form-data')
-	@ApiBody({ type: ApprovedSessiontDto })
-	approved(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
-		return this.sessionService.approved(+id, file)
+	approved(@Param('id') id: string, @Body() approvedSessiontDto: ApprovedSessiontDto) {
+		return this.sessionService.approved(+id, approvedSessiontDto)
 	}
 
 	@Delete(':id')

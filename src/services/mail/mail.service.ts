@@ -128,7 +128,7 @@ export class MailService {
 		})
 	}
 
-	async sendApprovedSessionEmailContext(context: ApprovedSessionEmailContext, file: Express.Multer.File) {
+	async sendApprovedSessionEmailContext(context: ApprovedSessionEmailContext, /* file: Express.Multer.File */) {
 		const subject = 'Sesión aprobada'
 		const { to, bussinesName } = context
 
@@ -141,10 +141,10 @@ export class MailService {
 				title: subject,
 				bussinesName
 			},
-			attachments: [{
-				filename: file.originalname,
-				path: file.path
-			}]
+			// attachments: [{
+			// 	filename: file.originalname,
+			// 	path: file.path
+			// }]
 		})
 	}
 }

@@ -11,6 +11,7 @@ import { PageMetaDto } from 'src/dto/page-meta.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateSessiontDto } from './dto/create-session.dto'
 import { UpdateSessionDto } from './dto/update-session.dto'
+import { ApprovedSessiontDto } from './dto/approved-session.dto'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 import { MailService } from 'src/services/mail/mail.service'
 
@@ -284,27 +285,24 @@ export class SessionService {
 		return updatedSession
 	}
 
-	async approved(id: number, file: Express.Multer.File) {
-		const fullPath = this.fileUploadService.getFullPath('approved-session', file.filename)
+	async approved(id: number, approvedSessiontDto: ApprovedSessiontDto) {
+		const { signature } = approvedSessiontDto
 
 		const session = await this.sessionRepository.findOne({
 			where: { id },
 			relations: ['accompaniment', 'accompaniment.business.user']
 		})
 		if (!session) {
-			this.fileUploadService.deleteFile(fullPath)
 			throw new BadRequestException(`Session with id ${id} not found`)
 		}
 
 		if(session.statusId !== 2) {
-			this.fileUploadService.deleteFile(fullPath)
 			throw new BadRequestException('Session is not in public status')
 		}
 
-		const updatedSession = await this.sessionRepository.update(id, { statusId: 3, filePathApproved: fullPath })
+		const updatedSession = await this.sessionRepository.update(id, { statusId: 3 })
 
 		if (!updatedSession) {
-			this.fileUploadService.deleteFile(fullPath)
 			throw new BadRequestException(`Failed to update session with id ${id}`)
 		}
 
@@ -314,7 +312,7 @@ export class SessionService {
 			this.mailService.sendApprovedSessionEmailContext({
 				to: bussinesEmail,
 				bussinesName
-			}, file)
+			}, /* file */)
 		} catch (error) {
 			console.error('Error sending approved session email:', error)
 		}

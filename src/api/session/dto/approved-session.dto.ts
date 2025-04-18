@@ -1,10 +1,12 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { IsNotEmpty, IsString } from "class-validator";
 
 export class ApprovedSessiontDto {
 	@ApiProperty({
-		type: 'string',
-		format: 'binary',
-		required: true
+		description: 'Signature of the user',
+		example: 'John Doe'
 	})
-  	file: any
+	@IsNotEmpty()
+	@IsString()
+	readonly signature: string;
 }
