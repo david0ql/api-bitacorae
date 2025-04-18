@@ -124,7 +124,7 @@ export class BusinessService {
 			const savedBusiness = await this.businessRepository.save(business)
 
 			try {
-				await this.mailService.sendWelcomeEmail({
+				this.mailService.sendWelcomeEmail({
 					name: socialReason,
 					email,
 					password

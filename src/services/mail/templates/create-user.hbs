@@ -2,49 +2,49 @@
 <html lang="es">
 	<head>
 		<meta charset="UTF-8" />
-		<link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet" />
 		<title>{{title}}</title>
 	</head>
 	<body style="margin: 0; padding: 0; font-family: Montserrat, sans-serif; background-color: #f4f4f4;">
 		<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f4f4">
 			<tr>
 				<td align="center">
-				<table width="600" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="margin: 20px 0; border-radius: 8px; overflow: hidden;">
-					{{> header}}
+					<table width="600" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="margin: 20px 0; border-radius: 8px; overflow: hidden;">
+						{{> header}}
 
-					<tr>
-						<td style="padding: 30px 40px 20px; text-align: center;">
-							<h2 style="color: #007BDB;">Hola {{name}}</h2>
-							<h3 style="color: #333;">¡Te damos la bienvenida!</h3>
-							<p style="color: #555; font-size: 16px; line-height: 1.5;">
-							Ahora podrás disfrutar de todos los beneficios de <strong>{{companyName}}</strong>, tu plataforma online que te permitirá
-							monitorear el avance de tu acompañamiento en el programa Consultorio Empresarial de Colsubsidio operado por BICTIA.
-							</p>
-						</td>
-					</tr>
+						<tr>
+							<td align="center" style="padding: 30px 40px 20px;">
+								<h2 style="color: #007BDB;">Hola {{name}}</h2>
+								<h3 style="color: #333;">¡Te damos la bienvenida!</h3>
+								<p style="color: #555; font-size: 16px; line-height: 1.5;">
+								Ahora podrás disfrutar de todos los beneficios de <strong>{{companyName}}</strong>, tu plataforma online que te permitirá
+								monitorear el avance de tu acompañamiento en el programa Consultorio Empresarial de Colsubsidio operado por BICTIA.
+								</p>
+							</td>
+						</tr>
 
-					<tr>
-					<td style="padding: 0 40px 20px;">
-						<p style="color: #555; font-size: 16px; line-height: 1.5;">
-							Te recordamos que, para acceder a nuestros canales, puedes hacerlo con:
-						</p>
-						<ul style="color: #333; font-size: 16px; padding-left: 20px;">
-							<li><strong>Correo electrónico:</strong> <a href="mailto:{{email}}" style="color: #007BDB;">{{email}}</a></li>
-							<li><strong>Contraseña:</strong> {{password}}</li>
-						</ul>
-					</td>
-					</tr>
+						<tr>
+							<td style="padding: 0 40px 20px;">
+								<p style="color: #555; font-size: 16px; line-height: 1.5;">
+									Te recordamos que, para acceder a nuestros canales, puedes hacerlo con:
+								</p>
+								<ul style="color: #333; font-size: 16px; padding-left: 20px;">
+									<li><strong>Correo electrónico:</strong> <a href="mailto:{{email}}" style="color: #007BDB;">{{email}}</a></li>
+									<li><strong>Contraseña:</strong> {{password}}</li>
+								</ul>
+							</td>
+						</tr>
 
-					<tr>
-						<td align="center" style="padding: 10px 40px 30px;">
-							<a href="{{url}}" style="background-color: #007BDB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-size: 16px;">
-								Ingresa aquí
-							</a>
-						</td>
-					</tr>
+						<tr>
+							<td align="center" style="padding: 10px 40px 30px;">
+								<a href="{{appUrl}}" style="background-color: #007BDB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-size: 16px;">
+									Ingresa aquí
+								</a>
+							</td>
+						</tr>
 
-					{{> footer}}
-				</table>
+						{{> footer}}
+					</table>
 				</td>
 			</tr>
 		</table>

@@ -4,8 +4,13 @@ import * as fs from 'fs'
 import * as path from 'path'
 import Handlebars from 'handlebars'
 
-import envVars from 'src/config/env'
 import { WelcomeEmailContext } from './interfaces/welcome-email-context.interface'
+import { NewSessionEmailContext } from './interfaces/new-session-email-context.interface'
+import { NewSessionActivityEmailContext } from './interfaces/new-session-activity-email-context.interface'
+import { EndedSessionEmailContext } from './interfaces/ended-session-email-context.interface'
+import { ApprovedSessionEmailContext } from './interfaces/approved-session-email-context.inteface'
+
+import envVars from 'src/config/env'
 
 @Injectable()
 export class MailService {
@@ -34,6 +39,7 @@ export class MailService {
 	async sendWelcomeEmail(context: WelcomeEmailContext) {
 		const subject = 'Bienvenido a Bitácora-e'
 		const { name, email, password } = context
+		const url = 'https://google.com'
 
 		await this.mailerService.sendMail({
 			to: email,
@@ -45,8 +51,100 @@ export class MailService {
 				name,
 				email,
 				password,
-				url: 'https://google.com'
+				url
 			}
+		})
+	}
+
+	async sendNewSessionEmail(context: NewSessionEmailContext, files?: Express.Multer.File[]) {
+		const subject = 'Nueva sesión creada'
+		const { to, bussinesName, expertName, sessionDate, sessionTime, preparationNotes } = context
+		const url = 'https://meet.google.com/example'
+
+		await this.mailerService.sendMail({
+			to,
+			subject,
+			template: 'create-session',
+			context: {
+				...this.varCommons,
+				title: subject,
+				bussinesName,
+				expertName,
+				sessionDate,
+				sessionTime,
+				preparationNotes,
+				url
+			},
+			attachments: files?.map((file) => ({
+				filename: file.originalname,
+				path: file.path,
+			})) ?? []
+		})
+	}
+
+	async sendNewSessionActivityEmail(context: NewSessionActivityEmailContext, file?: Express.Multer.File) {
+		const subject = 'Nueva actividad de sesión creada'
+		const { to, bussinesName, expertName, sessionDate, sessionTime } = context
+		const url = 'https://google.com'
+
+		await this.mailerService.sendMail({
+			to,
+			subject,
+			template: 'create-session-activity',
+			context: {
+				...this.varCommons,
+				title: subject,
+				bussinesName,
+				expertName,
+				sessionDate,
+				sessionTime,
+				url
+			},
+			attachments: file ? [{
+				filename: file.originalname,
+				path: file.path
+			}] : []
+		})
+	}
+
+	async sendEndedSessionEmail(context: EndedSessionEmailContext) {
+		const subject = 'Sesión finalizada'
+		const { to, bussinesName, expertName, sessionDate, sessionTime } = context
+		const url = 'https://google.com'
+
+		await this.mailerService.sendMail({
+			to,
+			subject,
+			template: 'ended-session',
+			context: {
+				...this.varCommons,
+				title: subject,
+				bussinesName,
+				expertName,
+				sessionDate,
+				sessionTime,
+				url
+			}
+		})
+	}
+
+	async sendApprovedSessionEmailContext(context: ApprovedSessionEmailContext, file: Express.Multer.File) {
+		const subject = 'Sesión aprobada'
+		const { to, bussinesName } = context
+
+		await this.mailerService.sendMail({
+			to,
+			subject,
+			template: 'approved-session',
+			context: {
+				...this.varCommons,
+				title: subject,
+				bussinesName
+			},
+			attachments: [{
+				filename: file.originalname,
+				path: file.path
+			}]
 		})
 	}
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards, UseInterceptors, UploadedFiles } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards, UseInterceptors, UploadedFiles, UploadedFile } from '@nestjs/common'
 
 import { SessionService } from './session.service'
 import { Session } from 'src/entities/Session'
@@ -7,6 +7,7 @@ import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateSessiontDto } from './dto/create-session.dto'
 import { UpdateSessionDto } from './dto/update-session.dto'
+import { ApprovedSessiontDto } from './dto/approved-session.dto'
 
 import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
@@ -47,6 +48,21 @@ export class SessionController {
 	@ApiBody({ type: UpdateSessionDto })
 	update(@Param('id') id: string, @Body() updateSessionDto: UpdateSessionDto, @UploadedFiles() files?: Express.Multer.File[]) {
 		return this.sessionService.update(+id, updateSessionDto, files)
+	}
+
+	@Patch('/public/:id')
+	@HttpCode(200)
+	public(@Param('id') id: string) {
+		return this.sessionService.public(+id)
+	}
+
+	@Patch('/approved/:id')
+	@HttpCode(200)
+	@UseInterceptors(FileUploadInterceptor('file', 'approved-session'))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({ type: ApprovedSessiontDto })
+	approved(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+		return this.sessionService.approved(+id, file)
 	}
 
 	@Delete(':id')

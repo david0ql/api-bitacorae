@@ -12,6 +12,7 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateSessiontDto } from './dto/create-session.dto'
 import { UpdateSessionDto } from './dto/update-session.dto'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
+import { MailService } from 'src/services/mail/mail.service'
 
 import envVars from 'src/config/env'
 
@@ -28,7 +29,8 @@ export class SessionService {
 		private readonly sessionPreparationFileRepository: Repository<SessionPreparationFile>,
 
 		private readonly dataSource: DataSource,
-		private readonly fileUploadService: FileUploadService
+		private readonly fileUploadService: FileUploadService,
+		private readonly mailService: MailService
 	) {}
 
 	async create(createSessiontDto: CreateSessiontDto, files?: Express.Multer.File[]) {
@@ -45,7 +47,10 @@ export class SessionService {
 			return this.fileUploadService.getFullPath('session-preparation', file.filename)
 		}) : []
 
-		const accompaniment = await this.accompanimentRepository.findOne({ where: { id: accompanimentId } })
+		const accompaniment = await this.accompanimentRepository.findOne({
+			where: { id: accompanimentId },
+			relations: ['business', 'expert', 'business.user', 'expert.user']
+		})
 		if (!accompaniment) {
 			preparationFiles.forEach(fullPath => {
 				this.fileUploadService.deleteFile(fullPath)
@@ -74,6 +79,26 @@ export class SessionService {
 			})
 
 			await this.sessionPreparationFileRepository.save(sessionPreparationFiles)
+
+			try {
+				const date = new Date(startDatetime)
+				const sessionDate = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: '2-digit' })
+				const sessionTime = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true })
+
+				const { email: bussinesEmail, name: bussinesName } = accompaniment.business?.user || { email: '', name: '' }
+				const expertName = accompaniment.expert?.user?.name || ''
+
+				this.mailService.sendNewSessionEmail({
+					to: bussinesEmail,
+					bussinesName,
+					expertName,
+					sessionDate,
+					sessionTime,
+					preparationNotes
+				}, files)
+			} catch (error) {
+				console.error('Error sending new session email:', error)
+			}
 
 			return savedSession
 		} catch (error) {
@@ -218,6 +243,83 @@ export class SessionService {
 			})
 			throw error
 		}
+	}
+
+	async public(id: number) {
+		const session = await this.sessionRepository.findOne({
+			where: { id },
+			relations: ['accompaniment', 'accompaniment.business.user', 'accompaniment.expert.user']
+		})
+		if (!session) {
+			throw new BadRequestException(`Session with id ${id} not found`)
+		}
+
+		if (session.statusId !== 1) {
+			throw new BadRequestException('Session is not in created status')
+		}
+
+		const updatedSession = await this.sessionRepository.update(id, { statusId: 2 })
+		if (!updatedSession) {
+			throw new BadRequestException(`Failed to update session with id ${id}`)
+		}
+
+		try {
+			const date = new Date(session.startDatetime)
+			const sessionDate = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: '2-digit' })
+			const sessionTime = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true })
+
+			const { email: bussinesEmail, name: bussinesName } = session.accompaniment?.business?.user || { email: '', name: '' }
+			const expertName = session.accompaniment?.expert?.user?.name || ''
+
+			this.mailService.sendEndedSessionEmail({
+				to: bussinesEmail,
+				bussinesName,
+				expertName,
+				sessionDate,
+				sessionTime
+			})
+		} catch (error) {
+			console.error('Error sending ended session email:', error)
+		}
+		return updatedSession
+	}
+
+	async approved(id: number, file: Express.Multer.File) {
+		const fullPath = this.fileUploadService.getFullPath('approved-session', file.filename)
+
+		const session = await this.sessionRepository.findOne({
+			where: { id },
+			relations: ['accompaniment', 'accompaniment.business.user']
+		})
+		if (!session) {
+			this.fileUploadService.deleteFile(fullPath)
+			throw new BadRequestException(`Session with id ${id} not found`)
+		}
+
+		if(session.statusId !== 2) {
+			this.fileUploadService.deleteFile(fullPath)
+			throw new BadRequestException('Session is not in public status')
+		}
+
+		const updatedSession = await this.sessionRepository.update(id, { statusId: 3, filePathApproved: fullPath })
+
+		if (!updatedSession) {
+			this.fileUploadService.deleteFile(fullPath)
+			throw new BadRequestException(`Failed to update session with id ${id}`)
+		}
+
+		try {
+			const { email: bussinesEmail, name: bussinesName } = session.accompaniment?.business?.user || { email: '', name: '' }
+
+			this.mailService.sendApprovedSessionEmailContext({
+				to: bussinesEmail,
+				bussinesName
+			}, file)
+		} catch (error) {
+			console.error('Error sending approved session email:', error)
+		}
+
+		return updatedSession
 	}
 
 	async remove(id: number) {

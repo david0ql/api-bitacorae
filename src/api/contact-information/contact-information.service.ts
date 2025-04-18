@@ -3,6 +3,7 @@ import { Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 
 import { ContactInformation } from 'src/entities/ContactInformation'
+import { Business } from 'src/entities/Business'
 import { CreateContactInformationDto } from './dto/create-contact-information.dto'
 import { UpdateContactInformationDto } from './dto/update-contact-information.dto'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
@@ -14,6 +15,9 @@ export class ContactInformationService {
 	constructor(
 		@InjectRepository(ContactInformation)
 		private readonly contactInformationRepository: Repository<ContactInformation>,
+
+		@InjectRepository(Business)
+		private readonly businessRepository: Repository<Business>,
 
 		private readonly fileUploadService: FileUploadService
 	) {}
@@ -40,6 +44,14 @@ export class ContactInformationService {
 		} = createContactInformationDto
 
 		const fullPath = file ? this.fileUploadService.getFullPath('contact-information', file.filename) : undefined
+
+		const business = this.businessRepository.findOne({ where: { id: businessId } })
+		if (!business) {
+			if (fullPath) {
+				this.fileUploadService.deleteFile(fullPath)
+			}
+			throw new Error(`Business with id ${businessId} not found`)
+		}
 
 		try {
 			const contactInformation = this.contactInformationRepository.create({

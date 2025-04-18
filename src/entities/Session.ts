@@ -49,6 +49,20 @@ export class Session {
   @Column("int", { name: "status_id", default: () => "'1'" })
   statusId: number;
 
+  @Column("varchar", {
+    name: "file_path_unapproved",
+    nullable: true,
+    length: 500,
+  })
+  filePathUnapproved: string | null;
+
+  @Column("varchar", {
+    name: "file_path_approved",
+    nullable: true,
+    length: 500,
+  })
+  filePathApproved: string | null;
+
   @Column("timestamp", {
     name: "created_at",
     default: () => "CURRENT_TIMESTAMP",

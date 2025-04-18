@@ -16,6 +16,7 @@ import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 
 import envVars from 'src/config/env'
+import { MailService } from 'src/services/mail/mail.service'
 
 @Injectable()
 export class SessionActivityService {
@@ -28,9 +29,10 @@ export class SessionActivityService {
 
 		@InjectRepository(Session)
 		private readonly sessionRepository: Repository<Session>,
-		
+
 		private readonly dataSource: DataSource,
-		private readonly fileUploadService: FileUploadService
+		private readonly fileUploadService: FileUploadService,
+		private readonly mailService: MailService
 	) {}
 
 	async create(user: JwtUser, createSessionActivityDto: CreateSessionActivityDto, file?: Express.Multer.File) {
@@ -39,7 +41,10 @@ export class SessionActivityService {
 
 		const fullPath = file ? this.fileUploadService.getFullPath('session-activity', file.filename) : undefined
 
-		const session = await this.sessionRepository.findOne({ where: { id: sessionId } })
+		const session = await this.sessionRepository.findOne({
+			where: { id: sessionId },
+			relations: ['accompaniment', 'accompaniment.business.user', 'accompaniment.expert.user']
+		})
 		if (!session) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
@@ -58,7 +63,28 @@ export class SessionActivityService {
 				attachmentPath: fullPath
 			})
 
-			return this.sessionActivityRepository.save(sessionActivity)
+			const savedSessionActivity = await this.sessionActivityRepository.save(sessionActivity)
+
+			try {
+				const date = new Date(session.startDatetime)
+				const sessionDate = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: '2-digit' })
+				const sessionTime = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true })
+
+				const { email: bussinesEmail, name: bussinesName } = session.accompaniment?.business?.user || { email: '', name: '' }
+				const expertName = session.accompaniment?.expert?.user?.name || ''
+
+				this.mailService.sendNewSessionActivityEmail({
+					to: bussinesEmail,
+					bussinesName,
+					expertName,
+					sessionDate,
+					sessionTime,
+				}, file)
+			} catch (error) {
+				console.error('Error sending new session activity email:', error)
+			}
+
+			return savedSessionActivity
 		} catch (error) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)

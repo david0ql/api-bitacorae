@@ -101,7 +101,7 @@ export class ExpertService {
 			const savedExpert = await this.expertRepository.save(expert)
 
 			try {
-				await this.mailService.sendWelcomeEmail({
+				this.mailService.sendWelcomeEmail({
 					name: firstName,
 					email,
 					password
