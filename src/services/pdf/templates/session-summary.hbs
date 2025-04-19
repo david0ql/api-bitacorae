@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				font-size: 14px;
+				line-height: normal;
+				margin: 0;
+			}
+
+			h1, h2, h3 {
+				text-align: center;
+				padding: 0;
+				margin: 0;
+			}
+
+			h3 {
+				margin-bottom: 20px;
+			}
+
+			.section {
+				padding-block: 20px;
+				border-bottom: 1px solid #ccc;
+			}
+
+			.label {
+				font-weight: bold;
+			}
+
+			.field {
+				margin-bottom: 6px;
+			}
+
+			.signature {
+				margin-top: 60px;
+			}
+
+			.signature p {
+				margin: 0 0 4px 0;
+			}
+
+			ul {
+				padding-left: 20px;
+				margin: 4px 0;
+			}
+
+			li {
+				margin-bottom: 4px;
+			}
+		</style>
+	</head>
+	<body>
+		<img src="http://localhost:3001/assets/email/logo_bictoria.jpg" alt="Logo Bictoria" style="max-width: 200px; display: block; margin: 20px auto"/>
+		<h1>ACTA DE SESIÓN DE ACOMPAÑAMIENTO</h1>
+		<h2 style="text-align: center">
+			Consultorio Empresarial de Colsubsidio operado por BICTIA
+		</h2>
+
+		<div class="section">
+			<h3 style="text-align: center"><strong>{{stitle}}</strong></h3>
+		</div>
+
+		<div class="section">
+			<h3>Datos de la Empresa</h3>
+			<div class="field"><span class="label">Razón social:</span> {{bSocialReason}}</div>
+			<div class="field"><span class="label">Teléfono:</span> {{bPhone}}</div>
+			<div class="field"><span class="label">Correo electrónico:</span> {{bEmail}}</div>
+			<div class="field"><span class="label">Sectores económicos:</span> {{bEconomicActivity}}</div>
+			<div class="field"><span class="label">Tamaño:</span> {{bBusinessSize}}</div>
+			<div class="field"><span class="label">Facebook:</span> {{bFacebook}}</div>
+			<div class="field"><span class="label">Instagram:</span> {{bInstagram}}</div>
+			<div class="field"><span class="label">Twitter / X:</span> {{bTwitter}}</div>
+			<div class="field"><span class="label">Sitio web:</span> {{bWebsite}}</div>
+		</div>
+
+		<div class="section">
+			<h3>Datos de Acompañamiento</h3>
+			<div class="field"><span class="label">Áreas de fortalecimiento:</span> {{aStrengtheningArea}}</div>
+			<div class="field"><span class="label">Horas asignadas:</span> {{aTotalHours}}</div>
+			<div class="field"><span class="label">Horas ejecutadas en la sesión:</span> {{aRegisteredHours}}</div>
+		</div>
+
+		<div class="section">
+			<h3>Datos del Experto Senior</h3>
+			<div class="field"><span class="label">Nombre:</span> {{eName}}</div>
+			<div class="field"><span class="label">Correo electrónico:</span> {{eEmail}}</div>
+			<div class="field"><span class="label">Teléfono:</span> {{ePhone}}</div>
+			<div class="field"><span class="label">Perfil:</span> {{eProfile}}</div>
+			<div class="field"><span class="label">Áreas de experiencia:</span> {{eStrengtheningArea}}</div>
+			<div class="field"><span class="label">Nivel de educación:</span> {{eEducationLevel}}</div>
+			<div class="field"><span class="label">Total de horas asignadas:</span> {{aTotalHours}}</div>
+		</div>
+
+		<div class="section">
+			<h3>Datos de la Sesión</h3>
+			<div class="field"><span class="label">Notas de preparación:</span> {{sPreparationNotes}}</div>
+			<div class="field"><span class="label">Archivos preparatorios:</span>
+				{{#if sPreparationFiles.length}}
+					<ul>
+						{{#each sPreparationFiles}}
+						<li><a href="{{this.filePath}}">{{this.name}}</a></li>
+						{{/each}}
+					</ul>
+				{{else}}
+					<span>No se adjuntaron archivos.</span>
+				{{/if}}
+			</div>
+			<div class="field"><span class="label">Notas:</span> {{sSessionNotes}}</div>
+			<div class="field"><span class="label">Conclusiones y/o compromisos:</span> {{sConclusionsCommitments}}</div>
+			<div class="field"><span class="label">Archivos adjuntos:</span>
+				{{#if sAttachments.length}}
+					<ul>
+						{{#each sAttachments}}
+						<li><a href="{{this.filePath}}">{{this.name}}</a></li>
+						{{/each}}
+					</ul>
+				{{else}}
+					<span>No se adjuntaron archivos.</span>
+				{{/if}}
+			</div>
+		</div>
+
+		<div class="signature">
+			<p><strong>Firma:</strong> ________________________________</p>
+			<p><strong>Fecha de firma:</strong></p>
+			<p><strong>Estado del acta:</strong> {{state}}</p>
+			<p><strong>Fecha de generación del acta:</strong> {{sDate}}</p>
+		</div>
+	</body>
+</html>

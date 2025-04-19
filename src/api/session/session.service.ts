@@ -3,8 +3,9 @@ import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
 import { Session } from 'src/entities/Session'
-import { SessionPreparationFile } from 'src/entities/SessionPreparationFile'
 import { Accompaniment } from 'src/entities/Accompaniment'
+import { SessionPreparationFile } from 'src/entities/SessionPreparationFile'
+import { SessionAttachment } from 'src/entities/SessionAttachment'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -14,6 +15,7 @@ import { UpdateSessionDto } from './dto/update-session.dto'
 import { ApprovedSessiontDto } from './dto/approved-session.dto'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 import { MailService } from 'src/services/mail/mail.service'
+import { PdfService } from 'src/services/pdf/pdf.service'
 
 import envVars from 'src/config/env'
 
@@ -29,9 +31,13 @@ export class SessionService {
 		@InjectRepository(SessionPreparationFile)
 		private readonly sessionPreparationFileRepository: Repository<SessionPreparationFile>,
 
+		@InjectRepository(SessionAttachment)
+		private readonly sessionAttachmentRepository: Repository<SessionAttachment>,
+
 		private readonly dataSource: DataSource,
 		private readonly fileUploadService: FileUploadService,
-		private readonly mailService: MailService
+		private readonly mailService: MailService,
+		private readonly pdfService: PdfService
 	) {}
 
 	async create(createSessiontDto: CreateSessiontDto, files?: Express.Multer.File[]) {
@@ -170,6 +176,8 @@ export class SessionService {
 				'session.preparationNotes AS preparationNotes',
 				'session.sessionNotes AS sessionNotes',
 				'session.conclusionsCommitments AS conclusionsCommitments',
+				'CONCAT(:appUrl, "/", session.file_path_unapproved) AS filePathUnapproved',
+				'CONCAT(:appUrl, "/", session.file_path_approved) AS filePathApproved',
 				'status.id AS statusId',
 				`GROUP_CONCAT(CONCAT(:appUrl, "/", spf.file_path) SEPARATOR '||') AS preparationFiles`
 			])
@@ -249,7 +257,17 @@ export class SessionService {
 	async public(id: number) {
 		const session = await this.sessionRepository.findOne({
 			where: { id },
-			relations: ['accompaniment', 'accompaniment.business.user', 'accompaniment.expert.user']
+			relations: [
+				'status',
+				'accompaniment',
+				'accompaniment.strengtheningArea',
+				'accompaniment.business.user',
+				'accompaniment.business.economicActivity',
+				'accompaniment.business.businessSize',
+				'accompaniment.expert.user',
+				'accompaniment.expert.strengtheningArea',
+				'accompaniment.expert.educationLevel',
+			]
 		})
 		if (!session) {
 			throw new BadRequestException(`Session with id ${id} not found`)
@@ -259,7 +277,60 @@ export class SessionService {
 			throw new BadRequestException('Session is not in created status')
 		}
 
-		const updatedSession = await this.sessionRepository.update(id, { statusId: 2 })
+		//* Generate PDF
+		const startDate = new Date(session.startDatetime)
+		const endDate = new Date(session.endDatetime)
+		const diffInHours = Math.floor(Math.abs(endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60))
+
+		let preparationFilesData = await this.sessionPreparationFileRepository.find({ where: { sessionId: id } })
+		const preparationFiles = preparationFilesData.map((file, index) => {
+			return {
+				name: 'Archivo ' + (index + 1),
+				filePath: envVars.APP_URL + '/' + file.filePath
+			}
+		})
+
+		const attachmentsData = await this.sessionAttachmentRepository.find({ where: { sessionId: id } })
+		const attachments = attachmentsData.map(file => {
+			return {
+				name: file.name,
+				filePath: file.externalPath ? file.externalPath : envVars.APP_URL + '/' + file.filePath
+			}
+		})
+
+		const date = new Date()
+		const generatedDate = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: '2-digit' }) + ' a las ' + date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true })
+
+		const file = await this.pdfService.generateSessionPdf({
+			bSocialReason: session.accompaniment?.business?.socialReason || 'No registra.',
+			bPhone: session.accompaniment?.business?.phone || 'No registra.',
+			bEmail: session.accompaniment?.business?.email || 'No registra.',
+			bEconomicActivity: session.accompaniment?.business?.economicActivity?.name || 'No registra.',
+			bBusinessSize: session.accompaniment?.business?.businessSize?.name || 'No registra.',
+			bFacebook: session.accompaniment?.business?.facebook || 'No registra.',
+			bInstagram: session.accompaniment?.business?.instagram || 'No registra.',
+			bTwitter: session.accompaniment?.business?.twitter || 'No registra.',
+			bWebsite: session.accompaniment?.business?.website || 'No registra.',
+			aStrengtheningArea: session.accompaniment?.strengtheningArea?.name || 'No registra.',
+			aTotalHours: session.accompaniment?.totalHours || 'No registra.',
+			aRegisteredHours: diffInHours || 'No registra.',
+			eName: session.accompaniment?.expert ? session.accompaniment.expert.firstName + session.accompaniment.expert.lastName : 'No registra.',
+			eEmail: session.accompaniment?.expert?.user?.email || 'No registra.',
+			ePhone: session.accompaniment?.expert?.phone || 'No registra.',
+			eProfile: session.accompaniment?.expert?.profile || 'No registra.',
+			eStrengtheningArea: session.accompaniment?.expert?.strengtheningArea?.name || 'No registra.',
+			eEducationLevel: session.accompaniment?.expert?.educationLevel?.name || 'No registra.',
+			stitle: session.title || 'No registra.',
+			sPreparationNotes: session.preparationNotes || 'No registra.',
+			sPreparationFiles: preparationFiles,
+			sSessionNotes: session.sessionNotes || 'No registra.',
+			sConclusionsCommitments: session.conclusionsCommitments || 'No registra.',
+			sAttachments: attachments,
+			state: 'Publicada',
+			sDate: generatedDate
+		})
+
+		const updatedSession = await this.sessionRepository.update(id, { statusId: 2, filePathUnapproved: file.filePath })
 		if (!updatedSession) {
 			throw new BadRequestException(`Failed to update session with id ${id}`)
 		}
@@ -282,6 +353,7 @@ export class SessionService {
 		} catch (error) {
 			console.error('Error sending ended session email:', error)
 		}
+
 		return updatedSession
 	}
 

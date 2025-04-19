@@ -78,6 +78,10 @@ import envVars from './config/env'
 			rootPath: join(__dirname, '..', 'assets'),
 			serveRoot: '/assets'
 		}),
+		ServeStaticModule.forRoot({
+			rootPath: join(__dirname, '..', 'generated'),
+			serveRoot: '/generated'
+		}),
 		TypeOrmModule.forRoot({
 			type: 'mysql',
 			host: envVars.DB_HOST,
