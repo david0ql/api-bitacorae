@@ -3,19 +3,24 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as Handlebars from 'handlebars'
 import * as puppeteer from 'puppeteer'
-import { PDFDocument, rgb } from 'pdf-lib'
 import { v4 as uuidv4 } from 'uuid'
 
 import { GenerateSessionPdfData } from './interfaces/generate-session-pdf.interface'
+import { FileInfo } from './interfaces/file-info.interface'
 
 @Injectable()
 export class PdfService {
-	async generateSessionPdf(data: GenerateSessionPdfData): Promise<{ fileName: string, filePath: string }> {
-		const outputDir = path.join(process.cwd(), 'generated', 'session')
+	async generateSessionPdf(data: GenerateSessionPdfData): Promise<FileInfo> {
+		const internalPath = path.join('generated', 'session', data.sign ? 'approved' : 'unApproved')
+		const outputDir = path.join(process.cwd(), internalPath)
 		const templatePath = path.join(process.cwd(), 'src', 'services', 'pdf', 'templates', 'session-summary.hbs')
+
+		const fileName = `${uuidv4()}.pdf`
+		const filePath = path.join(internalPath, fileName)
 
 		const htmlTemplate = fs.readFileSync(templatePath, 'utf8')
 		const template = Handlebars.compile(htmlTemplate)
+
 		const html = template(data)
 
 		const browser = await puppeteer.launch({ headless: true })
@@ -48,7 +53,7 @@ export class PdfService {
 					<div>Documento generado por <strong>Bitácora-e</strong></div>
 					<div>Página <span class="pageNumber"></span> de <span class="totalPages"></span></div>
 				</div>
-			`
+			`,
 		})
 		await browser.close()
 
@@ -56,35 +61,8 @@ export class PdfService {
 			fs.mkdirSync(outputDir, { recursive: true })
 		}
 
-		const fileName = `${uuidv4()}.pdf`
-		const relativePath = path.join('/generated/session', fileName)
+		fs.writeFileSync(path.join(process.cwd(), filePath), pdfBuffer)
 
-		const outputPath = path.join(outputDir, fileName)
-		fs.writeFileSync(outputPath, pdfBuffer)
-
-		return { fileName, filePath: relativePath}
+		return { fileName, filePath }
 	}
-
-	// async signPdf(pdfBuffer: Buffer, options: { nombre: string, fecha: string }): Promise<Buffer> {
-	// 	const pdfDoc = await PDFDocument.load(pdfBuffer)
-	// 	const pages = pdfDoc.getPages()
-	// 	const lastPage = pages[pages.length - 1]
-	// 	const fontSize = 10
-
-	// 	lastPage.drawText(`Firmado por: ${options.nombre}`, {
-	// 		x: 50,
-	// 		y: 50,
-	// 		size: fontSize,
-	// 		color: rgb(0, 0, 0),
-	// 	})
-
-	// 	lastPage.drawText(`Fecha de firma: ${options.fecha}`, {
-	// 		x: 50,
-	// 		y: 35,
-	// 		size: fontSize,
-	// 		color: rgb(0, 0, 0),
-	// 	})
-
-	// 	return Buffer.from(await pdfDoc.save())
-	// }
 }

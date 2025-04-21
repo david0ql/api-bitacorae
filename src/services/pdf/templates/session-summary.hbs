@@ -2,6 +2,7 @@
 <html lang="es">
 	<head>
 		<meta charset="UTF-8" />
+		<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
 		<style>
 			body {
 				font-family: Arial, sans-serif;
@@ -39,6 +40,17 @@
 
 			.signature p {
 				margin: 0 0 4px 0;
+			}
+
+			.signature-line {
+				display: inline-block;
+				margin-left: 6px;
+				vertical-align: middle;
+			}
+
+			.handwritten {
+				font-family: 'Pacifico', cursive;
+				font-size: 18px;
 			}
 
 			ul {
@@ -83,7 +95,7 @@
 		</div>
 
 		<div class="section">
-			<h3>Datos del Experto Senior</h3>
+			<h3>Datos del Experto</h3>
 			<div class="field"><span class="label">Nombre:</span> {{eName}}</div>
 			<div class="field"><span class="label">Correo electrónico:</span> {{eEmail}}</div>
 			<div class="field"><span class="label">Teléfono:</span> {{ePhone}}</div>
@@ -123,10 +135,20 @@
 		</div>
 
 		<div class="signature">
-			<p><strong>Firma:</strong> ________________________________</p>
-			<p><strong>Fecha de firma:</strong></p>
+			<p>
+				<strong>Firma:</strong>
+				<span class="signature-line">
+					{{#if sign}}
+						<span class="handwritten">{{signature}}</span>
+					{{else}}
+						<span>________________________________</span>
+					{{/if}}
+				</span>
+			</p>
+
+			<p><strong>Fecha de firma:</strong> {{signedDate}}</p>
 			<p><strong>Estado del acta:</strong> {{state}}</p>
-			<p><strong>Fecha de generación del acta:</strong> {{sDate}}</p>
+			<p><strong>Fecha de generación del acta:</strong> {{generationDate}}</p>
 		</div>
 	</body>
 </html>

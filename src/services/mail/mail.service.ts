@@ -9,6 +9,7 @@ import { NewSessionEmailContext } from './interfaces/new-session-email-context.i
 import { NewSessionActivityEmailContext } from './interfaces/new-session-activity-email-context.interface'
 import { EndedSessionEmailContext } from './interfaces/ended-session-email-context.interface'
 import { ApprovedSessionEmailContext } from './interfaces/approved-session-email-context.inteface'
+import { FileInfo } from '../pdf/interfaces/file-info.interface'
 
 import envVars from 'src/config/env'
 
@@ -128,7 +129,7 @@ export class MailService {
 		})
 	}
 
-	async sendApprovedSessionEmailContext(context: ApprovedSessionEmailContext, /* file: Express.Multer.File */) {
+	async sendApprovedSessionEmailContext(context: ApprovedSessionEmailContext, file: FileInfo) {
 		const subject = 'Sesión aprobada'
 		const { to, bussinesName } = context
 
@@ -141,10 +142,10 @@ export class MailService {
 				title: subject,
 				bussinesName
 			},
-			// attachments: [{
-			// 	filename: file.originalname,
-			// 	path: file.path
-			// }]
+			attachments: [{
+				filename: file.fileName,
+				path: file.filePath
+			}]
 		})
 	}
 }

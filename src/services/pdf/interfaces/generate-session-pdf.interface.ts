@@ -23,8 +23,12 @@ export interface GenerateSessionPdfData {
 	sSessionNotes: string
 	sConclusionsCommitments: string
 	sAttachments: Attachment[]
+
+	sign: boolean
 	state: string
-	sDate: string
+	generationDate: string
+	signature?: string
+	signedDate?: string
 }
 
 interface Attachment {

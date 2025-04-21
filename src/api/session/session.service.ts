@@ -254,8 +254,9 @@ export class SessionService {
 		}
 	}
 
-	async public(id: number) {
-		const session = await this.sessionRepository.findOne({
+
+	private async getSessionWithRelations(id: number) {
+		return this.sessionRepository.findOne({
 			where: { id },
 			relations: [
 				'status',
@@ -269,39 +270,38 @@ export class SessionService {
 				'accompaniment.expert.educationLevel',
 			]
 		})
-		if (!session) {
-			throw new BadRequestException(`Session with id ${id} not found`)
-		}
+	}
 
-		if (session.statusId !== 1) {
-			throw new BadRequestException('Session is not in created status')
-		}
+	private async mapFiles(sessionId: number) {
+		const preparationFilesData = await this.sessionPreparationFileRepository.find({ where: { sessionId } })
+		const preparationFiles = preparationFilesData.map((file, index) => ({
+			name: 'Archivo ' + (index + 1),
+			filePath: envVars.APP_URL + '/' + file.filePath
+		}))
 
-		//* Generate PDF
-		const startDate = new Date(session.startDatetime)
-		const endDate = new Date(session.endDatetime)
-		const diffInHours = Math.floor(Math.abs(endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60))
+		const attachmentsData = await this.sessionAttachmentRepository.find({ where: { sessionId } })
+		const attachments = attachmentsData.map(file => ({
+			name: file.name,
+			filePath: file.externalPath ? file.externalPath : envVars.APP_URL + '/' + file.filePath
+		}))
 
-		let preparationFilesData = await this.sessionPreparationFileRepository.find({ where: { sessionId: id } })
-		const preparationFiles = preparationFilesData.map((file, index) => {
-			return {
-				name: 'Archivo ' + (index + 1),
-				filePath: envVars.APP_URL + '/' + file.filePath
-			}
-		})
+		return { preparationFiles, attachments }
+	}
 
-		const attachmentsData = await this.sessionAttachmentRepository.find({ where: { sessionId: id } })
-		const attachments = attachmentsData.map(file => {
-			return {
-				name: file.name,
-				filePath: file.externalPath ? file.externalPath : envVars.APP_URL + '/' + file.filePath
-			}
-		})
+	private formatDate(date: Date): string {
+		return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: '2-digit' }) +
+			' a las ' +
+			date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true })
+	}
 
-		const date = new Date()
-		const generatedDate = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: '2-digit' }) + ' a las ' + date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true })
-
-		const file = await this.pdfService.generateSessionPdf({
+	private async generateSessionPdfData(session: Session, diffInHours: number, preparationFiles, attachments, options: {
+		state: string,
+		sign: boolean,
+		signature?: string,
+		signedDate?: string,
+		generationDate?: string
+	}) {
+		return this.pdfService.generateSessionPdf({
 			bSocialReason: session.accompaniment?.business?.socialReason || 'No registra.',
 			bPhone: session.accompaniment?.business?.phone || 'No registra.',
 			bEmail: session.accompaniment?.business?.email || 'No registra.',
@@ -326,67 +326,79 @@ export class SessionService {
 			sSessionNotes: session.sessionNotes || 'No registra.',
 			sConclusionsCommitments: session.conclusionsCommitments || 'No registra.',
 			sAttachments: attachments,
+			state: options.state,
+			generationDate: options.generationDate || this.formatDate(new Date()),
+			sign: options.sign,
+			signature: options.signature,
+			signedDate: options.signedDate
+		})
+	}
+
+	async public(id: number) {
+		const session = await this.getSessionWithRelations(id)
+		if (!session) throw new BadRequestException(`Session with id ${id} not found`)
+		if (session.statusId !== 1) throw new BadRequestException('Session is not in created status')
+
+		const diffInHours = Math.floor(Math.abs(new Date(session.endDatetime).getTime() - new Date(session.startDatetime).getTime()) / (1000 * 60 * 60))
+		const { preparationFiles, attachments } = await this.mapFiles(id)
+
+		const generationDate = this.formatDate(new Date())
+
+		const file = await this.generateSessionPdfData(session, diffInHours, preparationFiles, attachments, {
 			state: 'Publicada',
-			sDate: generatedDate
+			sign: false,
+			generationDate
 		})
 
-		const updatedSession = await this.sessionRepository.update(id, { statusId: 2, filePathUnapproved: file.filePath })
-		if (!updatedSession) {
-			throw new BadRequestException(`Failed to update session with id ${id}`)
-		}
+		const updatedSession = await this.sessionRepository.update(id, {
+			statusId: 2,
+			filePathUnapproved: file.filePath,
+			fileGenerationDatetime: new Date()
+		})
+		if (!updatedSession) throw new BadRequestException(`Failed to update session with id ${id}`)
 
 		try {
-			const date = new Date(session.startDatetime)
-			const sessionDate = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: '2-digit' })
-			const sessionTime = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true })
-
+			const sessionDate = this.formatDate(new Date(session.startDatetime))
 			const { email: bussinesEmail, name: bussinesName } = session.accompaniment?.business?.user || { email: '', name: '' }
 			const expertName = session.accompaniment?.expert?.user?.name || ''
-
-			this.mailService.sendEndedSessionEmail({
-				to: bussinesEmail,
-				bussinesName,
-				expertName,
-				sessionDate,
-				sessionTime
-			})
-		} catch (error) {
-			console.error('Error sending ended session email:', error)
+			this.mailService.sendEndedSessionEmail({ to: bussinesEmail, bussinesName, expertName, sessionDate, sessionTime: '' })
+		} catch (err) {
+			console.error('Error sending ended session email:', err)
 		}
 
 		return updatedSession
 	}
 
-	async approved(id: number, approvedSessiontDto: ApprovedSessiontDto) {
-		const { signature } = approvedSessiontDto
+	async approved(id: number, { signature, status }: ApprovedSessiontDto) {
+		const session = await this.getSessionWithRelations(id)
+		if (!session) throw new BadRequestException(`Session with id ${id} not found`)
+		if (session.statusId !== 2) throw new BadRequestException('Session is not in public status')
+		if (!session.filePathUnapproved) throw new BadRequestException('Session does not have an unapproved file')
 
-		const session = await this.sessionRepository.findOne({
-			where: { id },
-			relations: ['accompaniment', 'accompaniment.business.user']
+		if (!status) return await this.sessionRepository.update(id, { statusId: 4 })
+
+		const diffInHours = Math.floor(Math.abs(new Date(session.endDatetime).getTime() - new Date(session.startDatetime).getTime()) / (1000 * 60 * 60))
+		const { preparationFiles, attachments } = await this.mapFiles(id)
+
+		const generationDate = this.formatDate(session.fileGenerationDatetime || new Date())
+		const signedDate = this.formatDate(new Date())
+
+		const file = await this.generateSessionPdfData(session, diffInHours, preparationFiles, attachments, {
+			state: 'Aprobada',
+			sign: true,
+			signature,
+			signedDate,
+			generationDate
 		})
-		if (!session) {
-			throw new BadRequestException(`Session with id ${id} not found`)
-		}
 
-		if(session.statusId !== 2) {
-			throw new BadRequestException('Session is not in public status')
-		}
-
-		const updatedSession = await this.sessionRepository.update(id, { statusId: 3 })
-
-		if (!updatedSession) {
-			throw new BadRequestException(`Failed to update session with id ${id}`)
-		}
+		const updatedSession = await this.sessionRepository.update(id, { statusId: 3, filePathApproved: file.filePath })
+		if (!updatedSession) throw new BadRequestException(`Failed to update session with id ${id}`)
 
 		try {
 			const { email: bussinesEmail, name: bussinesName } = session.accompaniment?.business?.user || { email: '', name: '' }
-
-			this.mailService.sendApprovedSessionEmailContext({
-				to: bussinesEmail,
-				bussinesName
-			}, /* file */)
-		} catch (error) {
-			console.error('Error sending approved session email:', error)
+			this.mailService.sendApprovedSessionEmailContext({ to: bussinesEmail, bussinesName }, file)
+		} catch (err) {
+			console.error('Error sending approved session email:', err)
 		}
 
 		return updatedSession

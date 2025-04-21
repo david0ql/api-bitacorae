@@ -63,6 +63,9 @@ export class Session {
   })
   filePathApproved: string | null;
 
+  @Column("datetime", { name: "file_generation_datetime", nullable: true })
+  fileGenerationDatetime: Date | null;
+
   @Column("timestamp", {
     name: "created_at",
     default: () => "CURRENT_TIMESTAMP",
