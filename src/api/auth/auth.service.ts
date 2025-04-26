@@ -24,9 +24,9 @@ export class AuthService {
 			select: { id: true, roleId: true, password: true, email: true, active: true }
 		})
 
-		if (!user) throw new NotFoundException('User not found')
-		if (!user.active) throw new UnauthorizedException('User is inactive')
-		if (!bcrypt.compareSync(password, user.password)) throw new NotFoundException('Invalid credentials')
+		if (!user) throw new NotFoundException('Usuario no encontrado')
+		if (!user.active) throw new UnauthorizedException('El usuario está inactivo')
+		if (!bcrypt.compareSync(password, user.password)) throw new NotFoundException('Credenciales inválidas')
 
 		const payload = { id: user.id, roleId: user.roleId, email }
 

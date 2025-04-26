@@ -31,8 +31,8 @@ export class RedisService {
 
 		try {
 		  	return await callback()
-		} catch (error) {
-			this.logger.error('Error executing Redis operation', error)
+		} catch (e) {
+			this.logger.error('Error executing Redis operation', e)
 			return null
 		}
 	}

@@ -1,6 +1,8 @@
 import { DataSource, Repository } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
+import { format, toZonedTime } from 'date-fns-tz'
+import { es } from 'date-fns/locale'
 
 import { Session } from 'src/entities/Session'
 import { Accompaniment } from 'src/entities/Accompaniment'
@@ -10,12 +12,13 @@ import { SessionAttachment } from 'src/entities/SessionAttachment'
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
-import { CreateSessiontDto } from './dto/create-session.dto'
+import { CreateSessionDto } from './dto/create-session.dto'
 import { UpdateSessionDto } from './dto/update-session.dto'
-import { ApprovedSessiontDto } from './dto/approved-session.dto'
+import { ApprovedSessionDto } from './dto/approved-session.dto'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 import { MailService } from 'src/services/mail/mail.service'
 import { PdfService } from 'src/services/pdf/pdf.service'
+import { DateService } from 'src/services/date/date.service'
 
 import envVars from 'src/config/env'
 
@@ -37,10 +40,94 @@ export class SessionService {
 		private readonly dataSource: DataSource,
 		private readonly fileUploadService: FileUploadService,
 		private readonly mailService: MailService,
-		private readonly pdfService: PdfService
+		private readonly pdfService: PdfService,
+		private readonly dateService: DateService
 	) {}
 
-	async create(createSessiontDto: CreateSessiontDto, files?: Express.Multer.File[]) {
+	private async removeFiles(preparationFiles: string[]) {
+		if (preparationFiles && preparationFiles.length) {
+			preparationFiles.forEach(fullPath => {
+				this.fileUploadService.deleteFile(fullPath)
+			})
+		}
+	}
+
+	private async getSessionWithRelations(id: number) {
+		return this.sessionRepository.findOne({
+			where: { id },
+			relations: [
+				'status',
+				'accompaniment',
+				'accompaniment.strengtheningArea',
+				'accompaniment.business.user',
+				'accompaniment.business.economicActivity',
+				'accompaniment.business.businessSize',
+				'accompaniment.expert.user',
+				'accompaniment.expert.strengtheningArea',
+				'accompaniment.expert.educationLevel',
+			]
+		})
+	}
+
+	private async mapFiles(sessionId: number) {
+		const preparationFilesData = await this.sessionPreparationFileRepository.find({ where: { sessionId } })
+		const preparationFiles = preparationFilesData.map((file, index) => ({
+			name: 'Archivo ' + (index + 1),
+			filePath: envVars.APP_URL + '/' + file.filePath
+		}))
+
+		const attachmentsData = await this.sessionAttachmentRepository.find({ where: { sessionId } })
+		const attachments = attachmentsData.map(file => ({
+			name: file.name,
+			filePath: file.externalPath ? file.externalPath : envVars.APP_URL + '/' + file.filePath
+		}))
+
+		return { preparationFiles, attachments }
+	}
+
+	private async generateSessionPdfData(session: Session, diffInHours: number, preparationFiles, attachments, options: {
+		state: string,
+		sign: boolean,
+		signature?: string,
+		signedDate?: string,
+		generationDate?: string
+	}) {
+		return this.pdfService.generateSessionPdf({
+			bSocialReason: session.accompaniment?.business?.socialReason || 'No registra.',
+			bPhone: session.accompaniment?.business?.phone || 'No registra.',
+			bEmail: session.accompaniment?.business?.email || 'No registra.',
+			bEconomicActivity: session.accompaniment?.business?.economicActivity?.name || 'No registra.',
+			bBusinessSize: session.accompaniment?.business?.businessSize?.name || 'No registra.',
+			bFacebook: session.accompaniment?.business?.facebook || 'No registra.',
+			bInstagram: session.accompaniment?.business?.instagram || 'No registra.',
+			bTwitter: session.accompaniment?.business?.twitter || 'No registra.',
+			bWebsite: session.accompaniment?.business?.website || 'No registra.',
+			aStrengtheningArea: session.accompaniment?.strengtheningArea?.name || 'No registra.',
+			aTotalHours: session.accompaniment?.totalHours || 'No registra.',
+			aRegisteredHours: diffInHours || 'No registra.',
+			eName: session.accompaniment?.expert ? session.accompaniment.expert.firstName + session.accompaniment.expert.lastName : 'No registra.',
+			eEmail: session.accompaniment?.expert?.user?.email || 'No registra.',
+			ePhone: session.accompaniment?.expert?.phone || 'No registra.',
+			eProfile: session.accompaniment?.expert?.profile || 'No registra.',
+			eStrengtheningArea: session.accompaniment?.expert?.strengtheningArea?.name || 'No registra.',
+			eEducationLevel: session.accompaniment?.expert?.educationLevel?.name || 'No registra.',
+			stitle: session.title || 'No registra.',
+			sPreparationNotes: session.preparationNotes || 'No registra.',
+			sPreparationFiles: preparationFiles,
+			sSessionNotes: session.sessionNotes || 'No registra.',
+			sConclusionsCommitments: session.conclusionsCommitments || 'No registra.',
+			sAttachments: attachments,
+			state: options.state,
+			generationDate: options.generationDate || this.dateService.formatDate(new Date()),
+			sign: options.sign,
+			signature: options.signature,
+			signedDate: options.signedDate
+		})
+	}
+
+
+
+	async create(createSessionDto: CreateSessionDto, files?: Express.Multer.File[]) {
 		const {
 			accompanimentId,
 			title,
@@ -48,7 +135,7 @@ export class SessionService {
 			endDatetime,
 			conferenceLink,
 			preparationNotes
-		} = createSessiontDto
+		} = createSessionDto
 
 		const preparationFiles = files?.length ? files.map(file => {
 			return this.fileUploadService.getFullPath('session-preparation', file.filename)
@@ -56,22 +143,51 @@ export class SessionService {
 
 		const accompaniment = await this.accompanimentRepository.findOne({
 			where: { id: accompanimentId },
-			relations: ['business', 'expert', 'business.user', 'expert.user']
+			relations: ['business', 'expert', 'business.user', 'expert.user', 'sessions']
 		})
 		if (!accompaniment) {
-			preparationFiles.forEach(fullPath => {
-				this.fileUploadService.deleteFile(fullPath)
-			})
+			this.removeFiles(preparationFiles)
+			throw new BadRequestException(`Acompañamiento con id ${accompanimentId} no encontrado`)
+		}
 
-			throw new BadRequestException(`Accompaniment with id ${accompanimentId} not found`)
+		const startDate = this.dateService.parseToZonedDate(startDatetime)
+		const endDate = this.dateService.parseToZonedDate(endDatetime)
+		const now = this.dateService.getNowInTimeZone()
+		const diffInHours = this.dateService.getHoursDiff(startDate, endDate)
+
+		if (diffInHours > accompaniment.maxHoursPerSession) {
+			this.removeFiles(preparationFiles)
+			throw new BadRequestException(`La duración de la sesión no puede ser mayor a ${accompaniment.maxHoursPerSession} horas`)
+		}
+
+		if (diffInHours <= 0) {
+			this.removeFiles(preparationFiles)
+			throw new BadRequestException('La fecha de inicio debe ser menor a la fecha de fin')
+		}
+
+		if (startDate < now || endDate < now) {
+			this.removeFiles(preparationFiles)
+			throw new BadRequestException('La fecha de inicio y fin deben ser posteriores a la actual')
+		}
+
+		const assignedHours = accompaniment.sessions
+			.filter(session => [1, 2, 3].includes(session.statusId))
+			.reduce((total, session) => {
+				const sessionHours = this.dateService.getHoursDiff(session.startDatetime, session.endDatetime)
+				return total + sessionHours
+			}, 0)
+
+		if (assignedHours + diffInHours > accompaniment.totalHours) {
+			this.removeFiles(preparationFiles)
+			throw new BadRequestException(`La sesión excede las horas totales permitidas del acompañamiento. Horas disponibles: ${accompaniment.totalHours - assignedHours}`)
 		}
 
 		try {
 			const session = this.sessionRepository.create({
 				accompaniment,
 				title,
-				startDatetime,
-				endDatetime,
+				startDatetime: startDate,
+				endDatetime: endDate,
 				conferenceLink,
 				preparationNotes
 			})
@@ -88,9 +204,7 @@ export class SessionService {
 			await this.sessionPreparationFileRepository.save(sessionPreparationFiles)
 
 			try {
-				const date = new Date(startDatetime)
-				const sessionDate = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: '2-digit' })
-				const sessionTime = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true })
+				const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
 
 				const { email: bussinesEmail, name: bussinesName } = accompaniment.business?.user || { email: '', name: '' }
 				const expertName = accompaniment.expert?.user?.name || ''
@@ -99,20 +213,17 @@ export class SessionService {
 					to: bussinesEmail,
 					bussinesName,
 					expertName,
-					sessionDate,
-					sessionTime,
+					sessionDateTime,
 					preparationNotes
 				}, files)
-			} catch (error) {
-				console.error('Error sending new session email:', error)
+			} catch (e) {
+				console.error('Error sending new session email:', e)
 			}
 
 			return savedSession
-		} catch (error) {
-			preparationFiles.forEach(fullPath => {
-				this.fileUploadService.deleteFile(fullPath)
-			})
-			throw error
+		} catch (e) {
+			this.removeFiles(preparationFiles)
+			throw e
 		}
 	}
 
@@ -123,8 +234,8 @@ export class SessionService {
 			SELECT
 				s.id AS id,
 				s.title AS title,
-				s.start_datetime AS startDatetime,
-				s.end_datetime AS endDatetime,
+				DATE_FORMAT(s.start_datetime, '%Y-%m-%d %H:%i:%s') AS startDatetime,
+				DATE_FORMAT(s.end_datetime, '%Y-%m-%d %H:%i:%s') AS endDatetime,
 				TIMESTAMPDIFF(MINUTE, s.start_datetime, s.end_datetime) AS duration,
 				ss.name AS status,
 				GROUP_CONCAT(CONCAT(?, "/", spf.file_path) SEPARATOR '||') AS preparationFiles
@@ -170,8 +281,9 @@ export class SessionService {
 				'session.id AS id',
 				'session.accompanimentId AS accompanimentId',
 				'session.title AS title',
-				'session.startDatetime AS startDatetime',
-				'session.endDatetime AS endDatetime',
+				`DATE_FORMAT(session.startDatetime, '%Y-%m-%d %H:%i:%s') AS startDatetime`,
+				`DATE_FORMAT(session.endDatetime, '%Y-%m-%d %H:%i:%s') AS endDatetime`,
+				'TIMESTAMPDIFF(MINUTE, session.startDatetime, session.endDatetime) AS duration',
 				'session.conferenceLink AS conferenceLink',
 				'session.preparationNotes AS preparationNotes',
 				'session.sessionNotes AS sessionNotes',
@@ -202,32 +314,75 @@ export class SessionService {
 		}) : []
 
 		if(!id) {
-			preparationFiles.forEach(fullPath => {
-				this.fileUploadService.deleteFile(fullPath)
-			})
+			this.removeFiles(preparationFiles)
 			return { affected: 0 }
 		}
 
 		const session = await this.sessionRepository.findOne({ where: { id } })
 		if (!session) {
-			preparationFiles.forEach(fullPath => {
-				this.fileUploadService.deleteFile(fullPath)
-			})
+			this.removeFiles(preparationFiles)
+			throw new BadRequestException(`Sesión con id ${id} no encontrada`)
+		}
 
-			throw new BadRequestException(`Session with id ${id} not found`)
+		const accompaniment = await this.accompanimentRepository.findOne({
+			where: { id: session.accompanimentId },
+			relations: ['sessions']
+		})
+		if (!accompaniment) {
+			this.removeFiles(preparationFiles)
+			throw new BadRequestException(`Acompañamiento con id ${session.accompanimentId} no encontrado`)
+		}
+
+		const {
+			title,
+			startDatetime,
+			endDatetime,
+			conferenceLink,
+			preparationNotes,
+			sessionNotes,
+			conclusionsCommitments
+		} = updateSessionDto
+
+		if(startDatetime && endDatetime) {
+			const startDate = this.dateService.parseToZonedDate(startDatetime)
+			const endDate = this.dateService.parseToZonedDate(endDatetime)
+			const now = this.dateService.getNowInTimeZone()
+
+			const diffInHours = this.dateService.getHoursDiff(startDate, endDate)
+
+			if (diffInHours > accompaniment.maxHoursPerSession) {
+				this.removeFiles(preparationFiles)
+				throw new BadRequestException(`La duración de la sesión no puede ser mayor a ${accompaniment.maxHoursPerSession} horas`)
+			}
+
+			if (diffInHours <= 0) {
+				this.removeFiles(preparationFiles)
+				throw new BadRequestException('La fecha de inicio debe ser menor a la fecha de fin')
+			}
+
+			if (startDate < now || endDate < now) {
+				this.removeFiles(preparationFiles)
+				throw new BadRequestException('La fecha de inicio y fin deben ser posteriores a la actual')
+			}
+
+			const assignedHours = accompaniment.sessions
+			.filter(session => [1, 2, 3].includes(session.statusId))
+			.reduce((total, session) => {
+				const sessionHours = this.dateService.getHoursDiff(session.startDatetime, session.endDatetime)
+				return total + sessionHours
+			}, 0)
+
+			if (assignedHours + diffInHours > accompaniment.totalHours) {
+				this.removeFiles(preparationFiles)
+				throw new BadRequestException(`La sesión excede las horas totales permitidas del acompañamiento. Horas disponibles: ${accompaniment.totalHours - assignedHours}`)
+			}
+
+		} else {
+			this.removeFiles(preparationFiles)
+			throw new BadRequestException('Fechas de inicio y fin son requeridas')
 		}
 
 		try {
-			const {
-				title,
-				startDatetime,
-				endDatetime,
-				conferenceLink,
-				preparationNotes,
-				sessionNotes,
-				conclusionsCommitments
-			} = updateSessionDto
-
 			const sessionPreparationFiles = preparationFiles.map(fullPath => {
 				return this.sessionPreparationFileRepository.create({
 					sessionId: id,
@@ -246,103 +401,22 @@ export class SessionService {
 				sessionNotes,
 				conclusionsCommitments
 			})
-		} catch (error) {
-			preparationFiles.forEach(fullPath => {
-				this.fileUploadService.deleteFile(fullPath)
-			})
-			throw error
+		} catch (e) {
+			this.removeFiles(preparationFiles)
+			throw e
 		}
-	}
-
-
-	private async getSessionWithRelations(id: number) {
-		return this.sessionRepository.findOne({
-			where: { id },
-			relations: [
-				'status',
-				'accompaniment',
-				'accompaniment.strengtheningArea',
-				'accompaniment.business.user',
-				'accompaniment.business.economicActivity',
-				'accompaniment.business.businessSize',
-				'accompaniment.expert.user',
-				'accompaniment.expert.strengtheningArea',
-				'accompaniment.expert.educationLevel',
-			]
-		})
-	}
-
-	private async mapFiles(sessionId: number) {
-		const preparationFilesData = await this.sessionPreparationFileRepository.find({ where: { sessionId } })
-		const preparationFiles = preparationFilesData.map((file, index) => ({
-			name: 'Archivo ' + (index + 1),
-			filePath: envVars.APP_URL + '/' + file.filePath
-		}))
-
-		const attachmentsData = await this.sessionAttachmentRepository.find({ where: { sessionId } })
-		const attachments = attachmentsData.map(file => ({
-			name: file.name,
-			filePath: file.externalPath ? file.externalPath : envVars.APP_URL + '/' + file.filePath
-		}))
-
-		return { preparationFiles, attachments }
-	}
-
-	private formatDate(date: Date): string {
-		return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: '2-digit' }) +
-			' a las ' +
-			date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true })
-	}
-
-	private async generateSessionPdfData(session: Session, diffInHours: number, preparationFiles, attachments, options: {
-		state: string,
-		sign: boolean,
-		signature?: string,
-		signedDate?: string,
-		generationDate?: string
-	}) {
-		return this.pdfService.generateSessionPdf({
-			bSocialReason: session.accompaniment?.business?.socialReason || 'No registra.',
-			bPhone: session.accompaniment?.business?.phone || 'No registra.',
-			bEmail: session.accompaniment?.business?.email || 'No registra.',
-			bEconomicActivity: session.accompaniment?.business?.economicActivity?.name || 'No registra.',
-			bBusinessSize: session.accompaniment?.business?.businessSize?.name || 'No registra.',
-			bFacebook: session.accompaniment?.business?.facebook || 'No registra.',
-			bInstagram: session.accompaniment?.business?.instagram || 'No registra.',
-			bTwitter: session.accompaniment?.business?.twitter || 'No registra.',
-			bWebsite: session.accompaniment?.business?.website || 'No registra.',
-			aStrengtheningArea: session.accompaniment?.strengtheningArea?.name || 'No registra.',
-			aTotalHours: session.accompaniment?.totalHours || 'No registra.',
-			aRegisteredHours: diffInHours || 'No registra.',
-			eName: session.accompaniment?.expert ? session.accompaniment.expert.firstName + session.accompaniment.expert.lastName : 'No registra.',
-			eEmail: session.accompaniment?.expert?.user?.email || 'No registra.',
-			ePhone: session.accompaniment?.expert?.phone || 'No registra.',
-			eProfile: session.accompaniment?.expert?.profile || 'No registra.',
-			eStrengtheningArea: session.accompaniment?.expert?.strengtheningArea?.name || 'No registra.',
-			eEducationLevel: session.accompaniment?.expert?.educationLevel?.name || 'No registra.',
-			stitle: session.title || 'No registra.',
-			sPreparationNotes: session.preparationNotes || 'No registra.',
-			sPreparationFiles: preparationFiles,
-			sSessionNotes: session.sessionNotes || 'No registra.',
-			sConclusionsCommitments: session.conclusionsCommitments || 'No registra.',
-			sAttachments: attachments,
-			state: options.state,
-			generationDate: options.generationDate || this.formatDate(new Date()),
-			sign: options.sign,
-			signature: options.signature,
-			signedDate: options.signedDate
-		})
 	}
 
 	async public(id: number) {
 		const session = await this.getSessionWithRelations(id)
-		if (!session) throw new BadRequestException(`Session with id ${id} not found`)
-		if (session.statusId !== 1) throw new BadRequestException('Session is not in created status')
 
-		const diffInHours = Math.floor(Math.abs(new Date(session.endDatetime).getTime() - new Date(session.startDatetime).getTime()) / (1000 * 60 * 60))
+		if (!session) throw new BadRequestException(`Sesión con id ${id} no encontrada`)
+		if (session.statusId !== 1) throw new BadRequestException('La sesión no está en estado creada')
+
 		const { preparationFiles, attachments } = await this.mapFiles(id)
 
-		const generationDate = this.formatDate(new Date())
+		const diffInHours = this.dateService.getHoursDiff(session.startDatetime, session.endDatetime)
+		const generationDate = this.dateService.getFormattedNow()
 
 		const file = await this.generateSessionPdfData(session, diffInHours, preparationFiles, attachments, {
 			state: 'Publicada',
@@ -353,35 +427,37 @@ export class SessionService {
 		const updatedSession = await this.sessionRepository.update(id, {
 			statusId: 2,
 			filePathUnapproved: file.filePath,
-			fileGenerationDatetime: new Date()
+			fileGenerationDatetime: this.dateService.getNowInTimeZone()
 		})
-		if (!updatedSession) throw new BadRequestException(`Failed to update session with id ${id}`)
+		if (!updatedSession) throw new BadRequestException(`No se pudo actualizar la sesión con id ${id}`)
 
 		try {
-			const sessionDate = this.formatDate(new Date(session.startDatetime))
+			const sessionDateTime = this.dateService.formatDate(this.dateService.parseToZonedDate(session.startDatetime))
 			const { email: bussinesEmail, name: bussinesName } = session.accompaniment?.business?.user || { email: '', name: '' }
 			const expertName = session.accompaniment?.expert?.user?.name || ''
-			this.mailService.sendEndedSessionEmail({ to: bussinesEmail, bussinesName, expertName, sessionDate, sessionTime: '' })
-		} catch (err) {
-			console.error('Error sending ended session email:', err)
+
+			this.mailService.sendEndedSessionEmail({ to: bussinesEmail, bussinesName, expertName, sessionDateTime })
+		} catch (e) {
+			console.error('Error sending ended session email:', e)
 		}
 
 		return updatedSession
 	}
 
-	async approved(id: number, { signature, status }: ApprovedSessiontDto) {
+	async approved(id: number, { signature, status }: ApprovedSessionDto) {
 		const session = await this.getSessionWithRelations(id)
-		if (!session) throw new BadRequestException(`Session with id ${id} not found`)
-		if (session.statusId !== 2) throw new BadRequestException('Session is not in public status')
-		if (!session.filePathUnapproved) throw new BadRequestException('Session does not have an unapproved file')
+
+		if (!session) throw new BadRequestException(`Sesión con id ${id} no encontrada`)
+		if (session.statusId !== 2) throw new BadRequestException('La sesión no está en estado publicada')
+		if (!session.filePathUnapproved) throw new BadRequestException('La sesión no tiene un archivo para aprobar')
 
 		if (!status) return await this.sessionRepository.update(id, { statusId: 4 })
 
-		const diffInHours = Math.floor(Math.abs(new Date(session.endDatetime).getTime() - new Date(session.startDatetime).getTime()) / (1000 * 60 * 60))
 		const { preparationFiles, attachments } = await this.mapFiles(id)
 
-		const generationDate = this.formatDate(session.fileGenerationDatetime || new Date())
-		const signedDate = this.formatDate(new Date())
+		const diffInHours = this.dateService.getHoursDiff(session.startDatetime, session.endDatetime)
+		const generationDate = this.dateService.formatDate(session.fileGenerationDatetime || new Date())
+		const signedDate = this.dateService.formatDate(this.dateService.getNowInTimeZone())
 
 		const file = await this.generateSessionPdfData(session, diffInHours, preparationFiles, attachments, {
 			state: 'Aprobada',
@@ -392,13 +468,14 @@ export class SessionService {
 		})
 
 		const updatedSession = await this.sessionRepository.update(id, { statusId: 3, filePathApproved: file.filePath })
-		if (!updatedSession) throw new BadRequestException(`Failed to update session with id ${id}`)
+		if (!updatedSession) throw new BadRequestException(`No se pudo actualizar la sesión con id ${id}`)
 
 		try {
 			const { email: bussinesEmail, name: bussinesName } = session.accompaniment?.business?.user || { email: '', name: '' }
+
 			this.mailService.sendApprovedSessionEmailContext({ to: bussinesEmail, bussinesName }, file)
-		} catch (err) {
-			console.error('Error sending approved session email:', err)
+		} catch (e) {
+			console.error('Error sending approved session email:', e)
 		}
 
 		return updatedSession

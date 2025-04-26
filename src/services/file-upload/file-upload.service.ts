@@ -38,8 +38,8 @@ export class FileUploadService {
 				unlinkSync(fullPath)
 				return true
 			}
-		} catch (error) {
-			console.error('Error deleting file:', error)
+		} catch (e) {
+			console.error('Error deleting file:', e)
 		}
 
 		return false

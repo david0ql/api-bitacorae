@@ -25,7 +25,7 @@ export class ChatMessage {
   @Column("text", { name: "message" })
   message: string;
 
-  @Column("timestamp", { name: "sent_at", default: () => "CURRENT_TIMESTAMP" })
+  @Column("datetime", { name: "sent_at", default: () => "CURRENT_TIMESTAMP" })
   sentAt: Date;
 
   @ManyToOne(() => Chat, (chat) => chat.chatMessages, {

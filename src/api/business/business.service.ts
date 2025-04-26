@@ -72,7 +72,7 @@ export class BusinessService {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw new BadRequestException('Email already exists')
+			throw new BadRequestException('El correo electrónico ya existe')
 		}
 
 		try {
@@ -129,16 +129,16 @@ export class BusinessService {
 					email,
 					password
 				})
-			} catch (error) {
-				console.error('Error sending welcome email:', error)
+			} catch (e) {
+				console.error('Error sending welcome email:', e)
 			}
 
 			return savedBusiness
-		} catch (error) {
+		} catch (e) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw error
+			throw e
 		}
 	}
 
@@ -151,7 +151,7 @@ export class BusinessService {
 				b.social_reason AS socialReason,
 				b.document_type_id AS documentTypeId,
 				b.document_number AS documentNumber,
-				b.created_at AS createdAt,
+				DATE_FORMAT(b.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
 				u.active AS userActive,
 				CONCAT(c.first_name, ' ', c.last_name, ' - ', b.email) AS userInfo,
 				IFNULL(ROUND((SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END) / b.assigned_hours) * 100, 2), 0) AS progress
@@ -166,7 +166,7 @@ export class BusinessService {
 			LIMIT ${take} OFFSET ${skip}
 		`
 
-		const countSql = `SELECT COUNT(DISTINCT b.id) as total FROM business b`
+		const countSql = `SELECT COUNT(DISTINCT b.id) AS total FROM business b`
 
 		const [items, countResult] = await Promise.all([
 			this.dataSource.query(sql),
@@ -215,7 +215,7 @@ export class BusinessService {
 				'b.assigned_hours AS assignedHours',
 				'b.cohort_id AS cohortId',
 				'b.diagnostic AS diagnostic',
-				'CONCAT(:appUrl, "/", b.evidence) as evidence'
+				'CONCAT(:appUrl, "/", b.evidence) AS evidence'
 			])
 			.where('b.id = :id', { id })
 			.setParameters({appUrl: envVars.APP_URL})
@@ -272,7 +272,7 @@ export class BusinessService {
 				if (fullPath) {
 					this.fileUploadService.deleteFile(fullPath)
 				}
-				throw new BadRequestException('Email already exists')
+				throw new BadRequestException('El correo electrónico ya existe')
 			}
 		}
 
@@ -324,11 +324,11 @@ export class BusinessService {
 			}
 
 			return { result }
-		} catch (error) {
+		} catch (e) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw error
+			throw e
 		}
 	}
 

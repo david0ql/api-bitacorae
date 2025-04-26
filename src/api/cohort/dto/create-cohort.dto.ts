@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger"
-import { IsDateString, IsNotEmpty, IsNumber, IsString } from "class-validator"
+import { IsNotEmpty, IsNumber, IsString, Matches } from "class-validator"
 
 export class CreateCohortDto {
 	@ApiProperty({
@@ -19,18 +19,24 @@ export class CreateCohortDto {
 	readonly order: number
 
 	@ApiProperty({
-		description: 'Fecha de inicio',
+		description: 'Fecha de inicio (yyyy-MM-dd)',
 		example: '2021-01-01',
 	})
 	@IsNotEmpty()
-	@IsDateString()
+	@IsString()
+	@Matches(/^\d{4}-\d{2}-\d{2}$/, {
+		message: 'La fecha debe tener el formato yyyy-MM-dd',
+	})
 	readonly startDate: string
 
 	@ApiProperty({
-		description: 'Fecha de fin',
+		description: 'Fecha de fin (yyyy-MM-dd)',
 		example: '2021-01-01',
 	})
 	@IsNotEmpty()
-	@IsDateString()
+	@IsString()
+	@Matches(/^\d{4}-\d{2}-\d{2}$/, {
+		message: 'La fecha debe tener el formato yyyy-MM-dd',
+	})
 	readonly endDate: string
 }

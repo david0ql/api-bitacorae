@@ -1,8 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsOptional, IsString, Matches } from "class-validator";
 
-export class CreateSessiontDto {
+export class CreateSessionDto {
 	@ApiProperty({
 		description: 'Accompaniment ID',
 		example: 1
@@ -21,19 +21,25 @@ export class CreateSessiontDto {
 	readonly title: string;
 
 	@ApiProperty({
-		description: 'Start date and time of the session',
-		example: '2023-10-01T10:00:00Z'
+		description: 'Start date and time of the session (yyyy-MM-dd HH:mm:ss)',
+		example: '2025-04-25 10:00:00'
 	})
 	@IsNotEmpty()
 	@IsString()
+	@Matches(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/, {
+		message: 'startDatetime must be in the format yyyy-MM-dd HH:mm:ss',
+	})
 	readonly startDatetime: string;
 
 	@ApiProperty({
-		description: 'End date and time of the session',
-		example: '2023-10-01T12:00:00Z'
+		description: 'End date and time of the session (yyyy-MM-dd HH:mm:ss)',
+		example: '2025-04-25 12:00:00'
 	})
 	@IsNotEmpty()
 	@IsString()
+	@Matches(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/, {
+		message: 'endDatetime must be in the format yyyy-MM-dd HH:mm:ss',
+	})
 	readonly endDatetime: string;
 
 	@ApiProperty({
@@ -61,5 +67,5 @@ export class CreateSessiontDto {
 		required: false,
 		description: 'Files for session preparation'
 	})
-  	files?: any;
+	files?: any;
 }

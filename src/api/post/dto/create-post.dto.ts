@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger"
 import { Transform } from "class-transformer";
-import { ArrayNotEmpty, IsArray, IsNotEmpty, IsNumber, IsString } from "class-validator"
+import { ArrayNotEmpty, IsArray, IsNotEmpty, IsNumber, IsString, Matches } from "class-validator"
 
 export class CreatePostDto {
 	@ApiProperty({
@@ -35,11 +35,14 @@ export class CreatePostDto {
 	readonly categories: number[];
 
 	@ApiProperty({
-		description: 'The date of the post',
-		example: '2021-07-01T00:00:00.000Z',
+		description: 'The date of the post (format: yyyy-MM-dd HH:mm:ss)',
+		example: '2025-04-30 14:30:00',
 	})
 	@IsString()
 	@IsNotEmpty()
+	@Matches(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/, {
+		message: 'postDate must be in the format yyyy-MM-dd HH:mm:ss'
+	})
 	readonly postDate: string;
 
 	@ApiProperty({

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsNotEmpty, IsString, IsBoolean, IsDateString, IsNumber } from 'class-validator'
+import { IsNotEmpty, IsString, IsBoolean, Matches, IsNumber } from 'class-validator'
 
 export class CreateSessionActivityDto {
 	@ApiProperty({
@@ -28,10 +28,13 @@ export class CreateSessionActivityDto {
 	readonly requiresDeliverable: boolean
 
 	@ApiProperty({
-		description: 'Fecha límite para entregar la actividad (ISO 8601)',
-		example: '2025-04-30T23:59:59Z',
+		description: 'Fecha límite para entregar la actividad (formato yyyy-MM-dd HH:mm:ss)',
+		example: '2025-04-30 23:59:59',
 	})
-	@IsDateString()
+	@IsString()
+	@Matches(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/, {
+		message: 'La fecha debe estar en el formato yyyy-MM-dd HH:mm:ss',
+	})
 	readonly dueDatetime: string
 
 	@ApiProperty({

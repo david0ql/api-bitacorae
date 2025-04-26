@@ -31,7 +31,7 @@ export class ChatService {
 
 		const session = await this.sessionRepository.findOne({ where: { id: sessionId } })
 		if (!session) {
-			throw new BadRequestException(`Session with id ${sessionId} not found`)
+			throw new BadRequestException(`La sesión con id ${sessionId} no fue encontrada`)
 		}
 
 		let chat = await this.chatRepository.findOne({ where: { sessionId } })
@@ -51,25 +51,28 @@ export class ChatService {
 	}
 
 	async findAllBySession(id: number, pageOptionsDto: PageOptionsDto): Promise<PageDto<ChatMessage>> {
-		const queryBuilder = this.chatMessageRepository.createQueryBuilder('chat_message')
-			.leftJoin('chat_message.senderUser', 'user')
+		const queryBuilder = this.chatMessageRepository.createQueryBuilder('cm')
 			.select([
-				'chat_message.id',
-				'chat_message.message',
-				'chat_message.sentAt',
-				'user.name',
-				'user.email',
-				'user.roleId'
+				'cm.id AS id',
+				'cm.message AS message',
+				`DATE_FORMAT(cm.sent_at, '%Y-%m-%d %H:%i:%s') AS sentAt`,
+				'user.name AS senderName',
+				'user.email AS senderEmail',
+				'user.roleId AS senderRoleId'
 			])
-			.where('chat_message.chatId = :id', { id })
-			.orderBy('chat_message.sentAt', pageOptionsDto.order)
+			.innerJoin('cm.chat', 'chat')
+			.leftJoin('cm.senderUser', 'user')
+			.where('chat.sessionId = :id', { id })
+			.orderBy('cm.sentAt', pageOptionsDto.order)
 			.skip(pageOptionsDto.skip)
 			.take(pageOptionsDto.take)
 
-		const [ items, totalCount ] = await queryBuilder.getManyAndCount()
+		const [items, totalCount] = await Promise.all([
+			queryBuilder.getRawMany(),
+			queryBuilder.getCount()
+		])
 
 		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
-
 		return new PageDto(items, pageMetaDto)
 	}
 }

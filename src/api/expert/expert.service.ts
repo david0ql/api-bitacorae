@@ -60,7 +60,7 @@ export class ExpertService {
 			if(fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw new BadRequestException('Email already exists')
+			throw new BadRequestException(`El correo electrónico ${email} ya existe`)
 		}
 
 		try {
@@ -106,16 +106,16 @@ export class ExpertService {
 					email,
 					password
 				})
-			} catch (error) {
-				console.error('Error sending welcome email:', error)
+			} catch (e) {
+				console.error('Error sending welcome email:', e)
 			}
 
 			return savedExpert
-		} catch (error) {
+		} catch (e) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw error
+			throw e
 		}
 	}
 
@@ -230,7 +230,7 @@ export class ExpertService {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw new BadRequestException('Email already exists')
+			throw new BadRequestException(`El correo electrónico ${email} ya existe`)
 		}
 
 		try {
@@ -269,11 +269,11 @@ export class ExpertService {
 			}
 
 			return result
-		} catch (error) {
+		} catch (e) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw error
+			throw e
 		}
 	}
 

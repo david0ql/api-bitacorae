@@ -1,8 +1,8 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { CreateSessiontDto } from './create-session.dto';
+import { CreateSessionDto } from './create-session.dto';
 import { IsOptional, IsString } from 'class-validator';
 
-export class UpdateSessionDto extends PartialType(CreateSessiontDto) {
+export class UpdateSessionDto extends PartialType(CreateSessionDto) {
 	@ApiProperty({
 		description: 'Session notes',
 		example: 'These are the session notes',

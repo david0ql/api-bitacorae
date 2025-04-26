@@ -59,7 +59,7 @@ export class MailService {
 
 	async sendNewSessionEmail(context: NewSessionEmailContext, files?: Express.Multer.File[]) {
 		const subject = 'Nueva sesión creada'
-		const { to, bussinesName, expertName, sessionDate, sessionTime, preparationNotes } = context
+		const { to, bussinesName, expertName, sessionDateTime, preparationNotes } = context
 		const url = 'https://meet.google.com/example'
 
 		await this.mailerService.sendMail({
@@ -71,8 +71,7 @@ export class MailService {
 				title: subject,
 				bussinesName,
 				expertName,
-				sessionDate,
-				sessionTime,
+				sessionDateTime,
 				preparationNotes,
 				url
 			},
@@ -85,7 +84,7 @@ export class MailService {
 
 	async sendNewSessionActivityEmail(context: NewSessionActivityEmailContext, file?: Express.Multer.File) {
 		const subject = 'Nueva actividad de sesión creada'
-		const { to, bussinesName, expertName, sessionDate, sessionTime } = context
+		const { to, bussinesName, expertName, sessionDateTime } = context
 		const url = 'https://google.com'
 
 		await this.mailerService.sendMail({
@@ -97,8 +96,7 @@ export class MailService {
 				title: subject,
 				bussinesName,
 				expertName,
-				sessionDate,
-				sessionTime,
+				sessionDateTime,
 				url
 			},
 			attachments: file ? [{
@@ -110,7 +108,7 @@ export class MailService {
 
 	async sendEndedSessionEmail(context: EndedSessionEmailContext) {
 		const subject = 'Sesión finalizada'
-		const { to, bussinesName, expertName, sessionDate, sessionTime } = context
+		const { to, bussinesName, expertName, sessionDateTime } = context
 		const url = 'https://google.com'
 
 		await this.mailerService.sendMail({
@@ -122,8 +120,7 @@ export class MailService {
 				title: subject,
 				bussinesName,
 				expertName,
-				sessionDate,
-				sessionTime,
+				sessionDateTime,
 				url
 			}
 		})

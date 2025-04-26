@@ -34,11 +34,11 @@ export class SessionAttachmentService {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw new BadRequestException(`Session with id ${sessionId} not found`)
+			throw new BadRequestException(`Sesión con id ${sessionId} no encontrada`)
 		}
 
 		if (!file && !externalPath) {
-			throw new BadRequestException('Must provide either a file or an external path')
+			throw new BadRequestException('Debe proporcionar un archivo o una ruta externa')
 		}
 
 		try {
@@ -51,11 +51,11 @@ export class SessionAttachmentService {
 
 			return await this.sessionAttachmentRepository.save(sessionAttachment)
 
-		} catch (error) {
+		} catch (e) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw error
+			throw e
 		}
 	}
 

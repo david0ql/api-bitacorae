@@ -43,25 +43,36 @@ export class AccompanimentService {
 
 		const business = await this.businessRepository.findOne({ where: { id: businessId } })
 		if (!business) {
-			throw new BadRequestException(`Business with id ${businessId} not found`)
+			throw new BadRequestException(`No se encontró una empresa con el ID ${businessId}`)
 		}
 
 		const expert = await this.expertRepository.findOne({ where: { id: expertId } })
 		if (!expert) {
-			throw new BadRequestException(`Expert with id ${expertId} not found`)
+			throw new BadRequestException(`No se encontró un experto con el ID ${expertId}`)
 		}
 
 		const strengtheningArea = await this.strengtheningAreaRepository.findOne({ where: { id: strengtheningAreaId } })
 		if (!strengtheningArea) {
-			throw new BadRequestException(`Strengthening area with id ${strengtheningAreaId} not found`)
+			throw new BadRequestException(`No se encontró un área de fortalecimiento con el ID ${strengtheningAreaId}`)
 		}
 
-		const existingAccompaniment = await this.accompanimentRepository.findOne({
-			where: { businessId, expertId }
-		})
+		if(totalHours < maxHoursPerSession) {
+			throw new BadRequestException(`El total de horas (${totalHours}) no puede ser menor a las horas máximas por sesión (${maxHoursPerSession})`)
+		}
 
-		if (existingAccompaniment) {
-			throw new BadRequestException(`Business with id ${businessId} is already accompanied by expert with id ${expertId}`)
+		const usedHoursResult = await this.accompanimentRepository
+			.createQueryBuilder("accompaniment")
+			.select("SUM(accompaniment.totalHours)", "usedHours")
+			.where("accompaniment.businessId = :businessId", { businessId })
+			.getRawOne()
+
+		const usedHours = Number(usedHoursResult.usedHours || 0)
+		const remainingHours = business.assignedHours - usedHours
+
+		if (totalHours > remainingHours) {
+			throw new BadRequestException(
+				`El total de horas (${totalHours}) excede las horas disponibles (${remainingHours}) para la empresa`
+			)
 		}
 
 		const accompaniment = this.accompanimentRepository.create({
@@ -84,14 +95,14 @@ export class AccompanimentService {
 
 		if (roleId === 3) {
 			const expert = await this.expertRepository.findOne({ where: { userId: id }, select: ['id'] })
-			if (!expert) throw new BadRequestException(`Expert with userId ${id} not found`)
+			if (!expert) throw new BadRequestException(`No se encontró un experto con el ID de usuario ${id}`)
 			whereConditions.push(`a.expert_id = ?`)
 			params.push(expert.id)
 		}
 
 		if (roleId === 4) {
 			const business = await this.businessRepository.findOne({ where: { userId: id }, select: ['id'] })
-			if (!business) throw new BadRequestException(`Business with userId ${id} not found`)
+			if (!business) throw new BadRequestException(`No se encontró una empresa con el ID de usuario ${id}`)
 			whereConditions.push(`b.id = ?`)
 			params.push(business.id)
 		}
@@ -122,7 +133,7 @@ export class AccompanimentService {
 		`
 
 		const countSql = `
-			SELECT COUNT(DISTINCT b.id) as total
+			SELECT COUNT(DISTINCT b.id) AS total
 			FROM business b
 			LEFT JOIN accompaniment a ON a.business_id = b.id
 			${whereClause}
@@ -145,7 +156,7 @@ export class AccompanimentService {
 
 		if (roleId === 3) {
 			const expert = await this.expertRepository.findOne({ where: { userId }, select: ['id'] })
-			if (!expert) throw new BadRequestException(`Expert with userId ${id} not found`)
+			if (!expert) throw new BadRequestException(`No se encontró un experto con el ID de usuario ${id}`)
 
 			expertId = expert.id
 		}
@@ -181,7 +192,17 @@ export class AccompanimentService {
 	async findOne(id: number) {
 		if(!id) return {}
 
-		const accompaniment = await this.accompanimentRepository.findOne({ where: { id } })
+		const accompaniment = await this.accompanimentRepository.findOne({
+			select: {
+				id: true,
+				businessId: true,
+				expertId: true,
+				totalHours: true,
+				maxHoursPerSession: true,
+				strengtheningAreaId: true
+			},
+			where: { id }
+		})
 
 		return accompaniment || {}
 	}
@@ -200,21 +221,21 @@ export class AccompanimentService {
 		if(businessId) {
 			const business = await this.businessRepository.findOne({ where: { id: businessId } })
 			if (!business) {
-				throw new BadRequestException(`Business with id ${businessId} not found`)
+				throw new BadRequestException(`No se encontró una empresa con el ID ${businessId}`)
 			}
 		}
 
 		if(expertId) {
 			const expert = await this.expertRepository.findOne({ where: { id: expertId } })
 			if (!expert) {
-				throw new BadRequestException(`Expert with id ${expertId} not found`)
+				throw new BadRequestException(`No se encontró un experto con el ID ${expertId}`)
 			}
 		}
 
 		if(strengtheningAreaId) {
 			const strengtheningArea = await this.strengtheningAreaRepository.findOne({ where: { id: strengtheningAreaId } })
 			if (!strengtheningArea) {
-				throw new BadRequestException(`Strengthening area with id ${strengtheningAreaId} not found`)
+				throw new BadRequestException(`No se encontró un área de fortalecimiento con el ID ${strengtheningAreaId}`)
 			}
 		}
 
@@ -223,7 +244,7 @@ export class AccompanimentService {
 				where: { businessId, expertId }
 			})
 			if (existingAccompaniment && existingAccompaniment.id !== id) {
-				throw new BadRequestException(`Business with id ${businessId} is already accompanied by expert with id ${expertId}`)
+				throw new BadRequestException(`La empresa con el ID ${businessId} ya está siendo acompañada por el experto con el ID ${expertId}`)
 			}
 		}
 

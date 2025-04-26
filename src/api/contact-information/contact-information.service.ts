@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 
@@ -50,7 +50,7 @@ export class ContactInformationService {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw new Error(`Business with id ${businessId} not found`)
+			throw new BadRequestException(`El negocio con id ${businessId} no fue encontrado`)
 		}
 
 		try {
@@ -76,11 +76,11 @@ export class ContactInformationService {
 			})
 
 			return this.contactInformationRepository.save(contactInformation)
-		} catch (error) {
+		} catch (e) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw error
+			throw e
 		}
 	}
 

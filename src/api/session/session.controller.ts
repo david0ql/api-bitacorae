@@ -5,9 +5,9 @@ import { Session } from 'src/entities/Session'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
-import { CreateSessiontDto } from './dto/create-session.dto'
+import { CreateSessionDto } from './dto/create-session.dto'
 import { UpdateSessionDto } from './dto/update-session.dto'
-import { ApprovedSessiontDto } from './dto/approved-session.dto'
+import { ApprovedSessionDto } from './dto/approved-session.dto'
 
 import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
@@ -24,9 +24,9 @@ export class SessionController {
 	@HttpCode(200)
 	@UseInterceptors(FileUploadInterceptor('files', 'session-preparation', true))
 	@ApiConsumes('multipart/form-data')
-	@ApiBody({ type: CreateSessiontDto })
-	create(@Body() createSessiontDto: CreateSessiontDto, @UploadedFiles() files?: Express.Multer.File[]) {
-		return this.sessionService.create(createSessiontDto, files)
+	@ApiBody({ type: CreateSessionDto })
+	create(@Body() createSessionDto: CreateSessionDto, @UploadedFiles() files?: Express.Multer.File[]) {
+		return this.sessionService.create(createSessionDto, files)
 	}
 
 	@Get('/byAccompaniment/:id')
@@ -58,7 +58,7 @@ export class SessionController {
 
 	@Patch('/approved/:id')
 	@HttpCode(200)
-	approved(@Param('id') id: string, @Body() approvedSessiontDto: ApprovedSessiontDto) {
+	approved(@Param('id') id: string, @Body() approvedSessiontDto: ApprovedSessionDto) {
 		return this.sessionService.approved(+id, approvedSessiontDto)
 	}
 

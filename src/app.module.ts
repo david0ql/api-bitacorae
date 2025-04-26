@@ -91,7 +91,7 @@ import envVars from './config/env'
 			database: envVars.DB_NAME,
 			synchronize: false,
 			autoLoadEntities: true,
-			timezone: '-05:00'
+			timezone: 'local'
 		}),
 		TypeOrmModule.forFeature([
 			Business,

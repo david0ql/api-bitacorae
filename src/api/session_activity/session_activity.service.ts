@@ -1,6 +1,8 @@
 import { DataSource, Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
+import { format, toZonedTime } from 'date-fns-tz'
+import { es } from 'date-fns/locale'
 
 import { Session } from 'src/entities/Session'
 import { SessionActivity } from 'src/entities/SessionActivity'
@@ -14,9 +16,10 @@ import { RespondSessionActivityDto } from './dto/respond-session_activity.dto'
 import { RateSessionActivityDto } from './dto/rate-session_activity.dto'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
+import { MailService } from 'src/services/mail/mail.service'
+import { DateService } from 'src/services/date/date.service'
 
 import envVars from 'src/config/env'
-import { MailService } from 'src/services/mail/mail.service'
 
 @Injectable()
 export class SessionActivityService {
@@ -32,7 +35,8 @@ export class SessionActivityService {
 
 		private readonly dataSource: DataSource,
 		private readonly fileUploadService: FileUploadService,
-		private readonly mailService: MailService
+		private readonly mailService: MailService,
+		private readonly dateService: DateService
 	) {}
 
 	async create(user: JwtUser, createSessionActivityDto: CreateSessionActivityDto, file?: Express.Multer.File) {
@@ -49,7 +53,7 @@ export class SessionActivityService {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw new BadRequestException(`Session with id ${sessionId} not found`)
+			throw new BadRequestException(`Sesión con id ${sessionId} no encontrada`)
 		}
 
 		try {
@@ -66,9 +70,7 @@ export class SessionActivityService {
 			const savedSessionActivity = await this.sessionActivityRepository.save(sessionActivity)
 
 			try {
-				const date = new Date(session.startDatetime)
-				const sessionDate = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: '2-digit' })
-				const sessionTime = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true })
+				const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
 
 				const { email: bussinesEmail, name: bussinesName } = session.accompaniment?.business?.user || { email: '', name: '' }
 				const expertName = session.accompaniment?.expert?.user?.name || ''
@@ -77,19 +79,18 @@ export class SessionActivityService {
 					to: bussinesEmail,
 					bussinesName,
 					expertName,
-					sessionDate,
-					sessionTime,
+					sessionDateTime
 				}, file)
-			} catch (error) {
-				console.error('Error sending new session activity email:', error)
+			} catch (e) {
+				console.error('Error sending new session activity email:', e)
 			}
 
 			return savedSessionActivity
-		} catch (error) {
+		} catch (e) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw error
+			throw e
 		}
 	}
 
@@ -104,17 +105,17 @@ export class SessionActivityService {
 				a.title AS title,
 				a.description AS description,
 				a.requires_deliverable AS requiresDeliverable,
-				a.due_datetime AS dueDatetime,
+				DATE_FORMAT(a.due_datetime, '%Y-%m-%d %H:%i:%s') AS dueDatetime,
 				CONCAT(?, '/', a.attachment_path) AS fileUrl,
-				a.created_at AS createdAt,
+				DATE_FORMAT(a.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
 				CONCAT('[', GROUP_CONCAT(JSON_OBJECT(
 					'id', r.id,
 					'sessionActivityId', r.session_activity_id,
 					'respondedByUserId', r.responded_by_user_id,
 					'deliverableFilePath', CONCAT(?, '/', r.deliverable_file_path),
-					'respondedDatetime', r.responded_datetime,
+					'respondedDatetime', DATE_FORMAT(r.responded_datetime, '%Y-%m-%d %H:%i:%s'),
 					'grade', r.grade,
-					'gradedDatetime', r.graded_datetime
+					'gradedDatetime', DATE_FORMAT(r.graded_datetime, '%Y-%m-%d %H:%i:%s')
 				)),
 				']') AS responses
 			FROM
@@ -126,7 +127,7 @@ export class SessionActivityService {
 			LIMIT ${take} OFFSET ${skip}
 		`
 
-		const countSql = `SELECT COUNT(DISTINCT a.id) as total FROM session_activity a WHERE a.session_id = ?`
+		const countSql = `SELECT COUNT(DISTINCT a.id) AS total FROM session_activity a WHERE a.session_id = ?`
 
 		const [rawItems, countResult] = await Promise.all([
 			this.dataSource.query(sql, [envVars.APP_URL, envVars.APP_URL, sessionId]),
@@ -161,7 +162,7 @@ export class SessionActivityService {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw new BadRequestException(`Session activity with id ${id} not found`)
+			throw new BadRequestException(`Actividad de sesión con id ${id} no encontrada`)
 		}
 
 		const existingResponse = await this.sessionActivityResponseRepository.findOne({ where: { sessionActivityId: id } })
@@ -169,7 +170,7 @@ export class SessionActivityService {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw new BadRequestException(`Session activity with id ${id} already responded`)
+			throw new BadRequestException(`La actividad de sesión con id ${id} ya fue respondida`)
 		}
 
 		try {
@@ -181,11 +182,11 @@ export class SessionActivityService {
 			})
 
 			return this.sessionActivityResponseRepository.save(sessionActivityResponse)
-		} catch (error) {
+		} catch (e) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}
-			throw error
+			throw e
 		}
 	}
 
@@ -194,12 +195,21 @@ export class SessionActivityService {
 
 		const { grade } = rateSessionActivityDto
 
-		const sessionActivityResponse = await this.sessionActivityResponseRepository.findOne({ where: { sessionActivityId: id } })
-		if (!sessionActivityResponse) {
-			throw new BadRequestException(`Session activity response with id ${id} not found`)
+		const sessionActivity = await this.sessionActivityRepository.findOne({ where: { id } })
+		if (!sessionActivity) {
+			throw new BadRequestException(`Actividad de sesión con id ${id} no encontrada`)
 		}
 
-		return this.sessionActivityResponseRepository.update(id, {
+		const sessionActivityResponse = await this.sessionActivityResponseRepository.findOne({ where: { sessionActivityId: id } })
+		if (!sessionActivityResponse) {
+			throw new BadRequestException(`La respuesta de la actividad de sesión con id ${id} no fue encontrada`)
+		}
+
+		if (sessionActivityResponse.grade) {
+			throw new BadRequestException(`La actividad de sesión con id ${id} ya fue calificada`)
+		}
+
+		return this.sessionActivityResponseRepository.update(sessionActivityResponse.id, {
 			grade,
 			gradedDatetime: new Date()
 		})
