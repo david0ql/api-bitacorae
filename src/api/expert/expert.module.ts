@@ -8,11 +8,12 @@ import { ExpertController } from './expert.controller'
 import { Expert } from 'src/entities/Expert'
 import { User } from 'src/entities/User'
 import { ConsultorType } from 'src/entities/ConsultorType'
+import { Platform } from 'src/entities/Platform'
 
 @Module({
 	controllers: [ExpertController],
 	providers: [ExpertService, FileUploadService, MailService],
-	imports: [TypeOrmModule.forFeature([Expert, User, ConsultorType])]
+	imports: [TypeOrmModule.forFeature([Expert, User, ConsultorType, Platform])]
 })
 
 export class ExpertModule {}

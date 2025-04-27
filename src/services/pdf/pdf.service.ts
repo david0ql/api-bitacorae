@@ -7,9 +7,19 @@ import { v4 as uuidv4 } from 'uuid'
 
 import { GenerateSessionPdfData } from './interfaces/generate-session-pdf.interface'
 import { FileInfo } from './interfaces/file-info.interface'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Platform } from 'src/entities/Platform'
+import { Repository } from 'typeorm'
+
+import envVars from 'src/config/env'
 
 @Injectable()
 export class PdfService {
+	constructor(
+		@InjectRepository(Platform)
+		private readonly platformRepository: Repository<Platform>
+	) {}
+
 	async generateSessionPdf(data: GenerateSessionPdfData): Promise<FileInfo> {
 		const internalPath = path.join('generated', 'session', data.sign ? 'approved' : 'unApproved')
 		const outputDir = path.join(process.cwd(), internalPath)
@@ -21,7 +31,16 @@ export class PdfService {
 		const htmlTemplate = fs.readFileSync(templatePath, 'utf8')
 		const template = Handlebars.compile(htmlTemplate)
 
-		const html = template(data)
+		const platform = await this.platformRepository.findOne({ where: {} })
+
+		const reportHeaderImageUrl = platform?.reportHeaderImagePath ? `${envVars.APP_URL}/${platform.reportHeaderImagePath}` : ''
+		const programName = platform?.programName || 'Consultorio Empresarial de Colsubsidio operado por BICTIA'
+
+		const html = template({
+			reportHeaderImageUrl,
+			programName,
+			...data
+		})
 
 		const browser = await puppeteer.launch({ headless: true })
 		const page = await browser.newPage()

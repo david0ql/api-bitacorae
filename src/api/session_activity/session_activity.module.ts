@@ -9,11 +9,12 @@ import { SessionActivityController } from './session_activity.controller'
 import { SessionActivity } from 'src/entities/SessionActivity'
 import { SessionActivityResponse } from 'src/entities/SessionActivityResponse'
 import { Session } from 'src/entities/Session'
+import { Platform } from 'src/entities/Platform'
 
 @Module({
 	controllers: [SessionActivityController],
 	providers: [SessionActivityService, FileUploadService, MailService, DateService],
-	imports: [TypeOrmModule.forFeature([SessionActivity, SessionActivityResponse, Session])]
+	imports: [TypeOrmModule.forFeature([SessionActivity, SessionActivityResponse, Session, Platform])]
 })
 
 export class SessionActivityModule {}

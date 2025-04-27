@@ -10,6 +10,9 @@ import { NewSessionActivityEmailContext } from './interfaces/new-session-activit
 import { EndedSessionEmailContext } from './interfaces/ended-session-email-context.interface'
 import { ApprovedSessionEmailContext } from './interfaces/approved-session-email-context.inteface'
 import { FileInfo } from '../pdf/interfaces/file-info.interface'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Platform } from 'src/entities/Platform'
+import { Repository } from 'typeorm'
 
 import envVars from 'src/config/env'
 
@@ -19,12 +22,16 @@ export class MailService {
 	private varCommons = {
 		year: new Date().getFullYear(),
 		companyName: 'Bitácora-e',
-		appUrl: envVars.APP_URL
+		appUrl: envVars.APP_URL,
+		logoUrl: ''
 	}
 
-	constructor(private readonly mailerService: MailerService) {
-		this.registerPartials()
-	}
+	constructor(
+		private readonly mailerService: MailerService,
+
+		@InjectRepository(Platform)
+		private readonly platformRepository: Repository<Platform>
+	) { this.registerPartials() }
 
 	private registerPartials() {
 		if (!fs.existsSync(this.partialsDir)) return
@@ -37,7 +44,16 @@ export class MailService {
 		})
 	}
 
+	private async getPlatformVars() {
+		const platform = await this.platformRepository.findOne({ where: {} })
+		if(platform?.logoPath) {
+			this.varCommons.logoUrl = `${envVars.APP_URL}/${platform.logoPath}`
+		}
+	}
+
 	async sendWelcomeEmail(context: WelcomeEmailContext) {
+		await this.getPlatformVars()
+
 		const subject = 'Bienvenido a Bitácora-e'
 		const { name, email, password } = context
 		const url = 'https://google.com'
@@ -58,6 +74,8 @@ export class MailService {
 	}
 
 	async sendNewSessionEmail(context: NewSessionEmailContext, files?: Express.Multer.File[]) {
+		await this.getPlatformVars()
+
 		const subject = 'Nueva sesión creada'
 		const { to, bussinesName, expertName, sessionDateTime, conferenceLink, preparationNotes } = context
 
@@ -82,6 +100,8 @@ export class MailService {
 	}
 
 	async sendNewSessionActivityEmail(context: NewSessionActivityEmailContext, file?: Express.Multer.File) {
+		await this.getPlatformVars()
+
 		const subject = 'Nueva actividad de sesión creada'
 		const { to, bussinesName, expertName, sessionDateTime } = context
 		const url = 'https://google.com'
@@ -106,6 +126,8 @@ export class MailService {
 	}
 
 	async sendEndedSessionEmail(context: EndedSessionEmailContext) {
+		await this.getPlatformVars()
+
 		const subject = 'Sesión finalizada'
 		const { to, bussinesName, expertName, sessionDateTime } = context
 		const url = 'https://google.com'
@@ -126,6 +148,8 @@ export class MailService {
 	}
 
 	async sendApprovedSessionEmailContext(context: ApprovedSessionEmailContext, file: FileInfo) {
+		await this.getPlatformVars()
+
 		const subject = 'Sesión aprobada'
 		const { to, bussinesName } = context
 

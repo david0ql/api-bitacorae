@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common'
 import { MailerModule } from '@nestjs-modules/mailer'
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter'
 import { join } from 'path'
+import { TypeOrmModule } from '@nestjs/typeorm'
+import { Platform } from 'src/entities/Platform'
 
 import { MailService } from './mail.service'
 import envVars from 'src/config/env'
@@ -30,7 +32,8 @@ import envVars from 'src/config/env'
 					}
 				}
 			})
-		})
+		}),
+		TypeOrmModule.forFeature([Platform])
 	],
 	providers: [MailService],
 	exports: [MailService]

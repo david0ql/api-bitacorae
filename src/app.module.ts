@@ -32,6 +32,7 @@ import { MenuModule } from './api/menu/menu.module'
 import { ChatModule } from './api/chat/chat.module'
 import { SessionActivityModule } from './api/session_activity/session_activity.module'
 import { SessionAttachmentModule } from './api/session_attachment/session_attachment.module'
+import { PlatformModule } from './api/platform/platform.module'
 
 import { Business } from 'src/entities/Business'
 import { BusinessSize } from './entities/BusinessSize'
@@ -65,9 +66,9 @@ import { ChatMessage } from './entities/ChatMessage'
 import { SessionActivity } from './entities/SessionActivity'
 import { SessionActivityResponse } from './entities/SessionActivityResponse'
 import { SessionAttachment } from './entities/SessionAttachment'
+import { Admin } from './entities/Admin'
 
 import envVars from './config/env'
-import { Admin } from './entities/Admin'
 
 @Module({
 	imports: [
@@ -157,7 +158,8 @@ import { Admin } from './entities/Admin'
 		MenuModule,
 		ChatModule,
 		SessionActivityModule,
-		SessionAttachmentModule
+		SessionAttachmentModule,
+		PlatformModule
 	],
 	controllers: [],
 	providers: []
