@@ -5,8 +5,10 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
+import { Admin } from "./Admin";
 import { SessionActivity } from "./SessionActivity";
 import { Expert } from "./Expert";
 import { Role } from "./Role";
@@ -47,6 +49,9 @@ export class User {
     default: () => "CURRENT_TIMESTAMP",
   })
   updatedAt: Date;
+
+  @OneToOne(() => Admin, (admin) => admin.user)
+  admin: Admin;
 
   @OneToMany(
     () => SessionActivity,

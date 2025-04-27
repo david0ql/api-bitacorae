@@ -1,10 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, UseGuards, HttpCode, UseInterceptors, UploadedFile } from '@nestjs/common'
+
 import { UserService } from './user.service'
-import { CreateUserDto } from './dto/create-user.dto'
+
 import { UpdateUserDto } from './dto/update-user.dto'
-import { ApiBearerAuth } from '@nestjs/swagger'
+import { ChangePasswordDto } from './dto/change-password.dto'
+
+import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
+import { CurrentUser } from '../auth/decorators/current-user.decorator'
+import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 
 @Controller('user')
 @ApiBearerAuth()
@@ -12,28 +18,24 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard'
 export class UserController {
 	constructor(private readonly userService: UserService) {}
 
-	@Post()
-	create(@Body() createUserDto: CreateUserDto) {
-		return this.userService.create(createUserDto)
-	}
-
 	@Get()
-	findAll() {
-		return this.userService.findAll()
+	@HttpCode(200)
+	findOne(@CurrentUser() user: JwtUser) {
+		return this.userService.findOne(user)
 	}
 
-	@Get(':id')
-	findOne(@Param('id') id: string) {
-		return this.userService.findOne(+id)
+	@Patch('/change-password')
+	@HttpCode(200)
+	changePassword(@CurrentUser() user: JwtUser, @Body() changePasswordDto: ChangePasswordDto) {
+		return this.userService.changePassword(user, changePasswordDto)
 	}
 
-	@Patch(':id')
-	update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-		return this.userService.update(+id, updateUserDto)
-	}
-
-	@Delete(':id')
-	remove(@Param('id') id: string) {
-		return this.userService.remove(+id)
+	@Patch()
+	@HttpCode(200)
+	@UseInterceptors(FileUploadInterceptor('file', 'user'))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({ type: UpdateUserDto })
+	update(@CurrentUser() user: JwtUser, @Body() updateUserDto: UpdateUserDto, @UploadedFile() file?: Express.Multer.File) {
+		return this.userService.update(user, updateUserDto, file)
 	}
 }

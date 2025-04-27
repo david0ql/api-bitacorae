@@ -1,4 +1,5 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Admin } from "./Admin";
 import { Expert } from "./Expert";
 import { ContactInformation } from "./ContactInformation";
 import { Business } from "./Business";
@@ -22,6 +23,9 @@ export class DocumentType {
     default: () => "CURRENT_TIMESTAMP",
   })
   updatedAt: Date;
+
+  @OneToMany(() => Admin, (admin) => admin.documentType)
+  admins: Admin[];
 
   @OneToMany(() => Expert, (expert) => expert.documentType)
   experts: Expert[];

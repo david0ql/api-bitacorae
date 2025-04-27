@@ -67,6 +67,7 @@ import { SessionActivityResponse } from './entities/SessionActivityResponse'
 import { SessionAttachment } from './entities/SessionAttachment'
 
 import envVars from './config/env'
+import { Admin } from './entities/Admin'
 
 @Module({
 	imports: [
@@ -125,7 +126,8 @@ import envVars from './config/env'
 			ChatMessage,
 			SessionActivity,
 			SessionActivityResponse,
-			SessionAttachment
+			SessionAttachment,
+			Admin
 		]),
 		MailModule,
 		RedisModule,

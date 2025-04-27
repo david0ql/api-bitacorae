@@ -214,6 +214,7 @@ export class SessionService {
 					bussinesName,
 					expertName,
 					sessionDateTime,
+					conferenceLink,
 					preparationNotes
 				}, files)
 			} catch (e) {

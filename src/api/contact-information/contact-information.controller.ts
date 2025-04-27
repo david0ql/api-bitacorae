@@ -17,7 +17,7 @@ export class ContactInformationController {
 
 	@Post()
 	@HttpCode(200)
-	@UseInterceptors(FileUploadInterceptor('file', 'contact-information'))
+	@UseInterceptors(FileUploadInterceptor('file', 'user'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreateContactInformationDto })
 	create(@Body() createContactInformationDto: CreateContactInformationDto, @UploadedFile() file?: Express.Multer.File) {
@@ -32,7 +32,7 @@ export class ContactInformationController {
 
 	@Patch(':id')
 	@HttpCode(200)
-	@UseInterceptors(FileUploadInterceptor('file', 'contact-information'))
+	@UseInterceptors(FileUploadInterceptor('file', 'user'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: UpdateContactInformationDto })
 	update(@Param('id') id: string, @Body() updateContactInformationDto: UpdateContactInformationDto, @UploadedFile() file?: Express.Multer.File) {

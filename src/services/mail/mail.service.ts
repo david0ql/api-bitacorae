@@ -59,8 +59,7 @@ export class MailService {
 
 	async sendNewSessionEmail(context: NewSessionEmailContext, files?: Express.Multer.File[]) {
 		const subject = 'Nueva sesión creada'
-		const { to, bussinesName, expertName, sessionDateTime, preparationNotes } = context
-		const url = 'https://meet.google.com/example'
+		const { to, bussinesName, expertName, sessionDateTime, conferenceLink, preparationNotes } = context
 
 		await this.mailerService.sendMail({
 			to,
@@ -72,8 +71,8 @@ export class MailService {
 				bussinesName,
 				expertName,
 				sessionDateTime,
-				preparationNotes,
-				url
+				conferenceLink,
+				preparationNotes
 			},
 			attachments: files?.map((file) => ({
 				filename: file.originalname,

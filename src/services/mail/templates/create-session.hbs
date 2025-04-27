@@ -20,11 +20,14 @@
 									El experto <strong>{{expertName}}</strong> te ha agendado una sesión de trabajo para el día <br>
 									<strong>{{sessionDateTime}}</strong>.
 								</p>
-								<p style="color: #333; font-size: 16px;">
-									Enlace de acceso:
-									<a href="{{url}}" style="color: #007BDB;">{{#if url}}{{url}}{{else}}None{{/if}}</a>
-								</p>
-								<p style="color: #FF0000; font-weight: bold;">¡No olvides agregar esta sesión a tu calendario!</p>
+
+								{{#if conferenceLink}}
+									<p style="color: #333; font-size: 16px;">
+										Enlace de acceso:
+										<a href="{{conferenceLink}}" style="color: #007BDB;">{{conferenceLink}}</a>
+									</p>
+									<p style="color: #FF0000; font-weight: bold;">¡No olvides agregar esta sesión a tu calendario!</p>
+								{{/if}}
 							</td>
 						</tr>
 

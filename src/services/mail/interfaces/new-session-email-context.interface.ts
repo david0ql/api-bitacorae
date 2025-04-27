@@ -3,5 +3,6 @@ export interface NewSessionEmailContext {
 	bussinesName: string
 	expertName: string
 	sessionDateTime: string
+	conferenceLink: string | undefined
 	preparationNotes: string | undefined
 }

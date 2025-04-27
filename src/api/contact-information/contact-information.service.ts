@@ -43,7 +43,7 @@ export class ContactInformationService {
 			profile
 		} = createContactInformationDto
 
-		const fullPath = file ? this.fileUploadService.getFullPath('contact-information', file.filename) : undefined
+		const fullPath = file ? this.fileUploadService.getFullPath('user', file.filename) : undefined
 
 		const business = this.businessRepository.findOne({ where: { id: businessId } })
 		if (!business) {
@@ -118,7 +118,7 @@ export class ContactInformationService {
 	}
 
 	update(id: number, updateContactInformationDto: UpdateContactInformationDto, file?: Express.Multer.File) {
-		const fullPath = file ? this.fileUploadService.getFullPath('contact-information', file.filename) : undefined
+		const fullPath = file ? this.fileUploadService.getFullPath('user', file.filename) : undefined
 
 		if(!id) {
 			if (fullPath) {

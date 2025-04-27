@@ -1,4 +1,5 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Admin } from "./Admin";
 import { Expert } from "./Expert";
 import { ContactInformation } from "./ContactInformation";
 
@@ -21,6 +22,9 @@ export class EducationLevel {
     default: () => "CURRENT_TIMESTAMP",
   })
   updatedAt: Date;
+
+  @OneToMany(() => Admin, (admin) => admin.educationLevel)
+  admins: Admin[];
 
   @OneToMany(() => Expert, (expert) => expert.educationLevel)
   experts: Expert[];

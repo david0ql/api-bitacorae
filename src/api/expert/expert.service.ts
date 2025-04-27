@@ -53,7 +53,7 @@ export class ExpertService {
 			password
 		} = createExpertDto
 
-		const fullPath = file ? this.fileUploadService.getFullPath('expert', file.filename) : undefined
+		const fullPath = file ? this.fileUploadService.getFullPath('user', file.filename) : undefined
 
 		const existingUser = await this.userRepository.findOne({ where: { email } })
 		if(existingUser) {
@@ -196,7 +196,7 @@ export class ExpertService {
 	}
 
 	async update(id: number, updateExpertDto: UpdateExpertDto, file?: Express.Multer.File) {
-		const fullPath = file ? this.fileUploadService.getFullPath('expert', file.filename) : undefined
+		const fullPath = file ? this.fileUploadService.getFullPath('user', file.filename) : undefined
 		if(!id) {
 			if(fullPath) {
 				this.fileUploadService.deleteFile(fullPath)

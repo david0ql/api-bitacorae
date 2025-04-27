@@ -21,7 +21,7 @@ export class ExpertController {
 
 	@Post()
 	@HttpCode(200)
-	@UseInterceptors(FileUploadInterceptor('file', 'expert'))
+	@UseInterceptors(FileUploadInterceptor('file', 'user'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreateExpertDto })
 	create(@Body() createExpertDto: CreateExpertDto, @UploadedFile() file?: Express.Multer.File) {
@@ -42,7 +42,7 @@ export class ExpertController {
 
 	@Patch(':id')
 	@HttpCode(200)
-	@UseInterceptors(FileUploadInterceptor('file', 'expert'))
+	@UseInterceptors(FileUploadInterceptor('file', 'user'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: UpdateExpertDto })
 	update(@Param('id') id: string, @Body() updateExpertDto: UpdateExpertDto, @UploadedFile() file?: Express.Multer.File) {
