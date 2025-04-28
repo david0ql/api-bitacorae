@@ -1,4 +1,4 @@
-export interface GenerateSessionPdfData {
+export interface GenerateReportByBusinessPdfData {
 	bSocialReason: string
 	bPhone: string
 	bEmail: string
@@ -8,6 +8,11 @@ export interface GenerateSessionPdfData {
 	bInstagram: string
 	bTwitter: string
 	bWebsite: string
+	accompaniments: Accompaniment[]
+	generationDate: string
+}
+
+interface Accompaniment {
 	aStrengtheningArea: string
 	aTotalHours: number | string
 	aRegisteredHours: number | string
@@ -18,18 +23,17 @@ export interface GenerateSessionPdfData {
 	eProfile: string
 	eStrengtheningArea: string
 	eEducationLevel: string
+	eTotalHours: number | string
+	sessions: Session[]
+}
+
+interface Session {
 	stitle: string
 	sPreparationNotes: string
 	sPreparationFiles: Attachment[]
 	sSessionNotes: string
 	sConclusionsCommitments: string
 	sAttachments: Attachment[]
-
-	sign: boolean
-	state: string
-	generationDate: string
-	signature?: string
-	signedDate?: string
 }
 
 interface Attachment {

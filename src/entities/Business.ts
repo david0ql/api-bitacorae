@@ -7,6 +7,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
+import { Report } from "./Report";
 import { ContactInformation } from "./ContactInformation";
 import { Accompaniment } from "./Accompaniment";
 import { User } from "./User";
@@ -137,6 +138,9 @@ export class Business {
     default: () => "CURRENT_TIMESTAMP",
   })
   updatedAt: Date;
+
+  @OneToMany(() => Report, (report) => report.business)
+  reports: Report[];
 
   @OneToMany(
     () => ContactInformation,

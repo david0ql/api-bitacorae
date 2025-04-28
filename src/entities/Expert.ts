@@ -13,6 +13,7 @@ import { DocumentType } from "./DocumentType";
 import { ConsultorType } from "./ConsultorType";
 import { StrengtheningArea } from "./StrengtheningArea";
 import { EducationLevel } from "./EducationLevel";
+import { Report } from "./Report";
 import { Accompaniment } from "./Accompaniment";
 
 @Index("user_id", ["userId"], {})
@@ -137,6 +138,9 @@ export class Expert {
   })
   @JoinColumn([{ name: "education_level_id", referencedColumnName: "id" }])
   educationLevel: EducationLevel;
+
+  @OneToMany(() => Report, (report) => report.expert)
+  reports: Report[];
 
   @OneToMany(() => Accompaniment, (accompaniment) => accompaniment.expert)
   accompaniments: Accompaniment[];

@@ -1,8 +1,6 @@
 import { DataSource, Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
-import { format, toZonedTime } from 'date-fns-tz'
-import { es } from 'date-fns/locale'
 
 import { Session } from 'src/entities/Session'
 import { SessionActivity } from 'src/entities/SessionActivity'

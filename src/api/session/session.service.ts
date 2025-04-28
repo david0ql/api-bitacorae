@@ -1,8 +1,6 @@
 import { DataSource, Repository } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { format, toZonedTime } from 'date-fns-tz'
-import { es } from 'date-fns/locale'
 
 import { Session } from 'src/entities/Session'
 import { Accompaniment } from 'src/entities/Accompaniment'
@@ -65,6 +63,7 @@ export class SessionService {
 				'accompaniment.expert.user',
 				'accompaniment.expert.strengtheningArea',
 				'accompaniment.expert.educationLevel',
+				'accompaniment.expert.consultorType'
 			]
 		})
 	}
@@ -105,6 +104,7 @@ export class SessionService {
 			aStrengtheningArea: session.accompaniment?.strengtheningArea?.name || 'No registra.',
 			aTotalHours: session.accompaniment?.totalHours || 'No registra.',
 			aRegisteredHours: diffInHours || 'No registra.',
+			eType: session.accompaniment?.expert?.consultorType.name || '',
 			eName: session.accompaniment?.expert ? session.accompaniment.expert.firstName + session.accompaniment.expert.lastName : 'No registra.',
 			eEmail: session.accompaniment?.expert?.user?.email || 'No registra.',
 			ePhone: session.accompaniment?.expert?.phone || 'No registra.',
@@ -150,9 +150,9 @@ export class SessionService {
 			throw new BadRequestException(`Acompañamiento con id ${accompanimentId} no encontrado`)
 		}
 
-		const startDate = this.dateService.parseToZonedDate(startDatetime)
-		const endDate = this.dateService.parseToZonedDate(endDatetime)
-		const now = this.dateService.getNowInTimeZone()
+		const startDate = this.dateService.parseToDate(startDatetime)
+		const endDate = this.dateService.parseToDate(endDatetime)
+		const now = this.dateService.getNow()
 		const diffInHours = this.dateService.getHoursDiff(startDate, endDate)
 
 		if (diffInHours > accompaniment.maxHoursPerSession) {
@@ -345,9 +345,9 @@ export class SessionService {
 		} = updateSessionDto
 
 		if(startDatetime && endDatetime) {
-			const startDate = this.dateService.parseToZonedDate(startDatetime)
-			const endDate = this.dateService.parseToZonedDate(endDatetime)
-			const now = this.dateService.getNowInTimeZone()
+			const startDate = this.dateService.parseToDate(startDatetime)
+			const endDate = this.dateService.parseToDate(endDatetime)
+			const now = this.dateService.getNow()
 
 			const diffInHours = this.dateService.getHoursDiff(startDate, endDate)
 
@@ -428,12 +428,12 @@ export class SessionService {
 		const updatedSession = await this.sessionRepository.update(id, {
 			statusId: 2,
 			filePathUnapproved: file.filePath,
-			fileGenerationDatetime: this.dateService.getNowInTimeZone()
+			fileGenerationDatetime: this.dateService.getNow()
 		})
 		if (!updatedSession) throw new BadRequestException(`No se pudo actualizar la sesión con id ${id}`)
 
 		try {
-			const sessionDateTime = this.dateService.formatDate(this.dateService.parseToZonedDate(session.startDatetime))
+			const sessionDateTime = this.dateService.formatDate(this.dateService.parseToDate(session.startDatetime))
 			const { email: bussinesEmail, name: bussinesName } = session.accompaniment?.business?.user || { email: '', name: '' }
 			const expertName = session.accompaniment?.expert?.user?.name || ''
 
@@ -458,7 +458,7 @@ export class SessionService {
 
 		const diffInHours = this.dateService.getHoursDiff(session.startDatetime, session.endDatetime)
 		const generationDate = this.dateService.formatDate(session.fileGenerationDatetime || new Date())
-		const signedDate = this.dateService.formatDate(this.dateService.getNowInTimeZone())
+		const signedDate = this.dateService.formatDate(this.dateService.getNow())
 
 		const file = await this.generateSessionPdfData(session, diffInHours, preparationFiles, attachments, {
 			state: 'Aprobada',

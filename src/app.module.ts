@@ -33,6 +33,8 @@ import { ChatModule } from './api/chat/chat.module'
 import { SessionActivityModule } from './api/session_activity/session_activity.module'
 import { SessionAttachmentModule } from './api/session_attachment/session_attachment.module'
 import { PlatformModule } from './api/platform/platform.module'
+import { ReportTypeModule } from './api/report-type/report-type.module'
+import { ReportModule } from './api/report/report.module'
 
 import { Business } from 'src/entities/Business'
 import { BusinessSize } from './entities/BusinessSize'
@@ -67,6 +69,8 @@ import { SessionActivity } from './entities/SessionActivity'
 import { SessionActivityResponse } from './entities/SessionActivityResponse'
 import { SessionAttachment } from './entities/SessionAttachment'
 import { Admin } from './entities/Admin'
+import { ReportType } from './entities/ReportType'
+import { Report } from './entities/Report'
 
 import envVars from './config/env'
 
@@ -128,7 +132,9 @@ import envVars from './config/env'
 			SessionActivity,
 			SessionActivityResponse,
 			SessionAttachment,
-			Admin
+			Admin,
+			ReportType,
+			Report
 		]),
 		MailModule,
 		RedisModule,
@@ -159,7 +165,9 @@ import envVars from './config/env'
 		ChatModule,
 		SessionActivityModule,
 		SessionAttachmentModule,
-		PlatformModule
+		PlatformModule,
+		ReportTypeModule,
+		ReportModule
 	],
 	controllers: [],
 	providers: []

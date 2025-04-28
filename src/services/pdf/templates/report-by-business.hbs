@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				font-size: 16px;
+				line-height: normal;
+				margin: 0;
+				box-sizing: border-box;
+			}
+
+			h1, h2 {
+				text-align: center;
+				padding: 0;
+				margin: 0;
+			}
+
+			h1 {
+				font-size: 26px;
+			}
+
+			h2 {
+				font-size: 22px;
+			}
+
+			h3 {
+				font-size: 20px;
+			}
+
+			.containerImgHeader {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
+
+			.imgHeader {
+				max-width: 100%;
+				min-height: 50px;
+				max-height: 70px;
+				object-fit: contain;
+				margin: 0;
+			}
+
+			.section {
+				display: flex;
+				flex-direction: column;
+				padding-block: 20px;
+			}
+
+			.headerSection {
+				text-align: left;
+				margin-bottom: 10px;
+
+				width: 100%;
+				padding-block: 3px;
+				background-color: #f4f4f4;
+			}
+
+			.headerSectionRelevant {
+				text-align: center;
+				align-self: center;
+				margin-bottom: 10px;
+
+				width: fit-content;
+				padding-block: 3px;
+				padding-inline: 10px;
+				border-radius: 5px;
+				border-bottom: 2px solid #000;
+			}
+
+			.headerItemList {
+				text-align: left;
+				margin-bottom: 10px;
+			}
+
+			.label {
+				font-weight: bold;
+			}
+
+			.field {
+				display: flex;
+				flex-direction: column;
+				margin-bottom: 8px;
+				gap: 2px;
+			}
+
+			.signature {
+				width: 100%;
+				border-top: 1px solid #ccc;
+				padding-top: 20px;
+				margin-top: 50px;
+			}
+
+			ol {
+				padding-block: 0;
+				padding-left: 25px;
+				margin: 0;
+			}
+
+			ol > li {
+				margin: 0;
+				margin-bottom: 20px;
+			}
+
+			ol > li::marker {
+				font-size: 20px;
+				font-weight: bold;
+			}
+
+			ul > li {
+				margin-block: 5px;
+			}
+
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin-bottom: 10px;
+			}
+
+			table td {
+				padding-block: 3px;
+				border-bottom: 1px solid #eee;
+			}
+
+			table td:nth-child(1) {
+				width: 35%;
+			}
+
+			table td:nth-child(2) {
+				width: 65%;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="containerImgHeader">
+			<img src="{{reportHeaderImageUrl}}" alt="Logo Bictoria" class="imgHeader" />
+		</div>
+		<h1>INFORME DE ACOMPAÑAMIENTOS</h1>
+		<h2>{{programName}}</h2>
+
+		<div class="section">
+			<h3 class="headerSection">Datos de la Empresa</h3>
+			<table>
+				<tr>
+					<td><span class="label">Razón social:</span></td>
+					<td><span class="value">{{bSocialReason}}</span></td>
+				</tr>
+				<tr>
+					<td><span class="label">Teléfono:</span></td>
+					<td><span class="value">{{bPhone}}</span></td>
+				</tr>
+				<tr>
+					<td><span class="label">Correo electrónico:</span></td>
+					<td><span class="value">{{bEmail}}</span></td>
+				</tr>
+				<tr>
+					<td><span class="label">Sectores económicos:</span></td>
+					<td><span class="value">{{bEconomicActivity}}</span></td>
+				</tr>
+				<tr>
+					<td><span class="label">Tamaño:</span></td>
+					<td><span class="value">{{bBusinessSize}}</span></td>
+				</tr>
+				<tr>
+					<td><span class="label">Facebook:</span></td>
+					<td><span class="value">{{bFacebook}}</span></td>
+				</tr>
+				<tr>
+					<td><span class="label">Instagram:</span></td>
+					<td><span class="value">{{bInstagram}}</span></td>
+				</tr>
+				<tr>
+					<td><span class="label">Twitter / X:</span></td>
+					<td><span class="value">{{bTwitter}}</span></td>
+				</tr>
+				<tr>
+					<td><span class="label">Sitio web:</span></td>
+					<td><span class="value">{{bWebsite}}</span></td>
+				</tr>
+			</table>
+		</div>
+
+		{{#each accompaniments}}
+			<div class="section">
+				<h2 class="headerSectionRelevant">Acompañamiento #{{inc @index}}</h2>
+
+				<h3 class="headerSection">Datos del acompañamiento</h3>
+				<table>
+					<tr>
+						<td><span class="label">Áreas de fortalecimiento:</span></td>
+						<td><span class="value">{{aStrengtheningArea}}</span></td>
+					</tr>
+					<tr>
+						<td><span class="label">Horas asignadas:</span></td>
+						<td><span class="value">{{aTotalHours}}</span></td>
+					</tr>
+					<tr>
+						<td><span class="label">Horas ejecutadas:</span></td>
+						<td><span class="value">{{aRegisteredHours}}</span></td>
+					</tr>
+				</table>
+
+
+				<h3 class="headerSection">Datos de {{eType}}</h3>
+				<table>
+					<tr>
+						<td><span class="label">Nombre:</span></td>
+						<td><span class="value">{{eName}}</span></td>
+					</tr>
+					<tr>
+						<td><span class="label">Correo electrónico:</span></td>
+						<td><span class="value">{{eEmail}}</span></td>
+					</tr>
+					<tr>
+						<td><span class="label">Teléfono:</span></td>
+						<td><span class="value">{{ePhone}}</span></td>
+					</tr>
+					<tr>
+						<td><span class="label">Perfil:</span></td>
+						<td><span class="value">{{eProfile}}</span></td>
+					</tr>
+					<tr>
+						<td><span class="label">Áreas de experiencia:</span></td>
+						<td><span class="value">{{eStrengtheningArea}}</span></td>
+					</tr>
+					<tr>
+						<td><span class="label">Nivel de educación:</span></td>
+						<td><span class="value">{{eEducationLevel}}</span></td>
+					</tr>
+					<tr>
+						<td><span class="label">Total de horas asignadas:</span></td>
+						<td><span class="value">{{eTotalHours}}</span></td>
+					</tr>
+				</table>
+
+				<h3 class="headerSection">Sesiones</h3>
+				{{#if sessions.length}}
+					<ol>
+						{{#each sessions}}
+							<li>
+								<h3 class="headerItemList">{{stitle}}</h3>
+								<div class="field">
+									<span class="label">Notas de preparación:</span>
+									{{sPreparationNotes}}
+								</div>
+								<div class="field">
+									<span class="label">Archivos preparatorios:</span>
+									{{#if sPreparationFiles.length}}
+										<ul>
+											{{#each sPreparationFiles}}
+												<li><a href="{{this.filePath}}">{{this.name}}</a></li>
+											{{/each}}
+										</ul>
+									{{else}}
+										<span>No se adjuntaron archivos.</span>
+									{{/if}}
+								</div>
+								<div class="field">
+									<span class="label">Notas:</span>
+									{{sSessionNotes}}
+								</div>
+								<div class="field">
+									<span class="label">Conclusiones y/o compromisos:</span>
+									{{sConclusionsCommitments}}
+								</div>
+								<div class="field">
+									<span class="label">Archivos adjuntos:</span>
+									{{#if sAttachments.length}}
+										<ul>
+											{{#each sAttachments}}
+												<li><a href="{{this.filePath}}">{{this.name}}</a></li>
+											{{/each}}
+										</ul>
+									{{else}}
+										<span>No se adjuntaron archivos.</span>
+									{{/if}}
+								</div>
+							</li>
+						{{/each}}
+					</ol>
+				{{else}}
+					<p>No se registraron sesiones.</p>
+				{{/if}}
+			</div>
+		{{/each}}
+
+		<div class="signature">
+			<p><strong>Fecha de generación del informe:</strong> {{generationDate}}</p>
+		</div>
+	</body>
+</html>

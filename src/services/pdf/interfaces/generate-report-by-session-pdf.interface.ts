@@ -1,4 +1,4 @@
-export interface GenerateSessionPdfData {
+export interface GenerateReportBySessionPdfData {
 	bSocialReason: string
 	bPhone: string
 	bEmail: string
@@ -25,11 +25,7 @@ export interface GenerateSessionPdfData {
 	sConclusionsCommitments: string
 	sAttachments: Attachment[]
 
-	sign: boolean
-	state: string
 	generationDate: string
-	signature?: string
-	signedDate?: string
 }
 
 interface Attachment {

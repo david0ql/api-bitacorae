@@ -95,21 +95,6 @@
 				margin-top: 50px;
 			}
 
-			.signature p {
-				margin: 0 0 4px 0;
-			}
-
-			.signatureLine {
-				display: inline-block;
-				margin-left: 6px;
-				vertical-align: middle;
-			}
-
-			.handwritten {
-				font-family: 'Pacifico', cursive;
-				font-size: 22px;
-			}
-
 			ul {
 				padding-block: 0;
 				margin: 0;
@@ -143,7 +128,7 @@
 		<div class="containerImgHeader">
 			<img src="{{reportHeaderImageUrl}}" alt="Logo Bictoria" class="imgHeader" />
 		</div>
-		<h1>ACTA DE SESIÓN DE ACOMPAÑAMIENTO</h1>
+		<h1>INFORME SESIÓN DE ACOMPAÑAMIENTO</h1>
 		<h2>{{programName}}</h2>
 
 		<div class="headerSectionRelevant">
@@ -214,34 +199,35 @@
 			<h3 class="headerSection">Datos de {{eType}}</h3>
 			<table>
 				<tr>
-					<td><span class="label">Nombre:</span></td>
+					<td><span class="label">Nombre</span>:</td>
 					<td><span class="value">{{eName}}</span></td>
 				</tr>
 				<tr>
-					<td><span class="label">Correo electrónico:</span></td>
+					<td><span class="label">Correo electrónico</span>:</td>
 					<td><span class="value">{{eEmail}}</span></td>
 				</tr>
 				<tr>
-					<td><span class="label">Teléfono:</span></td>
+					<td><span class="label">Teléfono</span>:</td>
 					<td><span class="value">{{ePhone}}</span></td>
 				</tr>
 				<tr>
-					<td><span class="label">Perfil:</span></td>
+					<td><span class="label">Perfil</span>:</td>
 					<td><span class="value">{{eProfile}}</span></td>
 				</tr>
 				<tr>
-					<td><span class="label">Áreas de experiencia:</span></td>
+					<td><span class="label">Áreas de experiencia</span>:</td>
 					<td><span class="value">{{eStrengtheningArea}}</span></td>
 				</tr>
 				<tr>
-					<td><span class="label">Nivel de educación:</span></td>
+					<td><span class="label">Nivel de educación</span>:</td>
 					<td><span class="value">{{eEducationLevel}}</span></td>
 				</tr>
 				<tr>
-					<td><span class="label">Total de horas asignadas:</span></td>
+					<td><span class="label">Total de horas asignadas</span>:</td>
 					<td><span class="value">{{aTotalHours}}</span></td>
 				</tr>
 			</table>
+
 		</div>
 
 		<div class="section">
@@ -286,20 +272,7 @@
 		</div>
 
 		<div class="signature">
-			<p>
-				<strong>Firma:</strong>
-				<span class="signatureLine">
-					{{#if sign}}
-						<span class="handwritten">{{signature}}</span>
-					{{else}}
-						<span>________________________________</span>
-					{{/if}}
-				</span>
-			</p>
-
-			<p><strong>Fecha de firma:</strong> {{signedDate}}</p>
-			<p><strong>Estado del acta:</strong> {{state}}</p>
-			<p><strong>Fecha de generación del acta:</strong> {{generationDate}}</p>
+			<p><strong>Fecha de generación del informe:</strong> {{generationDate}}</p>
 		</div>
 	</body>
 </html>

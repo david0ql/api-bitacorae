@@ -1,7 +1,6 @@
 import { In, Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { parse } from 'date-fns'
 
 import { Post } from 'src/entities/Post'
 
@@ -127,7 +126,7 @@ export class PostService {
 			post.filePath = fullPath ?? post.filePath
 			post.content = content ?? post.content
 			if (postDate) {
-				post.postDate = this.dateService.parseToZonedDate(postDate)
+				post.postDate = this.dateService.parseToDate(postDate)
 			}
 
 			if (categories) {

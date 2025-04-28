@@ -22,8 +22,9 @@ export class MailService {
 	private varCommons = {
 		year: new Date().getFullYear(),
 		companyName: 'Bitácora-e',
+		programName: 'Consultorio Empresarial de Colsubsidio operado por BICTIA',
 		appUrl: envVars.APP_URL,
-		logoUrl: ''
+		logoUrl: `${envVars.APP_URL}/assets/email/logo_bictoria.jpg`
 	}
 
 	constructor(
@@ -48,6 +49,10 @@ export class MailService {
 		const platform = await this.platformRepository.findOne({ where: {} })
 		if(platform?.logoPath) {
 			this.varCommons.logoUrl = `${envVars.APP_URL}/${platform.logoPath}`
+		}
+
+		if(platform?.programName) {
+			this.varCommons.programName = platform.programName
 		}
 	}
 
