@@ -152,38 +152,104 @@ export class AccompanimentService {
 
 	async findAllByBusiness(user: JwtUser, id: number, pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
 		const { id: userId, roleId } = user
-		let expertId: number | undefined
+		const { take, skip, order } = pageOptionsDto
+
+		let whereConditions: string[] = ['a.business_id = ?']
+		let params: any[] = [id]
 
 		if (roleId === 3) {
 			const expert = await this.expertRepository.findOne({ where: { userId }, select: ['id'] })
 			if (!expert) throw new BadRequestException(`No se encontró un experto con el ID de usuario ${id}`)
 
-			expertId = expert.id
+			whereConditions.push(`AND a.expert_id = ?`)
+			params.push(expert.id)
 		}
 
-		const queryBuilder = this.accompanimentRepository.createQueryBuilder('accompaniment')
-			.select([
-				'accompaniment.id AS id',
-				'accompaniment.businessId AS businessId',
-				'CONCAT(expert.firstName, " ", expert.lastName) AS expertName',
-				'accompaniment.totalHours AS totalHours',
-				'accompaniment.maxHoursPerSession AS maxHoursPerSession'
-			])
-			.innerJoin('accompaniment.expert', 'expert')
-			.where('accompaniment.businessId = :id', { id })
-			.orderBy('accompaniment.id', pageOptionsDto.order)
-			.skip(pageOptionsDto.skip)
-			.take(pageOptionsDto.take)
+		const whereClause = whereConditions.join(' ')
 
-		if (expertId) {
-			queryBuilder.andWhere('accompaniment.expertId = :expertId', { expertId })
-		}
+		const sql = `
+			SELECT
+				a.id AS id,
+				a.total_hours AS totalHours,
+				a.max_hours_per_session AS maxHoursPerSession,
+				CONCAT(e.first_name, ' ', e.last_name) AS expertName,
+				e.id AS expertId,
+				b.id AS businessId,
+				b.assigned_hours AS assignedHours,
+				IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
+			FROM
+				accompaniment a
+				INNER JOIN expert e ON e.id = a.expert_id
+				INNER JOIN business b ON b.id = a.business_id
+				INNER JOIN session s ON s.accompaniment_id = a.id
+			WHERE
+				${whereClause}
+			GROUP BY a.id
+			ORDER BY a.id ${order}
+			LIMIT ${take} OFFSET ${skip}
+		`
 
-		const [items, totalCount] = await Promise.all([
-			queryBuilder.getRawMany(),
-			queryBuilder.getCount()
+		const countSql = `
+			SELECT COUNT(DISTINCT a.id) AS total
+			FROM accompaniment a
+			INNER JOIN expert e ON e.id = a.expert_id
+			INNER JOIN business b ON b.id = a.business_id
+			WHERE ${whereClause}
+		`
+
+		const [items, countResult] = await Promise.all([
+			this.dataSource.query(sql, params),
+			this.dataSource.query(countSql, params)
 		])
 
+		const totalCount = Number(countResult[0]?.total) ?? 0
+		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
+
+		return new PageDto(items, pageMetaDto)
+	}
+
+	async findAllByExpert(id: number, pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
+		const { take, skip, order } = pageOptionsDto
+
+		const expert = await this.expertRepository.findOne({ where: { id }, select: ['id'] })
+		if (!expert) throw new BadRequestException(`No se encontró un experto con el ID ${id}`)
+
+		const sql = `
+			SELECT
+				a.id AS id,
+				a.total_hours AS totalHours,
+				a.max_hours_per_session AS maxHoursPerSession,
+				CONCAT(e.first_name, ' ', e.last_name) AS expertName,
+				e.id AS expertId,
+				b.id AS businessId,
+				b.assigned_hours AS assignedHours,
+				IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
+			FROM
+				accompaniment a
+				INNER JOIN expert e ON e.id = a.expert_id
+				INNER JOIN business b ON b.id = a.business_id
+				INNER JOIN session s ON s.accompaniment_id = a.id
+			WHERE
+				a.expert_id = ?
+			GROUP BY a.id
+			ORDER BY a.id ${order}
+			LIMIT ${take} OFFSET ${skip}
+		`
+
+		const countSql = `
+			SELECT COUNT(DISTINCT a.id) AS total
+			FROM accompaniment a
+			INNER JOIN expert e ON e.id = a.expert_id
+			INNER JOIN business b ON b.id = a.business_id
+			WHERE a.expert_id = ?
+		`
+
+		const [items, countResult] = await Promise.all([
+			this.dataSource.query(sql, [id]),
+			this.dataSource.query(countSql, [id])
+		])
+
+		const totalCount = Number(countResult[0]?.total) ?? 0
 		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 
 		return new PageDto(items, pageMetaDto)

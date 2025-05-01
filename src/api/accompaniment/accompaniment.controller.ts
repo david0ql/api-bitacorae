@@ -38,6 +38,12 @@ export class AccompanimentController {
 		return this.accompanimentService.findAllByBusiness(user, +id, pageOptionsDto)
 	}
 
+	@Get('/byExpert/:id')
+	@HttpCode(200)
+	findAllByExpert(@Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Accompaniment>> {
+		return this.accompanimentService.findAllByExpert(+id, pageOptionsDto)
+	}
+
 	@Get(':id')
 	@HttpCode(200)
 	findOne(@Param('id') id: string) {
