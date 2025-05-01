@@ -245,7 +245,7 @@
 					</tr>
 					<tr>
 						<td><span class="label">Perfil:</span></td>
-						<td><span class="value">{{eProfile}}</span></td>
+						<td><span class="value">{{{sanitizeHtmlPdf eProfile}}}</span></td>
 					</tr>
 					<tr>
 						<td><span class="label">Áreas de experiencia:</span></td>
@@ -269,7 +269,7 @@
 								<h3 class="headerItemList">{{stitle}}</h3>
 								<div class="field">
 									<span class="label">Notas de preparación:</span>
-									{{sPreparationNotes}}
+									{{{sanitizeHtmlPdf sPreparationNotes}}}
 								</div>
 								<div class="field">
 									<span class="label">Archivos preparatorios:</span>
@@ -285,11 +285,11 @@
 								</div>
 								<div class="field">
 									<span class="label">Notas:</span>
-									{{sSessionNotes}}
+									{{{sanitizeHtmlPdf sSessionNotes}}}
 								</div>
 								<div class="field">
 									<span class="label">Conclusiones y/o compromisos:</span>
-									{{sConclusionsCommitments}}
+									{{{sanitizeHtmlPdf sConclusionsCommitments}}}
 								</div>
 								<div class="field">
 									<span class="label">Archivos adjuntos:</span>
@@ -331,7 +331,7 @@
 													</div>
 													<div class="field">
 														<span class="label">Descripción:</span>
-														{{this.description}}
+														{{{sanitizeHtmlPdf this.description}}}
 													</div>
 
 													<hr>
@@ -358,7 +358,7 @@
 													</div>
 													<div class="field">
 														<span class="label">Descripción del entregable:</span>
-														{{this.deliverableDescription}}
+														{{{sanitizeHtmlPdf this.deliverableDescription}}}
 													</div>
 												</li>
 											{{/each}}

@@ -4,6 +4,7 @@ import * as path from 'path'
 import * as Handlebars from 'handlebars'
 import * as puppeteer from 'puppeteer'
 import { v4 as uuidv4 } from 'uuid'
+import * as sanitizeHtml from 'sanitize-html'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
 
 import { GenerateSessionPdfData } from './interfaces/generate-session-pdf.interface'
@@ -23,6 +24,42 @@ Handlebars.registerHelper('inc', (value) => {
 
 Handlebars.registerHelper('isNumber', (value) => {
 	return typeof value === 'number' && !isNaN(value)
+})
+
+Handlebars.registerHelper('sanitizeHtmlPdf', (html: string) => {
+	const clean = sanitizeHtml(html, {
+		allowedTags: [
+			'p', 'b', 'i', 'strong', 'em', 'u', 'ul', 'ol', 'li',
+			'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+			'table', 'thead', 'tbody', 'tr', 'td', 'th',
+			'div', 'span', 'img'
+		],
+		allowedAttributes: {
+			a: ['href'],
+			img: ['src', 'alt', 'width', 'height', 'style'],
+			div: ['style'],
+			span: ['style'],
+			td: ['style'],
+			th: ['style'],
+			p: ['style']
+		},
+		allowedSchemes: ['http', 'https', 'data'],
+		allowedStyles: {
+			'*': {
+				'color': [/^.*$/],
+				'font-weight': [/^.*$/],
+				'text-align': [/^.*$/],
+				'font-size': [/^.*$/],
+				'background-color': [/^.*$/],
+				'width': [/^.*$/],
+				'height': [/^.*$/]
+			}
+		},
+
+		allowCommentTag: false
+	})
+
+	return new Handlebars.SafeString(clean)
 })
 
 @Injectable()

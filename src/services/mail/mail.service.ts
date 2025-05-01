@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { MailerService } from '@nestjs-modules/mailer'
 import * as fs from 'fs'
 import * as path from 'path'
+import * as sanitizeHtml from 'sanitize-html'
 import Handlebars from 'handlebars'
 
 import { WelcomeEmailContext } from './interfaces/welcome-email-context.interface'
@@ -15,6 +16,39 @@ import { Platform } from 'src/entities/Platform'
 import { Repository } from 'typeorm'
 
 import envVars from 'src/config/env'
+
+Handlebars.registerHelper('sanitizeHtmlEmail', (html: string) => {
+	const clean = sanitizeHtml(html, {
+		allowedTags: [
+			'b', 'i', 'em', 'strong', 'a', 'p', 'ul', 'ol', 'li', 'br', 'span',
+			'div', 'img', 'table', 'thead', 'tbody', 'tr', 'td', 'th', 'h1', 'h2', 'h3', 'h4'
+		],
+		allowedAttributes: {
+			a: ['href', 'target', 'rel'],
+			img: ['src', 'alt', 'width', 'height', 'style'],
+			p: ['style'],
+			div: ['style'],
+			span: ['style'],
+			td: ['style'],
+			th: ['style']
+		},
+		allowedSchemes: ['http', 'https', 'mailto', 'data'],
+		allowedStyles: {
+			'*': {
+				'color': [/^.*$/],
+				'font-weight': [/^.*$/],
+				'text-decoration': [/^.*$/],
+				'font-size': [/^.*$/],
+				'text-align': [/^.*$/],
+				'background-color': [/^.*$/],
+				'width': [/^.*$/],
+				'height': [/^.*$/]
+			}
+		}
+	})
+
+	return new Handlebars.SafeString(clean)
+})
 
 @Injectable()
 export class MailService {
