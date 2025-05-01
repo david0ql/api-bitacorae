@@ -32,7 +32,7 @@ export class PdfService implements OnModuleDestroy {
 
 	private async initBrowser() {
 		if (!this.browser) {
-			this.browser = await puppeteer.launch({ headless: true })
+			this.browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] })
 		}
 	}
 
