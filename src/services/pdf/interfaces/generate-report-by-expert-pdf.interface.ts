@@ -1,4 +1,22 @@
-export interface GenerateReportByBusinessPdfData {
+export interface GenerateReportByExpertPdfData {
+	eType: string
+	eName: string
+	eEmail: string
+	ePhone: string
+	eProfile: string
+	eStrengtheningArea: string
+	eEducationLevel: string
+	eTotalHours: number | string
+	eRegisteredHours: number | string
+	accompaniments: Accompaniment[]
+	generationDate: string
+}
+
+interface Accompaniment {
+	aStrengtheningArea: string
+	aTotalHours: number | string
+	aRegisteredHours: number | string
+
 	bSocialReason: string
 	bPhone: string
 	bEmail: string
@@ -8,22 +26,6 @@ export interface GenerateReportByBusinessPdfData {
 	bInstagram: string
 	bTwitter: string
 	bWebsite: string
-	accompaniments: Accompaniment[]
-	generationDate: string
-}
-
-interface Accompaniment {
-	aStrengtheningArea: string
-	aTotalHours: number | string
-	aRegisteredHours: number | string
-	eType: string
-	eName: string
-	eEmail: string
-	ePhone: string
-	eProfile: string
-	eStrengtheningArea: string
-	eEducationLevel: string
-	eTotalHours: number | string
 	sessions: Session[]
 }
 
@@ -46,7 +48,6 @@ interface Attachment {
 // 	title: string
 // 	description: string
 // 	requiresDeliverable: boolean
-// 	dueDate: string
 // 	attachment: Attachment | null
 // 	grade: number | null
 // }

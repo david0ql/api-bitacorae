@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger"
-import { IsNotEmpty, IsNumber, IsString, ValidateIf } from "class-validator"
+import { IsIn, IsNotEmpty, IsNumber, IsString, ValidateIf } from "class-validator"
 
 export class CreateReportDto {
 	@ApiProperty({
@@ -12,10 +12,12 @@ export class CreateReportDto {
 
 	@ApiProperty({
 		description: 'Document type ID',
-		example: 1
+		example: 1,
+		enum: [1, 2, 3, 4]
 	})
 	@IsNotEmpty()
 	@IsNumber()
+	@IsIn([1, 2, 3, 4])
 	readonly reportTypeId: number
 
 	@ApiProperty({

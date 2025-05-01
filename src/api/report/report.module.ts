@@ -12,11 +12,13 @@ import { SessionPreparationFile } from 'src/entities/SessionPreparationFile'
 import { SessionAttachment } from 'src/entities/SessionAttachment'
 import { Platform } from 'src/entities/Platform'
 import { Business } from 'src/entities/Business'
+import { Expert } from 'src/entities/Expert'
+import { SessionActivity } from 'src/entities/SessionActivity'
 
 @Module({
 	controllers: [ReportController],
 	providers: [ReportService, FileUploadService, DateService, PdfService],
-	imports: [TypeOrmModule.forFeature([Report, Session, SessionPreparationFile, SessionAttachment, Platform, Business])]
+	imports: [TypeOrmModule.forFeature([Report, Session, SessionPreparationFile, SessionAttachment, SessionActivity, Platform, Business, Expert])]
 })
 
 export class ReportModule {}

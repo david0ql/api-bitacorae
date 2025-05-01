@@ -24,6 +24,7 @@ export interface GenerateReportBySessionPdfData {
 	sSessionNotes: string
 	sConclusionsCommitments: string
 	sAttachments: Attachment[]
+	// sActivities: Activity[]
 
 	generationDate: string
 }
@@ -32,3 +33,11 @@ interface Attachment {
 	name: string
 	filePath: string
 }
+
+// interface Activity {
+// 	title: string
+// 	description: string
+// 	requiresDeliverable: boolean
+// 	attachment: Attachment | null
+// 	grade: number | null
+// }

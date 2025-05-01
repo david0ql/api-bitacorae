@@ -15,6 +15,7 @@ import { Platform } from 'src/entities/Platform'
 import { Repository } from 'typeorm'
 
 import envVars from 'src/config/env'
+import { GenerateReportByExpertPdfData } from './interfaces/generate-report-by-expert-pdf.interface'
 
 Handlebars.registerHelper('inc', (value) => {
 	return parseInt(value) + 1
@@ -187,10 +188,32 @@ export class PdfService implements OnModuleDestroy {
 		return { fileName, filePath }
 	}
 
-	async generateReportByBusinessPdf(data: GenerateReportByBusinessPdfData, attachmentPaths: string[]): Promise<FileInfo> {
-		const internalPath = path.join('generated', 'report', 'business')
+	async generateReportByBusinessPdf(data: GenerateReportByBusinessPdfData, attachmentPaths: string[], route: string = 'business'): Promise<FileInfo> {
+		const internalPath = path.join('generated', 'report', route)
 		const outputDir = path.join(process.cwd(), internalPath)
 		const templatePath = path.join(process.cwd(), 'src', 'services', 'pdf', 'templates', 'report-by-business.hbs')
+
+		const fileName = `${uuidv4()}.pdf`
+		const filePath = path.join(internalPath, fileName)
+
+		const mainPdfBuffer = await this.createPdfFromTemplate(templatePath, data)
+		const annexPdfBuffer = await this.createAnnexPage()
+
+		const finalPdfBuffer = await this.combinePdfs(mainPdfBuffer, annexPdfBuffer, attachmentPaths)
+
+		if (!fs.existsSync(outputDir)) {
+			fs.mkdirSync(outputDir, { recursive: true })
+		}
+
+		fs.writeFileSync(path.join(process.cwd(), filePath), finalPdfBuffer)
+
+		return { fileName, filePath }
+	}
+
+	async generateReportByExpertPdf(data: GenerateReportByExpertPdfData, attachmentPaths: string[]): Promise<FileInfo> {
+		const internalPath = path.join('generated', 'report', 'expert')
+		const outputDir = path.join(process.cwd(), internalPath)
+		const templatePath = path.join(process.cwd(), 'src', 'services', 'pdf', 'templates', 'report-by-expert.hbs')
 
 		const fileName = `${uuidv4()}.pdf`
 		const filePath = path.join(internalPath, fileName)

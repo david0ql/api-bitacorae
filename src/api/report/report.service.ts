@@ -4,9 +4,11 @@ import { InjectRepository } from '@nestjs/typeorm'
 
 import { Report } from 'src/entities/Report'
 import { Business } from 'src/entities/Business'
+import { Expert } from 'src/entities/Expert'
 import { Session } from 'src/entities/Session'
 import { SessionPreparationFile } from 'src/entities/SessionPreparationFile'
 import { SessionAttachment } from 'src/entities/SessionAttachment'
+import { SessionActivity } from 'src/entities/SessionActivity'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -28,6 +30,9 @@ export class ReportService {
 		@InjectRepository(Business)
 		private readonly businessRepository: Repository<Business>,
 
+		@InjectRepository(Expert)
+		private readonly expertRepository: Repository<Expert>,
+
 		@InjectRepository(Session)
 		private readonly sessionRepository: Repository<Session>,
 
@@ -36,6 +41,9 @@ export class ReportService {
 
 		@InjectRepository(SessionAttachment)
 		private readonly sessionAttachmentRepository: Repository<SessionAttachment>,
+
+		@InjectRepository(SessionActivity)
+		private readonly sessionActivityRepository: Repository<SessionActivity>,
 
 		private readonly fileUploadService: FileUploadService,
 		private readonly dateService: DateService,
@@ -60,21 +68,45 @@ export class ReportService {
 		})
 	}
 
-	private async getBusinessWithRelations(businessId: number) {
-		return this.businessRepository.findOne({
-			where: { id: businessId },
+	private async getBusinessWithRelations(businessId: number, expertId?: number) {
+		const query = this.businessRepository.createQueryBuilder('business')
+			.leftJoinAndSelect('business.user', 'user')
+			.leftJoinAndSelect('business.economicActivity', 'economicActivity')
+			.leftJoinAndSelect('business.businessSize', 'businessSize')
+			.leftJoinAndSelect('business.accompaniments', 'accompaniments')
+			.leftJoinAndSelect('accompaniments.strengtheningArea', 'strengtheningArea')
+			.leftJoinAndSelect('accompaniments.expert', 'expert')
+			.leftJoinAndSelect('expert.user', 'expertUser')
+			.leftJoinAndSelect('expert.strengtheningArea', 'expertStrengtheningArea')
+			.leftJoinAndSelect('expert.educationLevel', 'educationLevel')
+			.leftJoinAndSelect('expert.consultorType', 'consultorType')
+			.leftJoinAndSelect('accompaniments.sessions', 'sessions')
+			.leftJoinAndSelect('sessions.status', 'status')
+			.where('business.id = :businessId', { businessId })
+
+		if (expertId !== undefined) {
+			query.andWhere('expert.id = :expertId', { expertId })
+		}
+
+		return query.getOne()
+	}
+
+	private async getExpertWithRelations(expertId: number) {
+		return this.expertRepository.findOne({
+			where: { id: expertId },
 			relations: [
 				'user',
-				'economicActivity',
-				'businessSize',
+				'strengtheningArea',
+				'educationLevel',
+				'consultorType',
 				'accompaniments',
 				'accompaniments.strengtheningArea',
-				'accompaniments.expert.user',
-				'accompaniments.expert.strengtheningArea',
-				'accompaniments.expert.educationLevel',
-				'accompaniments.expert.consultorType',
 				'accompaniments.sessions',
-				'accompaniments.sessions.status'
+				'accompaniments.sessions.status',
+				'accompaniments.business',
+				'accompaniments.business.user',
+				'accompaniments.business.economicActivity',
+				'accompaniments.business.businessSize'
 			]
 		})
 	}
@@ -91,6 +123,12 @@ export class ReportService {
 			name: file.name,
 			filePath: file.externalPath ? file.externalPath : envVars.APP_URL + '/' + file.filePath
 		}))
+
+		// const activitiesData = await this.sessionActivityRepository.find({
+		// 	where: { sessionId },
+		// 	relations: ['session', 'session.status']
+		// })
+
 
 		return { preparationFiles, attachments }
 	}
@@ -130,7 +168,6 @@ export class ReportService {
 		const accompaniments = await Promise.all(
 			business.accompaniments.map(async accompaniment => {
 				let totalRegisteredHours = 0
-				let totalExpertHours = 0
 
 				const sessions = await Promise.all(
 					accompaniment.sessions.map(async session => {
@@ -140,10 +177,6 @@ export class ReportService {
 
 						if (session.statusId === 3 && diffInHours) {
 							totalRegisteredHours += diffInHours
-						}
-
-						if (session.statusId !== 4) {
-							totalExpertHours += diffInHours
 						}
 
 						return {
@@ -157,18 +190,20 @@ export class ReportService {
 					})
 				)
 
+				const expert = accompaniment.expert
+
 				return {
 					aStrengtheningArea: accompaniment.strengtheningArea?.name || 'No registra.',
 					aTotalHours: accompaniment.totalHours || 'No registra.',
 					aRegisteredHours: totalRegisteredHours || 'No registra.',
-					eType: accompaniment.expert?.consultorType?.name || 'No registra.',
-					eName: accompaniment.expert ? accompaniment.expert.firstName + accompaniment.expert.lastName : 'No registra.',
-					eEmail: accompaniment.expert?.user?.email || 'No registra.',
-					ePhone: accompaniment.expert?.phone || 'No registra.',
-					eProfile: accompaniment.expert?.profile || 'No registra.',
-					eStrengtheningArea: accompaniment.expert?.strengtheningArea?.name || 'No registra.',
-					eEducationLevel: accompaniment.expert?.educationLevel?.name || 'No registra.',
-					eTotalHours: totalExpertHours || 'No registra.',
+					eType: expert?.consultorType?.name || 'No registra.',
+					eName: expert ? expert.firstName + expert.lastName : 'No registra.',
+					eEmail: expert?.user?.email || 'No registra.',
+					ePhone: expert?.phone || 'No registra.',
+					eProfile: expert?.profile || 'No registra.',
+					eStrengtheningArea: expert?.strengtheningArea?.name || 'No registra.',
+					eEducationLevel: expert?.educationLevel?.name || 'No registra.',
+					eTotalHours: accompaniment.totalHours || 'No registra.',
 					sessions
 				}
 			})
@@ -189,14 +224,98 @@ export class ReportService {
 		}
 	}
 
-	async findApprovedSessionAttachments(businessId: number): Promise<string[]> {
-		const sessions = await this.sessionRepository.createQueryBuilder('session')
+	private async getExpertReportData(expert: Expert, generationDate: string) {
+		let eTotalHours = 0
+		let eRegisteredHours = 0
+
+		const accompaniments = await Promise.all(
+			expert.accompaniments.map(async accompaniment => {
+				let aTotalHours = accompaniment.totalHours
+				let aRegisteredHours = 0
+
+				const sessions = await Promise.all(
+					accompaniment.sessions.map(async session => {
+						const { preparationFiles, attachments } = await this.mapFiles(session.id)
+
+						const diffInHours = this.dateService.getHoursDiff(session.startDatetime, session.endDatetime)
+
+						if (session.statusId === 3 && diffInHours) {
+							aRegisteredHours += diffInHours
+						}
+
+						return {
+							stitle: session.title || 'No registra.',
+							sPreparationNotes: session.preparationNotes || 'No registra.',
+							sPreparationFiles: preparationFiles,
+							sSessionNotes: session.sessionNotes || 'No registra.',
+							sConclusionsCommitments: session.conclusionsCommitments || 'No registra.',
+							sAttachments: attachments
+						}
+					})
+				)
+
+				if(aTotalHours && aTotalHours > 0) {
+					eTotalHours += aTotalHours
+				}
+
+				if(aRegisteredHours && aRegisteredHours > 0) {
+					eRegisteredHours += aRegisteredHours
+				}
+
+				const business = accompaniment.business
+
+				return {
+					aStrengtheningArea: accompaniment.strengtheningArea?.name || 'No registra.',
+					aTotalHours: aTotalHours || 'No registra.',
+					aRegisteredHours: aRegisteredHours || 'No registra.',
+
+					bSocialReason: business?.socialReason || 'No registra.',
+					bPhone: business?.phone || 'No registra.',
+					bEmail: business?.email || 'No registra.',
+					bEconomicActivity: business?.economicActivity?.name || 'No registra.',
+					bBusinessSize: business?.businessSize?.name || 'No registra.',
+					bFacebook: business?.facebook || 'No registra.',
+					bInstagram: business?.instagram || 'No registra.',
+					bTwitter: business?.twitter || 'No registra.',
+					bWebsite: business?.website || 'No registra.',
+
+					sessions
+				}
+			})
+		)
+
+		return {
+			eType: expert.consultorType?.name || 'No registra.',
+			eName: expert.firstName + expert.lastName || 'No registra.',
+			eEmail: expert.user?.email || 'No registra.',
+			ePhone: expert.phone || 'No registra.',
+			eProfile: expert.profile || 'No registra.',
+			eStrengtheningArea: expert.strengtheningArea?.name || 'No registra.',
+			eEducationLevel: expert.educationLevel?.name || 'No registra.',
+			eTotalHours: eTotalHours || 'No registra.',
+			eRegisteredHours: eRegisteredHours || 'No registra.',
+			accompaniments,
+			generationDate
+		}
+	}
+
+	async findApprovedSessionAttachments({ businessId, expertId }: { businessId?: number; expertId?: number }): Promise<string[]> {
+		const query = this.sessionRepository.createQueryBuilder('session')
 			.innerJoin('session.status', 'status')
 			.innerJoin('session.accompaniment', 'accompaniment')
 			.innerJoin('accompaniment.business', 'business')
 			.where('status.id = :statusId', { statusId: 3 })
-			.andWhere('business.id = :businessId', { businessId })
 			.andWhere('session.file_path_approved IS NOT NULL')
+
+		if (businessId !== undefined) {
+			query.andWhere('business.id = :businessId', { businessId })
+		}
+
+		if (expertId !== undefined) {
+			query.andWhere('accompaniment.expertId = :expertId', { expertId })
+		}
+
+		const sessions = await query
 			.select('session.file_path_approved', 'filePath')
 			.getRawMany()
 
@@ -234,13 +353,40 @@ export class ReportService {
 			const generationDate = this.dateService.getFormattedNow()
 
 			const reportData = await this.getBusinessReportData(business, generationDate)
-			const attachmentPaths = await this.findApprovedSessionAttachments(businessId)
+			const attachmentPaths = await this.findApprovedSessionAttachments({ businessId })
 
 			const file = await this.pdfService.generateReportByBusinessPdf(reportData, attachmentPaths)
 
 			data = { name, reportTypeId, businessId, filePath: file.filePath }
 		}
 
+		if(reportTypeId === 3) {
+			const business = await this.getBusinessWithRelations(businessId, expertId)
+			if (!business) throw new BadRequestException(`No se encontraron acompañamientos para la empresa con id ${businessId} y experto con id ${expertId}`)
+
+			const generationDate = this.dateService.getFormattedNow()
+
+			const reportData = await this.getBusinessReportData(business, generationDate)
+			const attachmentPaths = await this.findApprovedSessionAttachments({ businessId, expertId })
+
+			const file = await this.pdfService.generateReportByBusinessPdf(reportData, attachmentPaths, 'business-expert')
+
+			data = { name, reportTypeId, businessId, expertId, filePath: file.filePath }
+		}
+
+		if(reportTypeId === 4) {
+			const expert = await this.getExpertWithRelations(expertId)
+			if (!expert) throw new BadRequestException(`Experto con id ${expertId} no encontrado`)
+
+			const generationDate = this.dateService.getFormattedNow()
+
+			const reportData = await this.getExpertReportData(expert, generationDate)
+
+			const attachmentPaths = await this.findApprovedSessionAttachments({ expertId })
+			const file = await this.pdfService.generateReportByExpertPdf(reportData, attachmentPaths)
+
+			data = { name, reportTypeId, expertId, filePath: file.filePath }
+		}
 
 		const report = this.reportRepository.create(data)
 
