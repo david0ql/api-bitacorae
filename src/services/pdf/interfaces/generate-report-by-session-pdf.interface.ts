@@ -1,3 +1,6 @@
+import { Activity } from "./activity-pdf.interface"
+import { Attachment } from "./attachment-pdf.interface"
+
 export interface GenerateReportBySessionPdfData {
 	bSocialReason: string
 	bPhone: string
@@ -24,20 +27,7 @@ export interface GenerateReportBySessionPdfData {
 	sSessionNotes: string
 	sConclusionsCommitments: string
 	sAttachments: Attachment[]
-	// sActivities: Activity[]
+	sActivities: Activity[]
 
 	generationDate: string
 }
-
-interface Attachment {
-	name: string
-	filePath: string
-}
-
-// interface Activity {
-// 	title: string
-// 	description: string
-// 	requiresDeliverable: boolean
-// 	attachment: Attachment | null
-// 	grade: number | null
-// }

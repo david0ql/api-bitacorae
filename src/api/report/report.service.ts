@@ -124,16 +124,37 @@ export class ReportService {
 			filePath: file.externalPath ? file.externalPath : envVars.APP_URL + '/' + file.filePath
 		}))
 
-		// const activitiesData = await this.sessionActivityRepository.find({
-		// 	where: { sessionId },
-		// 	relations: ['session', 'session.status']
-		// })
+		const activitiesData = await this.sessionActivityRepository.find({
+			where: { sessionId },
+			relations: ['sessionActivityResponses']
+		})
+		const activities = activitiesData.map(activity => {
+			const activityResponse = activity.sessionActivityResponses[0]
 
+			return {
+				title: activity.title,
+				description: activity.description,
+				requiresDeliverable: activity.requiresDeliverable,
+				dueDate: this.dateService.formatDate(activity.dueDatetime),
+				attachment: activity.attachmentPath ? {
+					name: 'Archivo de actividad',
+					filePath: envVars.APP_URL + '/' + activity.attachmentPath
+				} : null,
 
-		return { preparationFiles, attachments }
+				respondedDate: activityResponse ? this.dateService.formatDate(activityResponse.respondedDatetime) : 'No registra.',
+				deliverableDescription: activityResponse?.deliverableDescription || 'No registra.',
+				deliverableAttachment: activityResponse?.deliverableFilePath ? {
+					name: 'Archivo de respuesta',
+					filePath: envVars.APP_URL + '/' + activityResponse.deliverableFilePath
+				} : null,
+				grade: activityResponse?.grade || 'No registra.'
+			}
+		})
+
+		return { preparationFiles, attachments, activities }
 	}
 
-	private async generateSessionPdfData(session: Session, diffInHours: number, preparationFiles, attachments, generationDate) {
+	private async generateSessionPdfData(session: Session, diffInHours: number, preparationFiles, attachments, generationDate, activities) {
 		return this.pdfService.generateReportBySessionPdf({
 			bSocialReason: session.accompaniment?.business?.socialReason || 'No registra.',
 			bPhone: session.accompaniment?.business?.phone || 'No registra.',
@@ -160,6 +181,7 @@ export class ReportService {
 			sSessionNotes: session.sessionNotes || 'No registra.',
 			sConclusionsCommitments: session.conclusionsCommitments || 'No registra.',
 			sAttachments: attachments,
+			sActivities: activities,
 			generationDate
 		})
 	}
@@ -171,7 +193,7 @@ export class ReportService {
 
 				const sessions = await Promise.all(
 					accompaniment.sessions.map(async session => {
-						const { preparationFiles, attachments } = await this.mapFiles(session.id)
+						const { preparationFiles, attachments, activities } = await this.mapFiles(session.id)
 
 						const diffInHours = this.dateService.getHoursDiff(session.startDatetime, session.endDatetime)
 
@@ -185,7 +207,8 @@ export class ReportService {
 							sPreparationFiles: preparationFiles,
 							sSessionNotes: session.sessionNotes || 'No registra.',
 							sConclusionsCommitments: session.conclusionsCommitments || 'No registra.',
-							sAttachments: attachments
+							sAttachments: attachments,
+							sActivities: activities
 						}
 					})
 				)
@@ -235,7 +258,7 @@ export class ReportService {
 
 				const sessions = await Promise.all(
 					accompaniment.sessions.map(async session => {
-						const { preparationFiles, attachments } = await this.mapFiles(session.id)
+						const { preparationFiles, attachments, activities } = await this.mapFiles(session.id)
 
 						const diffInHours = this.dateService.getHoursDiff(session.startDatetime, session.endDatetime)
 
@@ -249,7 +272,8 @@ export class ReportService {
 							sPreparationFiles: preparationFiles,
 							sSessionNotes: session.sessionNotes || 'No registra.',
 							sConclusionsCommitments: session.conclusionsCommitments || 'No registra.',
-							sAttachments: attachments
+							sAttachments: attachments,
+							sActivities: activities
 						}
 					})
 				)
@@ -330,7 +354,7 @@ export class ReportService {
 			const session = await this.getSessionWithRelations(sessionId)
 			if (!session) throw new BadRequestException(`Sesión con id ${sessionId} no encontrada`)
 
-			const { preparationFiles, attachments } = await this.mapFiles(sessionId)
+			const { preparationFiles, attachments, activities } = await this.mapFiles(sessionId)
 
 			const diffInHours = this.dateService.getHoursDiff(session.startDatetime, session.endDatetime)
 			const generationDate = this.dateService.getFormattedNow()
@@ -340,7 +364,8 @@ export class ReportService {
 				diffInHours,
 				preparationFiles,
 				attachments,
-				generationDate
+				generationDate,
+				activities
 			)
 
 			data = { name, reportTypeId, sessionId, filePath: file.filePath }

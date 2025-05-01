@@ -88,6 +88,24 @@
 				gap: 2px;
 			}
 
+			.fieldHorizontal {
+				display: flex;
+				flex-direction: row;
+				margin-bottom: 3px;
+				gap: 5px;
+			}
+
+			.activitiesList {
+				display: flex;
+				flex-direction: column;
+				gap: 25px;
+			}
+
+			.activitiesList > li::marker {
+				font-size: 16px;
+				font-weight: bold;
+			}
+
 			.signature {
 				width: 100%;
 				border-top: 1px solid #ccc;
@@ -121,6 +139,12 @@
 
 			table td:nth-child(2) {
 				width: 60%;
+			}
+
+			hr {
+				border: 0;
+				border-top: 1px solid #ccc;
+				margin-block: 15px;
 			}
 		</style>
 	</head>
@@ -267,6 +291,70 @@
 					</ul>
 				{{else}}
 					<span>No se adjuntaron archivos.</span>
+				{{/if}}
+			</div>
+			<div class="field">
+				<span class="label">Actividades asignadas:</span>
+				{{#if sActivities.length}}
+					<ol class="activitiesList">
+						{{#each sActivities}}
+							<li>
+								<div class="fieldHorizontal">
+									<span class="label">Título:</span>
+									{{this.title}}
+								</div>
+								<div class="fieldHorizontal">
+									<span class="label">Fecha límite de entrega:</span>
+									{{this.dueDate}}
+								</div>
+								<div class="fieldHorizontal">
+									<span class="label">¿Requiere entregable?:</span>
+									{{#if this.requiresDeliverable}}Sí{{else}}No{{/if}}
+								</div>
+								<div class="fieldHorizontal">
+									<span class="label">Archivo asociado:</span>
+									{{#if this.attachment}}
+										<a href="{{this.attachment.filePath}}">{{this.attachment.name}}</a>
+									{{else}}
+										<span>No se adjuntó archivo.</span>
+									{{/if}}
+								</div>
+								<div class="field">
+									<span class="label">Descripción:</span>
+									{{this.description}}
+								</div>
+
+								<hr>
+
+								<div class="fieldHorizontal">
+									<span class="label">Fecha de respuesta:</span>
+									{{this.respondedDate}}
+								</div>
+								<div class="fieldHorizontal">
+									<span class="label">Archivo entregable:</span>
+									{{#if this.deliverableAttachment}}
+										<a href="{{this.deliverableAttachment.filePath}}">{{this.deliverableAttachment.name}}</a>
+									{{else}}
+										<span>No se adjuntó archivo.</span>
+									{{/if}}
+								</div>
+								<div class="fieldHorizontal">
+									<span class="label">Calificación:</span>
+									{{#if (isNumber this.grade)}}
+										{{this.grade}} / 100
+									{{else}}
+										{{this.grade}}
+									{{/if}}
+								</div>
+								<div class="field">
+									<span class="label">Descripción del entregable:</span>
+									{{this.deliverableDescription}}
+								</div>
+							</li>
+						{{/each}}
+					</ol>
+				{{else}}
+					<p>No se registraron actividades.</p>
 				{{/if}}
 			</div>
 		</div>

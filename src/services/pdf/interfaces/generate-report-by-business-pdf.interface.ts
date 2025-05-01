@@ -1,3 +1,5 @@
+import { Session } from "./session-pdf.interface"
+
 export interface GenerateReportByBusinessPdfData {
 	bSocialReason: string
 	bPhone: string
@@ -16,6 +18,7 @@ interface Accompaniment {
 	aStrengtheningArea: string
 	aTotalHours: number | string
 	aRegisteredHours: number | string
+
 	eType: string
 	eName: string
 	eEmail: string
@@ -26,27 +29,3 @@ interface Accompaniment {
 	eTotalHours: number | string
 	sessions: Session[]
 }
-
-interface Session {
-	stitle: string
-	sPreparationNotes: string
-	sPreparationFiles: Attachment[]
-	sSessionNotes: string
-	sConclusionsCommitments: string
-	sAttachments: Attachment[]
-	// sActivities: Activity[]
-}
-
-interface Attachment {
-	name: string
-	filePath: string
-}
-
-// interface Activity {
-// 	title: string
-// 	description: string
-// 	requiresDeliverable: boolean
-// 	dueDate: string
-// 	attachment: Attachment | null
-// 	grade: number | null
-// }

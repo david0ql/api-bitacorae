@@ -21,6 +21,10 @@ Handlebars.registerHelper('inc', (value) => {
 	return parseInt(value) + 1
 })
 
+Handlebars.registerHelper('isNumber', (value) => {
+	return typeof value === 'number' && !isNaN(value)
+})
+
 @Injectable()
 export class PdfService implements OnModuleDestroy {
 	private browser: puppeteer.Browser | null = null

@@ -1,3 +1,5 @@
+import { Attachment } from "./attachment-pdf.interface"
+
 export interface GenerateSessionPdfData {
 	bSocialReason: string
 	bPhone: string
@@ -30,9 +32,4 @@ export interface GenerateSessionPdfData {
 	generationDate: string
 	signature?: string
 	signedDate?: string
-}
-
-interface Attachment {
-	name: string
-	filePath: string
 }

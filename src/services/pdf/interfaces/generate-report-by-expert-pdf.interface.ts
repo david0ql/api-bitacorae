@@ -1,3 +1,5 @@
+import { Session } from "./session-pdf.interface"
+
 export interface GenerateReportByExpertPdfData {
 	eType: string
 	eName: string
@@ -28,26 +30,3 @@ interface Accompaniment {
 	bWebsite: string
 	sessions: Session[]
 }
-
-interface Session {
-	stitle: string
-	sPreparationNotes: string
-	sPreparationFiles: Attachment[]
-	sSessionNotes: string
-	sConclusionsCommitments: string
-	sAttachments: Attachment[]
-	// sActivities: Activity[]
-}
-
-interface Attachment {
-	name: string
-	filePath: string
-}
-
-// interface Activity {
-// 	title: string
-// 	description: string
-// 	requiresDeliverable: boolean
-// 	attachment: Attachment | null
-// 	grade: number | null
-// }
