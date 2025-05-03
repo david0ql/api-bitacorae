@@ -206,12 +206,12 @@ export class SessionService {
 			try {
 				const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
 
-				const { email: bussinesEmail, name: bussinesName } = accompaniment.business?.user || { email: '', name: '' }
+				const { email: businessEmail, name: businessName } = accompaniment.business?.user || { email: '', name: '' }
 				const expertName = accompaniment.expert?.user?.name || ''
 
 				this.mailService.sendNewSessionEmail({
-					to: bussinesEmail,
-					bussinesName,
+					to: businessEmail,
+					businessName,
 					expertName,
 					sessionDateTime,
 					conferenceLink,
@@ -434,10 +434,10 @@ export class SessionService {
 
 		try {
 			const sessionDateTime = this.dateService.formatDate(this.dateService.parseToDate(session.startDatetime))
-			const { email: bussinesEmail, name: bussinesName } = session.accompaniment?.business?.user || { email: '', name: '' }
+			const { email: businessEmail, name: businessName } = session.accompaniment?.business?.user || { email: '', name: '' }
 			const expertName = session.accompaniment?.expert?.user?.name || ''
 
-			this.mailService.sendEndedSessionEmail({ to: bussinesEmail, bussinesName, expertName, sessionDateTime })
+			this.mailService.sendEndedSessionEmail({ to: businessEmail, businessName, expertName, sessionDateTime })
 		} catch (e) {
 			console.error('Error sending ended session email:', e)
 		}
@@ -472,9 +472,9 @@ export class SessionService {
 		if (!updatedSession) throw new BadRequestException(`No se pudo actualizar la sesión con id ${id}`)
 
 		try {
-			const { email: bussinesEmail, name: bussinesName } = session.accompaniment?.business?.user || { email: '', name: '' }
+			const { email: businessEmail, name: businessName } = session.accompaniment?.business?.user || { email: '', name: '' }
 
-			this.mailService.sendApprovedSessionEmailContext({ to: bussinesEmail, bussinesName }, file)
+			this.mailService.sendApprovedSessionEmailContext({ to: businessEmail, businessName }, file)
 		} catch (e) {
 			console.error('Error sending approved session email:', e)
 		}

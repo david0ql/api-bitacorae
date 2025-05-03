@@ -1,4 +1,4 @@
 export interface ApprovedSessionEmailContext {
 	to: string
-	bussinesName: string
+	businessName: string
 }

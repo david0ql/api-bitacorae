@@ -215,15 +215,15 @@ export class UserService {
 			}
 
 			if(roleId === 3) {
-				const bussiness = await this.userRepository.findOne({ where: { id: userId }, relations: ['businesses'] })
-				if(!bussiness) {
+				const business = await this.userRepository.findOne({ where: { id: userId }, relations: ['businesses'] })
+				if(!business) {
 					if (fullPath) {
 						this.fileUploadService.deleteFile(fullPath)
 					}
 					throw new BadRequestException('Empresa no encontrada')
 				}
 
-				const existingContactInfo = await this.contactInformationRepository.findOne({ where: { businessId: bussiness.businesses[0].id } })
+				const existingContactInfo = await this.contactInformationRepository.findOne({ where: { businessId: business.businesses[0].id } })
 				if(!existingContactInfo) {
 					if (fullPath) {
 						this.fileUploadService.deleteFile(fullPath)

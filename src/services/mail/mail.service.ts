@@ -116,7 +116,7 @@ export class MailService {
 		await this.getPlatformVars()
 
 		const subject = 'Nueva sesión creada'
-		const { to, bussinesName, expertName, sessionDateTime, conferenceLink, preparationNotes } = context
+		const { to, businessName, expertName, sessionDateTime, conferenceLink, preparationNotes } = context
 
 		await this.mailerService.sendMail({
 			to,
@@ -125,7 +125,7 @@ export class MailService {
 			context: {
 				...this.varCommons,
 				title: subject,
-				bussinesName,
+				businessName,
 				expertName,
 				sessionDateTime,
 				conferenceLink,
@@ -142,7 +142,7 @@ export class MailService {
 		await this.getPlatformVars()
 
 		const subject = 'Nueva actividad de sesión creada'
-		const { to, bussinesName, expertName, sessionDateTime } = context
+		const { to, businessName, expertName, sessionDateTime } = context
 		const url = 'https://google.com'
 
 		await this.mailerService.sendMail({
@@ -152,7 +152,7 @@ export class MailService {
 			context: {
 				...this.varCommons,
 				title: subject,
-				bussinesName,
+				businessName,
 				expertName,
 				sessionDateTime,
 				url
@@ -168,7 +168,7 @@ export class MailService {
 		await this.getPlatformVars()
 
 		const subject = 'Sesión finalizada'
-		const { to, bussinesName, expertName, sessionDateTime } = context
+		const { to, businessName, expertName, sessionDateTime } = context
 		const url = 'https://google.com'
 
 		await this.mailerService.sendMail({
@@ -178,7 +178,7 @@ export class MailService {
 			context: {
 				...this.varCommons,
 				title: subject,
-				bussinesName,
+				businessName,
 				expertName,
 				sessionDateTime,
 				url
@@ -190,7 +190,7 @@ export class MailService {
 		await this.getPlatformVars()
 
 		const subject = 'Sesión aprobada'
-		const { to, bussinesName } = context
+		const { to, businessName } = context
 
 		await this.mailerService.sendMail({
 			to,
@@ -199,7 +199,7 @@ export class MailService {
 			context: {
 				...this.varCommons,
 				title: subject,
-				bussinesName
+				businessName
 			},
 			attachments: [{
 				filename: file.fileName,

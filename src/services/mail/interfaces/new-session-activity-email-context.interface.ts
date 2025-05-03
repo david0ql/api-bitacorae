@@ -1,6 +1,6 @@
 export interface NewSessionActivityEmailContext {
 	to: string
-	bussinesName: string
+	businessName: string
 	expertName: string
 	sessionDateTime: string
 }
