@@ -9,7 +9,7 @@ import { PageMetaDto } from 'src/dto/page-meta.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 
 @Injectable()
-export class ProductoStatusService {
+export class ProductStatusService {
 	constructor(
 		@InjectRepository(ProductStatus)
 		private readonly productStatusRepository: Repository<ProductStatus>

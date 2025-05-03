@@ -18,7 +18,7 @@ import { ExpertModule } from './api/expert/expert.module'
 import { GenderModule } from './api/gender/gender.module'
 import { MarketScopeModule } from './api/market-scope/market-scope.module'
 import { PositionModule } from './api/position/position.module'
-import { ProductoStatusModule } from './api/producto-status/producto-status.module'
+import { ProductStatusModule } from './api/product-status/product-status.module'
 import { RoleModule } from './api/role/role.module'
 import { ServiceModule } from './api/service/service.module'
 import { StrengtheningAreaModule } from './api/strengthening_area/strengthening_area.module'
@@ -151,7 +151,7 @@ import envVars from './config/env'
 		GenderModule,
 		MarketScopeModule,
 		PositionModule,
-		ProductoStatusModule,
+		ProductStatusModule,
 		RoleModule,
 		ServiceModule,
 		StrengtheningAreaModule,
