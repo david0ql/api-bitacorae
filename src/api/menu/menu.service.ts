@@ -24,7 +24,6 @@ export class MenuService {
 			.select([
 				'menu.id',
 				'menu.name',
-				'menu.icon',
 				'menu.path',
 				'menu.parentId',
 				'menu.order'

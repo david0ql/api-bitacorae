@@ -19,9 +19,6 @@ export class Menu {
   @Column("varchar", { name: "name", length: 255 })
   name: string;
 
-  @Column("varchar", { name: "icon", nullable: true, length: 100 })
-  icon: string | null;
-
   @Column("varchar", { name: "path", nullable: true, length: 255 })
   path: string | null;
 
