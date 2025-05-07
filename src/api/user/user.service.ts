@@ -15,6 +15,7 @@ import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 
 import envVars from 'src/config/env'
+import { Auditor } from 'src/entities/Auditor'
 
 @Injectable()
 export class UserService {
@@ -30,6 +31,9 @@ export class UserService {
 
 		@InjectRepository(Admin)
 		private readonly adminRepository: Repository<Admin>,
+
+		@InjectRepository(Auditor)
+		private readonly auditorRepository: Repository<Auditor>,
 
 		private readonly fileUploadService: FileUploadService
 	) {}
@@ -60,6 +64,34 @@ export class UserService {
 					'a.profile AS profile'
 				])
 				.innerJoin('u.admin', 'a')
+				.where('u.id = :userId', { userId })
+				.setParameters({ appUrl: envVars.APP_URL })
+				.getRawOne() || {}
+		}
+
+		if(roleId === 2) {
+			return await this.userRepository.createQueryBuilder('u')
+				.select([
+					'u.id AS userId',
+					'u.email AS email',
+					'a.firstName AS firstName',
+					'a.lastName AS lastName',
+					'a.documentTypeId AS documentTypeId',
+					'a.documentNumber AS documentNumber',
+					'a.phone AS phone',
+					'CONCAT(:appUrl, "/", a.photo) AS photo',
+					'a.genderId AS genderId',
+					'a.educationLevelId AS educationLevelId',
+					'a.experienceYears AS experienceYears',
+					'a.strengtheningAreaId AS strengtheningAreaId',
+					'a.facebook AS facebook',
+					'a.instagram AS instagram',
+					'a.twitter AS twitter',
+					'a.website AS website',
+					'a.linkedin AS linkedin',
+					'a.profile AS profile'
+				])
+				.innerJoin('u.auditor', 'a')
 				.where('u.id = :userId', { userId })
 				.setParameters({ appUrl: envVars.APP_URL })
 				.getRawOne() || {}
@@ -193,6 +225,37 @@ export class UserService {
 				}
 
 				await this.adminRepository.update(existingAdmin.id, {
+					firstName,
+					lastName,
+					documentTypeId,
+					documentNumber,
+					phone,
+					genderId,
+					educationLevelId,
+					experienceYears,
+					strengtheningAreaId,
+					facebook,
+					instagram,
+					twitter,
+					website,
+					linkedin,
+					profile,
+					photo: fullPath
+				})
+
+				await this.userRepository.update(userId, { email })
+			}
+
+			if(roleId === 2) {
+				const existingAuditor = await this.auditorRepository.findOne({ where: { userId } })
+				if(!existingAuditor) {
+					if (fullPath) {
+						this.fileUploadService.deleteFile(fullPath)
+					}
+					throw new BadRequestException('Auditor no encontrado')
+				}
+
+				await this.auditorRepository.update(existingAuditor.id, {
 					firstName,
 					lastName,
 					documentTypeId,

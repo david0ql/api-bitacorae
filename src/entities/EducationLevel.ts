@@ -2,6 +2,7 @@ import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Admin } from "./Admin";
 import { Expert } from "./Expert";
 import { ContactInformation } from "./ContactInformation";
+import { Auditor } from "./Auditor";
 
 @Entity("education_level", { schema: "dbbitacorae" })
 export class EducationLevel {
@@ -34,4 +35,7 @@ export class EducationLevel {
     (contactInformation) => contactInformation.educationLevel
   )
   contactInformations: ContactInformation[];
+
+  @OneToMany(() => Auditor, (auditor) => auditor.educationLevel)
+  auditors: Auditor[];
 }

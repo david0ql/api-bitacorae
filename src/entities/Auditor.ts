@@ -4,59 +4,57 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { Business } from "./Business";
 import { DocumentType } from "./DocumentType";
+import { EducationLevel } from "./EducationLevel";
 import { Gender } from "./Gender";
 import { StrengtheningArea } from "./StrengtheningArea";
-import { EducationLevel } from "./EducationLevel";
+import { User } from "./User";
 
+@Index("unique_user_id", ["userId"], { unique: true })
 @Index("document_type_id", ["documentTypeId"], {})
 @Index("gender_id", ["genderId"], {})
-@Index("strengthing_area_id", ["strengtheningAreaId"], {})
 @Index("education_level_id", ["educationLevelId"], {})
-@Index("contact_information_ibfk_1", ["businessId"], {})
-@Entity("contact_information", { schema: "dbbitacorae" })
-export class ContactInformation {
+@Index("strengthening_area_id", ["strengtheningAreaId"], {})
+@Entity("auditor", { schema: "dbbitacorae" })
+export class Auditor {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;
 
-  @Column("int", { name: "business_id" })
-  businessId: number;
+  @Column("int", { name: "user_id", unique: true })
+  userId: number;
 
   @Column("varchar", { name: "first_name", length: 255 })
   firstName: string;
 
-  @Column("varchar", { name: "last_name", length: 255 })
-  lastName: string;
-
-  @Column("varchar", { name: "email", length: 255 })
-  email: string;
-
-  @Column("varchar", { name: "phone", nullable: true, length: 12 })
-  phone: string | null;
+  @Column("varchar", { name: "last_name", nullable: true, length: 255 })
+  lastName: string | null;
 
   @Column("int", { name: "document_type_id", nullable: true })
   documentTypeId: number | null;
 
-  @Column("varchar", { name: "document_number", nullable: true, length: 15 })
+  @Column("varchar", { name: "document_number", nullable: true, length: 20 })
   documentNumber: string | null;
+
+  @Column("varchar", { name: "phone", nullable: true, length: 20 })
+  phone: string | null;
+
+  @Column("int", { name: "gender_id", nullable: true })
+  genderId: number | null;
 
   @Column("varchar", { name: "photo", nullable: true, length: 255 })
   photo: string | null;
 
-  @Column("int", { name: "gender_id", nullable: true })
-  genderId: number | null;
+  @Column("int", { name: "education_level_id", nullable: true })
+  educationLevelId: number | null;
 
   @Column("int", { name: "experience_years", nullable: true })
   experienceYears: number | null;
 
   @Column("int", { name: "strengthening_area_id", nullable: true })
   strengtheningAreaId: number | null;
-
-  @Column("int", { name: "education_level_id", nullable: true })
-  educationLevelId: number | null;
 
   @Column("varchar", { name: "facebook", nullable: true, length: 255 })
   facebook: string | null;
@@ -88,22 +86,22 @@ export class ContactInformation {
   })
   updatedAt: Date;
 
-  @ManyToOne(() => Business, (business) => business.contactInformations, {
-    onDelete: "CASCADE",
-    onUpdate: "CASCADE",
+  @ManyToOne(() => DocumentType, (documentType) => documentType.auditors, {
+    onDelete: "RESTRICT",
+    onUpdate: "RESTRICT",
   })
-  @JoinColumn([{ name: "business_id", referencedColumnName: "id" }])
-  business: Business;
-
-  @ManyToOne(
-    () => DocumentType,
-    (documentType) => documentType.contactInformations,
-    { onDelete: "RESTRICT", onUpdate: "RESTRICT" }
-  )
   @JoinColumn([{ name: "document_type_id", referencedColumnName: "id" }])
   documentType: DocumentType;
 
-  @ManyToOne(() => Gender, (gender) => gender.contactInformations, {
+  @ManyToOne(
+    () => EducationLevel,
+    (educationLevel) => educationLevel.auditors,
+    { onDelete: "RESTRICT", onUpdate: "RESTRICT" }
+  )
+  @JoinColumn([{ name: "education_level_id", referencedColumnName: "id" }])
+  educationLevel: EducationLevel;
+
+  @ManyToOne(() => Gender, (gender) => gender.auditors, {
     onDelete: "RESTRICT",
     onUpdate: "RESTRICT",
   })
@@ -112,17 +110,16 @@ export class ContactInformation {
 
   @ManyToOne(
     () => StrengtheningArea,
-    (strengtheningArea) => strengtheningArea.contactInformations,
+    (strengtheningArea) => strengtheningArea.auditors,
     { onDelete: "RESTRICT", onUpdate: "RESTRICT" }
   )
   @JoinColumn([{ name: "strengthening_area_id", referencedColumnName: "id" }])
   strengtheningArea: StrengtheningArea;
 
-  @ManyToOne(
-    () => EducationLevel,
-    (educationLevel) => educationLevel.contactInformations,
-    { onDelete: "RESTRICT", onUpdate: "RESTRICT" }
-  )
-  @JoinColumn([{ name: "education_level_id", referencedColumnName: "id" }])
-  educationLevel: EducationLevel;
+  @OneToOne(() => User, (user) => user.auditor, {
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  })
+  @JoinColumn([{ name: "user_id", referencedColumnName: "id" }])
+  user: User;
 }

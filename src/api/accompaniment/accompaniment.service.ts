@@ -117,7 +117,7 @@ export class AccompanimentService {
 				bs.name AS size,
 				sa.name AS strengthening,
 				b.assigned_hours AS assignedHours,
-				IFNULL(COUNT(s.id), 0) AS scheduledSessions,
+				IFNULL(COUNT(DISTINCT s.id), 0) AS scheduledSessions,
 				IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
 			FROM
 				business b
@@ -176,6 +176,7 @@ export class AccompanimentService {
 				e.id AS expertId,
 				b.id AS businessId,
 				b.assigned_hours AS assignedHours,
+				IFNULL(COUNT(DISTINCT s.id), 0) AS scheduledSessions,
 				IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
 			FROM
 				accompaniment a
@@ -223,6 +224,7 @@ export class AccompanimentService {
 				e.id AS expertId,
 				b.id AS businessId,
 				b.assigned_hours AS assignedHours,
+				IFNULL(COUNT(DISTINCT s.id), 0) AS scheduledSessions,
 				IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
 			FROM
 				accompaniment a

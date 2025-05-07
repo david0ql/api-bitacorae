@@ -43,7 +43,7 @@ export class Business {
   @Column("int", { name: "document_type_id" })
   documentTypeId: number;
 
-  @Column("varchar", { name: "document_number", length: 10 })
+  @Column("varchar", { name: "document_number", length: 15 })
   documentNumber: string;
 
   @Column("varchar", { name: "address", length: 255 })

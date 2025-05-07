@@ -3,6 +3,7 @@ import { Admin } from "./Admin";
 import { Expert } from "./Expert";
 import { ContactInformation } from "./ContactInformation";
 import { Business } from "./Business";
+import { Auditor } from "./Auditor";
 
 @Entity("document_type", { schema: "dbbitacorae" })
 export class DocumentType {
@@ -38,4 +39,7 @@ export class DocumentType {
 
   @OneToMany(() => Business, (business) => business.documentType)
   businesses: Business[];
+
+  @OneToMany(() => Auditor, (auditor) => auditor.documentType)
+  auditors: Auditor[];
 }

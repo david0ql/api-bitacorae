@@ -8,11 +8,12 @@ import { User } from 'src/entities/User'
 import { ContactInformation } from 'src/entities/ContactInformation'
 import { Expert } from 'src/entities/Expert'
 import { Admin } from 'src/entities/Admin'
+import { Auditor } from 'src/entities/Auditor'
 
 @Module({
 	controllers: [UserController],
 	providers: [UserService, FileUploadService],
-	imports: [TypeOrmModule.forFeature([User, ContactInformation, Expert, Admin])]
+	imports: [TypeOrmModule.forFeature([User, ContactInformation, Expert, Admin, Auditor])]
 })
 
 export class UserModule {}

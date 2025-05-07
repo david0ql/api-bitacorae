@@ -70,6 +70,7 @@ import { SessionActivity } from './entities/SessionActivity'
 import { SessionActivityResponse } from './entities/SessionActivityResponse'
 import { SessionAttachment } from './entities/SessionAttachment'
 import { Admin } from './entities/Admin'
+import { Auditor } from './entities/Auditor'
 import { ReportType } from './entities/ReportType'
 import { Report } from './entities/Report'
 
@@ -134,6 +135,7 @@ import envVars from './config/env'
 			SessionActivityResponse,
 			SessionAttachment,
 			Admin,
+			Auditor,
 			ReportType,
 			Report
 		]),

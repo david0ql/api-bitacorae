@@ -195,10 +195,13 @@ export class ExpertService {
 				'e.email AS email',
 				'e.phone AS phone',
 				'e.documentTypeId AS documentTypeId',
+				'documentType.name AS documentTypeName',
 				'e.documentNumber AS documentNumber',
 				'CONCAT(:appUrl, "/", e.photo) AS photo',
 				'e.consultorTypeId AS consultorTypeId',
+				'consultorType.name AS consultorTypeName',
 				'e.genderId AS genderId',
+				'gender.name AS genderName',
 				'e.experienceYears AS experienceYears',
 				'e.strengtheningAreaId AS strengtheningAreaId',
 				'e.educationLevelId AS educationLevelId',
@@ -213,6 +216,9 @@ export class ExpertService {
 				'user.active AS active'
 			])
 			.innerJoin('e.user', 'user')
+			.innerJoin('e.consultorType', 'consultorType')
+			.innerJoin('e.documentType', 'documentType')
+			.innerJoin('e.gender', 'gender')
 			.innerJoin('e.strengtheningArea', 'strengtheningArea')
 			.innerJoin('e.educationLevel', 'educationLevel')
 			.where('e.id = :id', { id })

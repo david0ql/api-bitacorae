@@ -13,6 +13,7 @@ import { ContactInformation } from "./ContactInformation";
 import { Accompaniment } from "./Accompaniment";
 import { StrengtheningLevel } from "./StrengtheningLevel";
 import { Business } from "./Business";
+import { Auditor } from "./Auditor";
 
 @Index("strengthening_area_strengthening_level_FK", ["levelId"], {})
 @Entity("strengthening_area", { schema: "dbbitacorae" })
@@ -66,4 +67,7 @@ export class StrengtheningArea {
 
   @OneToMany(() => Business, (business) => business.strengtheningArea)
   businesses: Business[];
+
+  @OneToMany(() => Auditor, (auditor) => auditor.strengtheningArea)
+  auditors: Auditor[];
 }

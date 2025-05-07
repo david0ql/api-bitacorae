@@ -15,6 +15,7 @@ import { Role } from "./Role";
 import { SessionActivityResponse } from "./SessionActivityResponse";
 import { ChatMessage } from "./ChatMessage";
 import { Business } from "./Business";
+import { Auditor } from "./Auditor";
 
 @Index("email_unique", ["email"], { unique: true })
 @Index("role_id", ["roleId"], {})
@@ -80,4 +81,7 @@ export class User {
 
   @OneToMany(() => Business, (business) => business.user)
   businesses: Business[];
+
+  @OneToOne(() => Auditor, (auditor) => auditor.user)
+  auditor: Auditor;
 }
