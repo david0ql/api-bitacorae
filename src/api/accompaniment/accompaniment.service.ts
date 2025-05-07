@@ -181,7 +181,7 @@ export class AccompanimentService {
 				accompaniment a
 				INNER JOIN expert e ON e.id = a.expert_id
 				INNER JOIN business b ON b.id = a.business_id
-				INNER JOIN session s ON s.accompaniment_id = a.id
+				LEFT JOIN session s ON s.accompaniment_id = a.id
 			WHERE
 				${whereClause}
 			GROUP BY a.id
@@ -326,6 +326,10 @@ export class AccompanimentService {
 	async remove(id: number) {
 		if(!id) return { affected: 0 }
 
-		return this.accompanimentRepository.delete(id)
+		try {
+			return this.accompanimentRepository.delete(id)
+		} catch (e) {
+			throw new Error(`No se pudo eliminar el acompañamiento`)
+		}
 	}
 }

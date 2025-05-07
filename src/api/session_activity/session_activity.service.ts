@@ -40,6 +40,7 @@ export class SessionActivityService {
 	async create(user: JwtUser, createSessionActivityDto: CreateSessionActivityDto, file?: Express.Multer.File) {
 		const { title, description, dueDatetime, requiresDeliverable, sessionId } = createSessionActivityDto
 		const { id } = user
+		const now = this.dateService.getNow()
 
 		const fullPath = file ? this.fileUploadService.getFullPath('session-activity', file.filename) : undefined
 
@@ -52,6 +53,16 @@ export class SessionActivityService {
 				this.fileUploadService.deleteFile(fullPath)
 			}
 			throw new BadRequestException(`Sesión con id ${sessionId} no encontrada`)
+		}
+
+		if(dueDatetime) {
+			const date = this.dateService.parseToDate(dueDatetime)
+			if (date < now) {
+				if (fullPath) {
+					this.fileUploadService.deleteFile(fullPath)
+				}
+				throw new BadRequestException('La fecha de entrega no puede ser anterior a la fecha actual')
+			}
 		}
 
 		try {
@@ -110,6 +121,7 @@ export class SessionActivityService {
 					'id', r.id,
 					'sessionActivityId', r.session_activity_id,
 					'respondedByUserId', r.responded_by_user_id,
+					'deliverableDescription', r.deliverable_description,
 					'deliverableFilePath', CONCAT(?, '/', r.deliverable_file_path),
 					'respondedDatetime', DATE_FORMAT(r.responded_datetime, '%Y-%m-%d %H:%i:%s'),
 					'grade', r.grade,

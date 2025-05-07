@@ -103,6 +103,7 @@ export class ContactInformationService {
 				'ci.experienceYears AS experienceYears',
 				'ci.strengtheningAreaId AS strengtheningAreaId',
 				'ci.educationLevelId AS educationLevelId',
+				'el.name AS educationLevelName',
 				'ci.facebook AS facebook',
 				'ci.instagram AS instagram',
 				'ci.twitter AS twitter',
@@ -110,6 +111,7 @@ export class ContactInformationService {
 				'ci.linkedin AS linkedin',
 				'ci.profile AS profile'
 			])
+			.innerJoin('ci.educationLevel', 'el')
 			.where('ci.businessId = :businessId', { businessId: id })
 			.setParameters({appUrl: envVars.APP_URL})
 			.getRawOne()

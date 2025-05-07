@@ -40,6 +40,12 @@ export class ExpertController {
 		return this.expertService.findOne(+id)
 	}
 
+	@Get('/byFilter/:filter')
+	@HttpCode(200)
+	findAllByFilter(@Param('filter') filter: string) {
+		return this.expertService.findAllByFilter(filter)
+	}
+
 	@Patch(':id')
 	@HttpCode(200)
 	@UseInterceptors(FileUploadInterceptor('file', 'user'))

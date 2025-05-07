@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsNotEmpty, IsString, IsBoolean, Matches, IsNumber } from 'class-validator'
+import { IsNotEmpty, IsString, IsBoolean, Matches, IsNumber, IsOptional } from 'class-validator'
 
 export class CreateSessionActivityDto {
 	@ApiProperty({
@@ -25,6 +25,7 @@ export class CreateSessionActivityDto {
 	})
 	@Type(() => Boolean)
 	@IsBoolean()
+	@IsOptional()
 	readonly requiresDeliverable: boolean
 
 	@ApiProperty({
@@ -35,6 +36,7 @@ export class CreateSessionActivityDto {
 	@Matches(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/, {
 		message: 'La fecha debe estar en el formato yyyy-MM-dd HH:mm:ss',
 	})
+	@IsOptional()
 	readonly dueDatetime: string
 
 	@ApiProperty({

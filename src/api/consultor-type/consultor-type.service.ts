@@ -28,18 +28,22 @@ export class ConsultorTypeService {
 	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<ConsultorType>> {
 		const queryBuilder = this.consultorRepository.createQueryBuilder('consultor_type')
 		.select([
-			'consultor_type.id',
-			'consultor_type.roleId',
-			'consultor_type.name'
+			'consultor_type.id AS id',
+			'consultor_type.name AS name',
+			'consultor_type.roleId AS roleId',
+			'role.name AS roleName'
 		])
+		.leftJoin('consultor_type.role', 'role')
 		.orderBy('consultor_type.name', pageOptionsDto.order)
 		.skip(pageOptionsDto.skip)
 		.take(pageOptionsDto.take)
 
-		const [ items, totalCount ] = await queryBuilder.getManyAndCount()
+		const [items, totalCount] = await Promise.all([
+			queryBuilder.getRawMany(),
+			queryBuilder.getCount()
+		])
 
 		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
-
 		return new PageDto(items, pageMetaDto)
 	}
 
@@ -54,6 +58,10 @@ export class ConsultorTypeService {
 	remove(id: number) {
 		if(!id) return { affected: 0 }
 
-		return this.consultorRepository.delete(id)
+		try {
+			return this.consultorRepository.delete(id)
+		} catch (e) {
+			throw new Error(`No se pudo eliminar el tipo de usuario con id ${id}`)
+		}
 	}
 }

@@ -34,7 +34,8 @@ export class CohortService {
 				'cohort.startDate',
 				'cohort.endDate'
 			])
-			.orderBy('cohort.name', pageOptionsDto.order)
+			.orderBy('cohort.order', pageOptionsDto.order)
+			.addOrderBy('cohort.name', pageOptionsDto.order)
 			.skip(pageOptionsDto.skip)
 			.take(pageOptionsDto.take)
 
@@ -56,6 +57,10 @@ export class CohortService {
 	remove(id: number) {
 		if(!id) return { affected: 0 }
 
-		return this.cohortRepository.delete(id)
+		try {
+			return this.cohortRepository.delete(id)
+		} catch (e) {
+			throw new Error(`No se pudo eliminar el cohort con id ${id}`)
+		}
 	}
 }

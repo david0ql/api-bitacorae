@@ -23,7 +23,9 @@ export class PlatformService {
 			website,
 			programName,
 			notificationEmail,
-			programStartDate
+			programStartDate,
+			deleteLogo,
+			deleteReportHeaderImage
 		} = createPlatformDto
 
 		const logoPath = files.logoFile?.[0] ? this.fileUploadService.getFullPath('platform', files.logoFile[0].filename) : undefined
@@ -47,6 +49,15 @@ export class PlatformService {
 				existingPlatform.programName = programName || existingPlatform.programName
 				existingPlatform.notificationEmail = notificationEmail || existingPlatform.notificationEmail
 				existingPlatform.programStartDate = programStartDate || existingPlatform.programStartDate
+
+				if(deleteLogo && existingPlatform.logoPath) {
+					this.fileUploadService.deleteFile(existingPlatform.logoPath)
+					existingPlatform.logoPath = ''
+				}
+				if(deleteReportHeaderImage && existingPlatform.reportHeaderImagePath) {
+					this.fileUploadService.deleteFile(existingPlatform.reportHeaderImagePath)
+					existingPlatform.reportHeaderImagePath = ''
+				}
 
 				return await this.platformRepository.save(existingPlatform)
 

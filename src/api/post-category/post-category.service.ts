@@ -53,6 +53,10 @@ export class PostCategoryService {
 	remove(id: number) {
 		if(!id) return { affected: 0 }
 
-		return this.postCategoryRepository.delete(id)
+		try {
+			return this.postCategoryRepository.delete(id)
+		} catch (e) {
+			throw new Error(`No se pudo eliminar la categoría de publicación con id ${id}`)
+		}
 	}
 }

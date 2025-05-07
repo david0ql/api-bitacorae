@@ -9,13 +9,13 @@ import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.inte
 import { CreatePlatformDto } from './dto/create-platform.dto'
 
 @Controller('platform')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class PlatformController {
 	constructor(private readonly platformService: PlatformService) {}
 
 	@Post()
 	@HttpCode(200)
+	@ApiBearerAuth()
+	@UseGuards(JwtAuthGuard, PermissionsGuard)
 	@UseInterceptors(FileUploadInterceptor([
 		{ name: 'logoFile', maxCount: 1 },
 		{ name: 'reportHeaderImageFile', maxCount: 1 }

@@ -60,7 +60,7 @@ export class PostService {
 		let whereConditions: string[] = []
 
 		if (roleId !== 1) {
-			whereConditions.push(`p.post_date >= NOW()`)
+			whereConditions.push(`DATE(p.post_date) <=  NOW()`)
 		}
 
 		const whereClause = whereConditions.length ? `WHERE ${whereConditions.join(' AND ')}` : ''
@@ -72,7 +72,7 @@ export class PostService {
 				CONCAT(?, '/', p.file_path) AS fileUrl,
 				p.content AS content,
 				DATE_FORMAT(p.post_date, '%Y-%m-%d %H:%i:%s') AS postDate,
-				CONCAT('[', GROUP_CONCAT(JSON_OBJECT('id', pc.id, 'name', pc.name)), ']') AS categories,
+				CONCAT('[', GROUP_CONCAT(JSON_OBJECT('value', pc.id, 'label', pc.name)), ']') AS categories,
 				DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt
 			FROM
 				post p

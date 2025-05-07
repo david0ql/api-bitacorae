@@ -133,6 +133,7 @@ export class ExpertService {
 				'e.documentNumber AS documentNumber',
 				'CONCAT(:appUrl, "/", e.photo) AS photo',
 				'e.consultorTypeId AS consultorTypeId',
+				'consultorType.name AS consultorTypeName',
 				'e.genderId AS genderId',
 				'e.experienceYears AS experienceYears',
 				'e.strengtheningAreaId AS strengtheningAreaId',
@@ -143,9 +144,11 @@ export class ExpertService {
 				'e.website AS website',
 				'e.linkedin AS linkedin',
 				'e.profile AS profile',
-				'user.active AS active'
+				'user.active AS active',
+				`IF(user.active = 1, 'Si', 'No') AS userActive`
 			])
 			.innerJoin('e.user', 'user')
+			.innerJoin('e.consultorType', 'consultorType')
 			.orderBy('e.id', pageOptionsDto.order)
 			.skip(pageOptionsDto.skip)
 			.take(pageOptionsDto.take)
@@ -158,6 +161,25 @@ export class ExpertService {
 
 		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 		return new PageDto(items, pageMetaDto)
+	}
+
+	async findAllByFilter(filter: string) {
+		if(!filter) return []
+
+		const experts = await this.expertRepository
+			.createQueryBuilder('e')
+			.select([
+				'e.id AS value',
+				'CONCAT(e.firstName, " ", e.lastName, " - ", e.email) AS label'
+			])
+			.innerJoin('e.user', 'user')
+			.where('e.firstName LIKE :filter OR e.lastName LIKE :filter OR e.email LIKE :filter', { filter: `%${filter}%` })
+			.andWhere('user.active = 1')
+			.take(10)
+			.setParameters({appUrl: envVars.APP_URL})
+			.getRawMany()
+
+		return experts || []
 	}
 
 	async findOne(id: number) {
@@ -180,6 +202,8 @@ export class ExpertService {
 				'e.experienceYears AS experienceYears',
 				'e.strengtheningAreaId AS strengtheningAreaId',
 				'e.educationLevelId AS educationLevelId',
+				'strengtheningArea.name AS strengtheningAreaName',
+				'educationLevel.name AS educationLevelName',
 				'e.facebook AS facebook',
 				'e.instagram AS instagram',
 				'e.twitter AS twitter',
@@ -189,6 +213,9 @@ export class ExpertService {
 				'user.active AS active'
 			])
 			.innerJoin('e.user', 'user')
+			.innerJoin('e.strengtheningArea', 'strengtheningArea')
+			.innerJoin('e.educationLevel', 'educationLevel')
+			.where('e.id = :id', { id })
 			.setParameters({appUrl: envVars.APP_URL})
 			.getRawOne()
 
@@ -225,8 +252,11 @@ export class ExpertService {
 			profile
 		} = updateExpertDto
 
-		const existingUser = await this.userRepository.findOne({ where: { email } })
-		if(existingUser && existingUser.id != id) {
+		const existingUser = await this.userRepository.findOne({
+			where: { email },
+			relations: ['experts']
+		})
+		if(existingUser && existingUser.experts[0]?.id !== id) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
 			}

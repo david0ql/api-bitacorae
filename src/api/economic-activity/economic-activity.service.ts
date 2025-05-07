@@ -53,6 +53,10 @@ export class EconomicActivityService {
 	remove(id: number) {
 		if(!id) return { affected: 0 }
 
-		return this.economicRepository.delete(id)
+		try {
+			return this.economicRepository.delete(id)
+		} catch (e) {
+			throw new Error(`No se pudo eliminar la actividad económica con id ${id}`)
+		}
 	}
 }

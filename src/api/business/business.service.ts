@@ -149,15 +149,16 @@ export class BusinessService {
 			SELECT
 				b.id AS id,
 				b.social_reason AS socialReason,
-				b.document_type_id AS documentTypeId,
+				dt.name AS documentType,
 				b.document_number AS documentNumber,
 				DATE_FORMAT(b.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
-				u.active AS userActive,
+				IF(u.active = 1, 'Si', 'No') AS userActive,
 				CONCAT(c.first_name, ' ', c.last_name, ' - ', b.email) AS userInfo,
-				IFNULL(ROUND((SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END) / b.assigned_hours) * 100, 2), 0) AS progress
+				CONCAT(IFNULL(ROUND((SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END) / b.assigned_hours) * 100, 0), 0), '%') AS progress
 			FROM
 				business b
 				INNER JOIN user u ON u.id = b.user_id
+				INNER JOIN document_type dt ON dt.id = b.document_type_id
 				LEFT JOIN contact_information c ON c.business_id = b.id
 				LEFT JOIN accompaniment a ON a.business_id = b.id
 				LEFT JOIN session s ON s.accompaniment_id = a.id
@@ -193,6 +194,7 @@ export class BusinessService {
 				'b.phone AS phone',
 				'b.email AS email',
 				'b.economic_activity_id AS economicActivityId',
+				'economicActivity.name AS economicActivityName',
 				'b.business_size_id AS businessSizeId',
 				'b.number_of_employees AS numberOfEmployees',
 				'b.last_year_sales AS lastYearSales',
@@ -208,16 +210,23 @@ export class BusinessService {
 				'b.observation AS observation',
 				'b.number_of_people_leading AS numberOfPeopleLeading',
 				'b.product_status_id AS productStatusId',
+				'productStatus.name AS productStatusName',
 				'b.market_scope_id AS marketScopeId',
+				'marketScope.name AS marketScopeName',
 				'b.business_plan AS businessPlan',
 				'b.business_segmentation AS businessSegmentation',
 				'b.strengthening_area_id AS strengtheningAreaId',
+				'strengtheningArea.name AS strengtheningAreaName',
 				'b.assigned_hours AS assignedHours',
 				'b.cohort_id AS cohortId',
 				'b.diagnostic AS diagnostic',
 				'CONCAT(:appUrl, "/", b.evidence) AS evidence'
 			])
 			.where('b.id = :id', { id })
+			.innerJoin('b.strengtheningArea', 'strengtheningArea')
+			.innerJoin('b.economicActivity', 'economicActivity')
+			.innerJoin('b.marketScope', 'marketScope')
+			.innerJoin('b.productStatus', 'productStatus')
 			.setParameters({appUrl: envVars.APP_URL})
 			.getRawOne()
 
@@ -267,8 +276,11 @@ export class BusinessService {
 		} = updateBusinessDto
 
 		if(email) {
-			const existingUser = await this.userRepository.findOne({ where: { email } })
-			if(existingUser && existingUser.id != id) {
+			const existingUser = await this.userRepository.findOne({
+				where: { email },
+				relations: ['businesses']
+			})
+			if(existingUser && existingUser.businesses[0]?.id !== id) {
 				if (fullPath) {
 					this.fileUploadService.deleteFile(fullPath)
 				}
@@ -336,21 +348,25 @@ export class BusinessService {
 		const existing = await this.businessRepository.findOneBy({ id })
 		if (!existing) return { affected: 0 }
 
-		const business = await this.businessRepository.findOne({
-			select: { userId: true },
-			where: { id }
-		})
+		try {
+			const business = await this.businessRepository.findOne({
+				select: { userId: true },
+				where: { id }
+			})
 
-		const result = await this.businessRepository.delete(id)
+			const result = await this.businessRepository.delete(id)
 
-		if(business) {
-			await this.userRepository.delete(business.userId)
+			if(business) {
+				await this.userRepository.delete(business.userId)
+			}
+
+			if (existing.evidence) {
+				this.fileUploadService.deleteFile(existing.evidence)
+			}
+
+			return result
+		} catch (e) {
+			throw new Error(`No se pudo eliminar la empresa con id ${id}`)
 		}
-
-		if (existing.evidence) {
-			this.fileUploadService.deleteFile(existing.evidence)
-		}
-
-		return result
 	}
 }

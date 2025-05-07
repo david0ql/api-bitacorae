@@ -282,6 +282,8 @@ export class SessionService {
 				'session.id AS id',
 				'session.accompanimentId AS accompanimentId',
 				'session.title AS title',
+				'accompaniment.businessId AS businessId',
+				'accompaniment.expertId AS expertId',
 				`DATE_FORMAT(session.startDatetime, '%Y-%m-%d %H:%i:%s') AS startDatetime`,
 				`DATE_FORMAT(session.endDatetime, '%Y-%m-%d %H:%i:%s') AS endDatetime`,
 				'TIMESTAMPDIFF(MINUTE, session.startDatetime, session.endDatetime) AS duration',
@@ -292,9 +294,13 @@ export class SessionService {
 				'CONCAT(:appUrl, "/", session.file_path_unapproved) AS filePathUnapproved',
 				'CONCAT(:appUrl, "/", session.file_path_approved) AS filePathApproved',
 				'status.id AS statusId',
-				`GROUP_CONCAT(CONCAT(:appUrl, "/", spf.file_path) SEPARATOR '||') AS preparationFiles`
+				'status.name AS status',
+				`GROUP_CONCAT(CONCAT(:appUrl, "/", spf.file_path) SEPARATOR '||') AS preparationFiles`,
+				`GROUP_CONCAT(CONCAT(:appUrl, "/", sa.file_path) SEPARATOR '||') AS attachments`
 			])
 			.innerJoin('session.status', 'status')
+			.innerJoin('session.accompaniment', 'accompaniment')
+			.leftJoin('session.sessionAttachments', 'sa', 'sa.session_id = session.id')
 			.leftJoin('session_preparation_file', 'spf', 'spf.session_id = session.id')
 			.where('session.id = :id', { id })
 			.groupBy('session.id')
@@ -305,7 +311,8 @@ export class SessionService {
 
 		return {
 			...rawSession,
-			preparationFiles: rawSession.preparationFiles ? rawSession.preparationFiles.split('||') : []
+			preparationFiles: rawSession.preparationFiles ? rawSession.preparationFiles.split('||') : [],
+			attachments: rawSession.attachments ? rawSession.attachments.split('||') : []
 		}
 	}
 
@@ -378,9 +385,6 @@ export class SessionService {
 				throw new BadRequestException(`La sesión excede las horas totales permitidas del acompañamiento. Horas disponibles: ${accompaniment.totalHours - assignedHours}`)
 			}
 
-		} else {
-			this.removeFiles(preparationFiles)
-			throw new BadRequestException('Fechas de inicio y fin son requeridas')
 		}
 
 		try {
@@ -452,8 +456,6 @@ export class SessionService {
 		if (session.statusId !== 2) throw new BadRequestException('La sesión no está en estado publicada')
 		if (!session.filePathUnapproved) throw new BadRequestException('La sesión no tiene un archivo para aprobar')
 
-		if (!status) return await this.sessionRepository.update(id, { statusId: 4 })
-
 		const { preparationFiles, attachments } = await this.mapFiles(id)
 
 		const diffInHours = this.dateService.getHoursDiff(session.startDatetime, session.endDatetime)
@@ -461,14 +463,16 @@ export class SessionService {
 		const signedDate = this.dateService.formatDate(this.dateService.getNow())
 
 		const file = await this.generateSessionPdfData(session, diffInHours, preparationFiles, attachments, {
-			state: 'Aprobada',
+			state: !status ? 'Rechazada' : 'Aprobada',
 			sign: true,
 			signature,
 			signedDate,
 			generationDate
 		})
 
-		const updatedSession = await this.sessionRepository.update(id, { statusId: 3, filePathApproved: file.filePath })
+		const statusId = status ? 3 : 4
+
+		const updatedSession = await this.sessionRepository.update(id, { statusId, filePathApproved: file.filePath })
 		if (!updatedSession) throw new BadRequestException(`No se pudo actualizar la sesión con id ${id}`)
 
 		try {
@@ -486,14 +490,22 @@ export class SessionService {
 		const session = await this.sessionRepository.findOne({ where: { id } })
 		if (!session) return { affected: 0 }
 
-		const sessionPreparationFiles = await this.sessionPreparationFileRepository.find({ where: { sessionId: id } })
-		if (sessionPreparationFiles) {
-			sessionPreparationFiles.forEach(file => {
-				this.fileUploadService.deleteFile(file.filePath)
-			})
-			await this.sessionPreparationFileRepository.delete({ sessionId: id })
+		if(session.statusId !== 1) {
+			throw new BadRequestException('No se puede eliminar una sesión que no está en estado creada')
 		}
 
-		return this.sessionRepository.delete(id)
+		try {
+			const sessionPreparationFiles = await this.sessionPreparationFileRepository.find({ where: { sessionId: id } })
+			if (sessionPreparationFiles) {
+				sessionPreparationFiles.forEach(file => {
+					this.fileUploadService.deleteFile(file.filePath)
+				})
+				await this.sessionPreparationFileRepository.delete({ sessionId: id })
+			}
+
+			return this.sessionRepository.delete(id)
+		} catch (e) {
+			throw new Error(`No se pudo eliminar la sesión`)
+		}
 	}
 }

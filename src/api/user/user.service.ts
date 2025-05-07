@@ -70,6 +70,34 @@ export class UserService {
 				.select([
 					'u.id AS userId',
 					'u.email AS email',
+					'e.firstName AS firstName',
+					'e.lastName AS lastName',
+					'e.documentTypeId AS documentTypeId',
+					'e.documentNumber AS documentNumber',
+					'e.phone AS phone',
+					'CONCAT(:appUrl, "/", e.photo) AS photo',
+					'e.genderId AS genderId',
+					'e.educationLevelId AS educationLevelId',
+					'e.experienceYears AS experienceYears',
+					'e.strengtheningAreaId AS strengtheningAreaId',
+					'e.facebook AS facebook',
+					'e.instagram AS instagram',
+					'e.twitter AS twitter',
+					'e.website AS website',
+					'e.linkedin AS linkedin',
+					'e.profile AS profile'
+				])
+				.innerJoin('u.experts', 'e')
+				.where('u.id = :userId', { userId })
+				.setParameters({ appUrl: envVars.APP_URL })
+				.getRawOne() || {}
+		}
+
+		if(roleId === 4) {
+			return await this.userRepository.createQueryBuilder('u')
+				.select([
+					'u.id AS userId',
+					'u.email AS email',
 					'ci.firstName AS firstName',
 					'ci.lastName AS lastName',
 					'ci.documentTypeId AS documentTypeId',
@@ -89,34 +117,6 @@ export class UserService {
 				])
 				.innerJoin('u.businesses', 'b')
 				.leftJoin('b.contactInformations', 'ci')
-				.where('u.id = :userId', { userId })
-				.setParameters({ appUrl: envVars.APP_URL })
-				.getRawOne() || {}
-		}
-
-		if(roleId === 4) {
-			return await this.userRepository.createQueryBuilder('u')
-				.select([
-					'u.id AS userId',
-					'u.email AS email',
-					'e.firstName AS firstName',
-					'e.lastName AS lastName',
-					'e.documentTypeId AS documentTypeId',
-					'e.documentNumber AS documentNumber',
-					'e.phone AS phone',
-					'CONCAT(:appUrl, "/", e.photo) AS photo',
-					'e.genderId AS genderId',
-					'e.educationLevelId AS educationLevelId',
-					'e.experienceYears AS experienceYears',
-					'e.strengtheningAreaId AS strengtheningAreaId',
-					'e.facebook AS facebook',
-					'e.instagram AS instagram',
-					'e.twitter AS twitter',
-					'e.website AS website',
-					'e.linkedin AS linkedin',
-					'e.profile AS profile'
-				])
-				.innerJoin('u.experts', 'e')
 				.where('u.id = :userId', { userId })
 				.setParameters({ appUrl: envVars.APP_URL })
 				.getRawOne() || {}
@@ -215,23 +215,17 @@ export class UserService {
 			}
 
 			if(roleId === 3) {
-				const business = await this.userRepository.findOne({ where: { id: userId }, relations: ['businesses'] })
-				if(!business) {
+				const existingExpert = await this.expertRepository.findOne({ where: { userId } })
+				if(!existingExpert) {
 					if (fullPath) {
 						this.fileUploadService.deleteFile(fullPath)
 					}
-					throw new BadRequestException('Empresa no encontrada')
+					throw new BadRequestException('Experto no encontrado')
 				}
 
-				const existingContactInfo = await this.contactInformationRepository.findOne({ where: { businessId: business.businesses[0].id } })
-				if(!existingContactInfo) {
-					if (fullPath) {
-						this.fileUploadService.deleteFile(fullPath)
-					}
-					throw new BadRequestException('Información de contacto no encontrada')
-				}
-
-				await this.contactInformationRepository.update(existingContactInfo.id, {
+				await this.expertRepository.update(existingExpert.id, {
+					firstName,
+					lastName,
 					documentTypeId,
 					documentNumber,
 					phone,
@@ -252,17 +246,23 @@ export class UserService {
 			}
 
 			if(roleId === 4) {
-				const existingExpert = await this.expertRepository.findOne({ where: { userId } })
-				if(!existingExpert) {
+				const business = await this.userRepository.findOne({ where: { id: userId }, relations: ['businesses'] })
+				if(!business) {
 					if (fullPath) {
 						this.fileUploadService.deleteFile(fullPath)
 					}
-					throw new BadRequestException('Experto no encontrado')
+					throw new BadRequestException('Empresa no encontrada')
 				}
 
-				await this.expertRepository.update(existingExpert.id, {
-					firstName,
-					lastName,
+				const existingContactInfo = await this.contactInformationRepository.findOne({ where: { businessId: business.businesses[0].id } })
+				if(!existingContactInfo) {
+					if (fullPath) {
+						this.fileUploadService.deleteFile(fullPath)
+					}
+					throw new BadRequestException('Información de contacto no encontrada')
+				}
+
+				await this.contactInformationRepository.update(existingContactInfo.id, {
 					documentTypeId,
 					documentNumber,
 					phone,
