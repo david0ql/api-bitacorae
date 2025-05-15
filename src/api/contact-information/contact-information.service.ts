@@ -111,7 +111,7 @@ export class ContactInformationService {
 				'ci.linkedin AS linkedin',
 				'ci.profile AS profile'
 			])
-			.innerJoin('ci.educationLevel', 'el')
+			.leftJoin('ci.educationLevel', 'el')
 			.where('ci.businessId = :businessId', { businessId: id })
 			.setParameters({appUrl: envVars.APP_URL})
 			.getRawOne()
