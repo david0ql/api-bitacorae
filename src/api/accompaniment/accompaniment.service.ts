@@ -14,6 +14,8 @@ import { CreateAccompanimentDto } from './dto/create-accompaniment.dto'
 import { UpdateAccompanimentDto } from './dto/update-accompaniment.dto'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 
+import envVars from 'src/config/env'
+
 @Injectable()
 export class AccompanimentService {
 	constructor(
@@ -114,6 +116,7 @@ export class AccompanimentService {
 				b.id AS id,
 				b.social_reason AS socialReason,
 				CONCAT(c.first_name, ' ', c.last_name) AS name,
+				CONCAT("${envVars.APP_URL}", "/", c.photo) AS photo,
 				bs.name AS size,
 				sa.name AS strengthening,
 				b.assigned_hours AS assignedHours,
