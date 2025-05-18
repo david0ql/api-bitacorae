@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger"
 import { Type } from "class-transformer";
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator"
+import { IsNotEmpty, IsNumber, IsOptional, IsString, ValidateIf } from "class-validator"
 
 export class CreateExpertDto {
 	@ApiProperty({
@@ -75,9 +75,10 @@ export class CreateExpertDto {
 		example: 5,
 		required: false
 	})
+	@IsOptional()
+	@ValidateIf(value => value !== null)
 	@Type(() => Number)
 	@IsNumber()
-	@IsOptional()
 	readonly experienceYears: number;
 
 	@ApiProperty({
@@ -136,11 +137,10 @@ export class CreateExpertDto {
 
 	@ApiProperty({
 		description: 'LinkedIn profile URL',
-		example: 'http://linkedin.com/in/example',
-		required: false
+		example: 'http://linkedin.com/in/example'
 	})
+	@IsNotEmpty()
 	@IsString()
-	@IsOptional()
 	readonly linkedin: string;
 
 	@ApiProperty({
@@ -148,8 +148,8 @@ export class CreateExpertDto {
 		example: 'This is a sample profile description.',
 		required: false
 	})
+	@IsNotEmpty()
 	@IsString()
-	@IsOptional()
 	readonly profile: string;
 
 	@ApiProperty({

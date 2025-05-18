@@ -1,6 +1,6 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { CreateBusinessDto } from './create-business.dto';
-import { IsNumber, IsOptional } from 'class-validator';
+import { IsNumber, IsOptional, ValidateIf } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateBusinessDto extends PartialType(CreateBusinessDto) {
@@ -9,8 +9,9 @@ export class UpdateBusinessDto extends PartialType(CreateBusinessDto) {
 		example: 1,
 		required: false
 	})
+	@IsOptional()
+	@ValidateIf(value => value !== null)
 	@Type(() => Number)
 	@IsNumber()
-	@IsOptional()
 	readonly active: number
 }

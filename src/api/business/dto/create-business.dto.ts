@@ -135,10 +135,9 @@ export class CreateBusinessDto {
 
 	@ApiProperty({
 		description: 'Website URL',
-		example: 'http://example.com',
-		required: false
+		example: 'http://example.com'
 	})
-	@IsString()
+	@IsNotEmpty()
 	@IsOptional()
 	readonly website: string
 
@@ -162,12 +161,11 @@ export class CreateBusinessDto {
 
 	@ApiProperty({
 		description: 'Has the business been founded before',
-		example: true,
-		required: false
+		example: true
 	})
+	@IsNotEmpty()
 	@Type(() => Boolean)
 	@IsBoolean()
-	@IsOptional()
 	readonly hasFoundedBefore: boolean
 
 	@ApiProperty({
@@ -208,11 +206,10 @@ export class CreateBusinessDto {
 
 	@ApiProperty({
 		description: 'Business plan',
-		example: 'This is a business plan',
-		required: false
+		example: 'This is a business plan'
 	})
+	@IsNotEmpty()
 	@IsString()
-	@IsOptional()
 	readonly businessPlan: string
 
 	@ApiProperty({
@@ -220,8 +217,8 @@ export class CreateBusinessDto {
 		example: 'This is a business segmentation',
 		required: false
 	})
+	@IsNotEmpty()
 	@IsString()
-	@IsOptional()
 	readonly businessSegmentation: string
 
 	@ApiProperty({
@@ -253,11 +250,10 @@ export class CreateBusinessDto {
 
 	@ApiProperty({
 		description: 'Diagnostic',
-		example: 'This is a diagnostic',
-		required: false
+		example: 'This is a diagnostic'
 	})
+	@IsNotEmpty()
 	@IsString()
-	@IsOptional()
 	readonly diagnostic: string
 
 	@ApiProperty({

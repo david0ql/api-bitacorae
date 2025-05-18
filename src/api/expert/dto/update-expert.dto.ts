@@ -1,6 +1,6 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger'
 import { CreateExpertDto } from './create-expert.dto'
-import { IsNumber, IsOptional } from 'class-validator'
+import { IsNumber, IsOptional, ValidateIf } from 'class-validator'
 import { Type } from 'class-transformer'
 
 export class UpdateExpertDto extends PartialType(CreateExpertDto) {
@@ -9,8 +9,9 @@ export class UpdateExpertDto extends PartialType(CreateExpertDto) {
 		example: 1,
 		required: false
 	})
+	@IsOptional()
+	@ValidateIf(value => value !== null)
 	@Type(() => Number)
 	@IsNumber()
-	@IsOptional()
 	readonly active: number
 }
