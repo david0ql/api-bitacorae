@@ -75,8 +75,7 @@ export class CreateExpertDto {
 		example: 5,
 		required: false
 	})
-	@IsOptional()
-	@ValidateIf(value => value !== null)
+	@IsNotEmpty()
 	@Type(() => Number)
 	@IsNumber()
 	readonly experienceYears: number;

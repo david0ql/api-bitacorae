@@ -30,7 +30,8 @@ export class CreateUserDto {
 	@ApiProperty({
 		description: 'Document type ID',
 		example: 1,
-		required: false
+		required: false,
+		nullable: true
 	})
 	@IsOptional()
 	@ValidateIf(value => value !== null)
@@ -59,7 +60,8 @@ export class CreateUserDto {
 	@ApiProperty({
 		description: 'Gender ID',
 		example: 1,
-		required: false
+		required: false,
+		nullable: true
 	})
 	@IsOptional()
 	@ValidateIf(value => value !== null)
@@ -70,7 +72,8 @@ export class CreateUserDto {
 	@ApiProperty({
 		description: 'Education level ID',
 		example: 1,
-		required: false
+		required: false,
+		nullable: true
 	})
 	@IsOptional()
 	@ValidateIf(value => value !== null)
@@ -81,7 +84,8 @@ export class CreateUserDto {
 	@ApiProperty({
 		description: 'Strengthening area ID',
 		example: 1,
-		required: false
+		required: false,
+		nullable: true
 	})
 	@IsOptional()
 	@ValidateIf(value => value !== null)
@@ -92,7 +96,8 @@ export class CreateUserDto {
 	@ApiProperty({
 		description: 'Experience years',
 		example: 1,
-		required: false
+		required: false,
+		nullable: true
 	})
 	@IsOptional()
 	@ValidateIf(value => value !== null)

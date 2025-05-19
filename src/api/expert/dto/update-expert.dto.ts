@@ -7,7 +7,8 @@ export class UpdateExpertDto extends PartialType(CreateExpertDto) {
 	@ApiProperty({
 		description: 'Active status',
 		example: 1,
-		required: false
+		required: false,
+		nullable: true
 	})
 	@IsOptional()
 	@ValidateIf(value => value !== null)

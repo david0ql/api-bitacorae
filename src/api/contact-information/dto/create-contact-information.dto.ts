@@ -73,11 +73,9 @@ export class CreateContactInformationDto {
 	@ApiProperty({
 		description: 'Experience years',
 		example: 1,
-		required: false,
-		nullable: true
+		required: false
 	})
-	@IsOptional()
-	@ValidateIf(value => value !== null)
+	@IsNotEmpty()
 	@Type(() => Number)
 	@IsNumber()
 	readonly experienceYears: number
