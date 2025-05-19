@@ -273,6 +273,23 @@ export class SessionService {
 		return new PageDto(items, pageMetaDto)
 	}
 
+	async findAllByFilter(filter: string) {
+		if(!filter) return []
+
+		const session = await this.sessionRepository
+			.createQueryBuilder('s')
+			.select([
+				's.id AS value',
+				'CONCAT(s.title, " - ", DATE_FORMAT(s.start_datetime, "%Y-%m-%d %H:%i"), " / ", DATE_FORMAT(s.end_datetime, "%Y-%m-%d %H:%i")) AS label'
+			])
+			.where('s.title LIKE :filter', { filter: `%${filter}%` })
+			.take(10)
+			.setParameters({ appUrl: envVars.APP_URL })
+			.getRawMany()
+
+		return session || []
+	}
+
 	async findOne(id: number) {
 		if (!id) return {}
 

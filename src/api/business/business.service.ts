@@ -180,6 +180,25 @@ export class BusinessService {
 		return new PageDto(items, pageMetaDto)
 	}
 
+	async findAllByFilter(filter: string) {
+		if(!filter) return []
+
+		const business = await this.businessRepository
+			.createQueryBuilder('b')
+			.select([
+				'b.id AS value',
+				'CONCAT(b.social_reason, " - ", b.email) AS label'
+			])
+			.innerJoin('b.user', 'user')
+			.where('b.social_reason LIKE :filter OR b.email LIKE :filter', { filter: `%${filter}%` })
+			.andWhere('user.active = 1')
+			.take(10)
+			.setParameters({appUrl: envVars.APP_URL})
+			.getRawMany()
+
+		return business || []
+	}
+
 	async findOne(id: number) {
 		if(!id) return {}
 

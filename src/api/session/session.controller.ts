@@ -41,6 +41,12 @@ export class SessionController {
 		return this.sessionService.findOne(+id)
 	}
 
+	@Get('/byFilter/:filter')
+	@HttpCode(200)
+	findAllByFilter(@Param('filter') filter: string) {
+		return this.sessionService.findAllByFilter(filter)
+	}
+
 	@Patch(':id')
 	@HttpCode(200)
 	@UseInterceptors(FileUploadInterceptor('files', 'session-preparation', true))
