@@ -58,7 +58,8 @@ export class MailService {
 		companyName: 'Bitácora-e',
 		programName: 'Consultorio Empresarial de Colsubsidio operado por BICTIA',
 		appUrl: envVars.APP_URL,
-		logoUrl: `${envVars.APP_URL}/assets/email/logo_bictoria.jpg`
+		logoUrl: `${envVars.APP_URL}/assets/email/logo_bictoria.jpg`,
+		notificationEmail: '',
 	}
 
 	constructor(
@@ -88,17 +89,24 @@ export class MailService {
 		if(platform?.programName) {
 			this.varCommons.programName = platform.programName
 		}
+
+		if(platform?.notificationEmail) {
+			this.varCommons.notificationEmail = platform.notificationEmail
+		}
 	}
 
 	async sendWelcomeEmail(context: WelcomeEmailContext) {
 		await this.getPlatformVars()
 
-		const subject = 'Bienvenido a Bitácora-e'
 		const { name, email, password } = context
+		const { notificationEmail } = this.varCommons
+
+		const subject = 'Bienvenido a Bitácora-e'
 		const url = 'https://google.com'
 
 		await this.mailerService.sendMail({
 			to: email,
+			...(notificationEmail ? { cc: notificationEmail } : {}),
 			subject,
 			template: 'create-user',
 			context: {
@@ -115,11 +123,14 @@ export class MailService {
 	async sendNewSessionEmail(context: NewSessionEmailContext, files?: Express.Multer.File[]) {
 		await this.getPlatformVars()
 
-		const subject = 'Nueva sesión creada'
 		const { to, businessName, expertName, sessionDateTime, conferenceLink, preparationNotes } = context
+		const { notificationEmail } = this.varCommons
+
+		const subject = 'Nueva sesión creada'
 
 		await this.mailerService.sendMail({
 			to,
+			...(notificationEmail ? { cc: notificationEmail } : {}),
 			subject,
 			template: 'create-session',
 			context: {
@@ -141,12 +152,15 @@ export class MailService {
 	async sendNewSessionActivityEmail(context: NewSessionActivityEmailContext, file?: Express.Multer.File) {
 		await this.getPlatformVars()
 
-		const subject = 'Nueva actividad de sesión creada'
 		const { to, businessName, expertName, sessionDateTime } = context
+		const { notificationEmail } = this.varCommons
+
+		const subject = 'Nueva actividad de sesión creada'
 		const url = 'https://google.com'
 
 		await this.mailerService.sendMail({
 			to,
+			...(notificationEmail ? { cc: notificationEmail } : {}),
 			subject,
 			template: 'create-session-activity',
 			context: {
@@ -167,12 +181,15 @@ export class MailService {
 	async sendEndedSessionEmail(context: EndedSessionEmailContext) {
 		await this.getPlatformVars()
 
-		const subject = 'Sesión finalizada'
 		const { to, businessName, expertName, sessionDateTime } = context
+		const { notificationEmail } = this.varCommons
+
+		const subject = 'Sesión finalizada'
 		const url = 'https://google.com'
 
 		await this.mailerService.sendMail({
 			to,
+			...(notificationEmail ? { cc: notificationEmail } : {}),
 			subject,
 			template: 'ended-session',
 			context: {
@@ -189,11 +206,14 @@ export class MailService {
 	async sendApprovedSessionEmailContext(context: ApprovedSessionEmailContext, file: FileInfo) {
 		await this.getPlatformVars()
 
-		const subject = 'Sesión aprobada'
 		const { to, businessName } = context
+		const { notificationEmail } = this.varCommons
+
+		const subject = 'Sesión aprobada'
 
 		await this.mailerService.sendMail({
 			to,
+			...(notificationEmail ? { cc: notificationEmail } : {}),
 			subject,
 			template: 'approved-session',
 			context: {
