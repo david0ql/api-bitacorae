@@ -13,6 +13,7 @@ interface EnvVars {
 	REDIS_PORT: number;
 	UPLOADS_DIR: string;
 	APP_URL: string;
+	WEB_URL: string;
 	MAIL_HOST: string;
 	MAIL_PORT: number;
 	MAIL_USER: string;
@@ -34,6 +35,7 @@ const envSchema = joi
 		REDIS_PORT: joi.number().required(),
 		UPLOADS_DIR: joi.string().required(),
 		APP_URL: joi.string().required(),
+		WEB_URL: joi.string().required(),
 		MAIL_HOST: joi.string().required(),
 		MAIL_PORT: joi.number().required(),
 		MAIL_USER: joi.string().required(),

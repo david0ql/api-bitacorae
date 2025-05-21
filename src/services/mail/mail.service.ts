@@ -57,7 +57,7 @@ export class MailService {
 		year: new Date().getFullYear(),
 		companyName: 'Bitácora-e',
 		programName: 'Consultorio Empresarial de Colsubsidio operado por BICTIA',
-		appUrl: envVars.APP_URL,
+		webUrl: envVars.WEB_URL,
 		logoUrl: `${envVars.APP_URL}/assets/email/logo_bictoria.jpg`,
 		notificationEmail: '',
 	}
