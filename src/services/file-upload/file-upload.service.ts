@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { diskStorage } from 'multer'
 import { existsSync, mkdirSync, unlinkSync } from 'fs'
-import { join } from 'path'
-import { v4 as uuidv4 } from 'uuid'
+import { join, parse } from 'path'
 import envVars from 'src/config/env'
 
 @Injectable()
@@ -19,8 +18,10 @@ export class FileUploadService {
 		return diskStorage({
 			destination,
 			filename: (_, file, cb) => {
-				const fileExt = file.originalname.split('.').pop()
-				const filename = `${uuidv4()}.${fileExt}`
+				const { name, ext } = parse(file.originalname)
+				const timestamp = Date.now()
+				const safeName = name.replace(/[^a-zA-Z0-9-_]/g, '_') //* Sanitizing the filename
+				const filename = `${safeName}-${timestamp}${ext}`
 				cb(null, filename)
 			}
 		})
