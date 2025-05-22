@@ -50,9 +50,9 @@ export class CreatePlatformDto {
     @ApiProperty({
         description: 'Sitio web',
         example: 'https://www.example.com',
-        required: false
+        required: true
     })
-    @IsOptional()
+    @IsNotEmpty()
     @IsString()
     @MaxLength(255)
     readonly website?: string
@@ -60,9 +60,9 @@ export class CreatePlatformDto {
     @ApiProperty({
         description: 'Nombre del programa',
         example: 'Programa ABC',
-        required: false
+        required: true
     })
-    @IsOptional()
+    @IsNotEmpty()
     @IsString()
     @MaxLength(500)
     readonly programName?: string
@@ -70,9 +70,9 @@ export class CreatePlatformDto {
     @ApiProperty({
         description: 'Correo electrónico de notificaciones',
         example: 'notificaciones@example.com',
-        required: false
+        required: true
     })
-    @IsOptional()
+    @IsNotEmpty()
     @IsEmail()
     @MaxLength(255)
     readonly notificationEmail?: string
@@ -80,9 +80,9 @@ export class CreatePlatformDto {
     @ApiProperty({
         description: 'Fecha de inicio del programa',
         example: '2025-04-01',
-        required: false
+        required: true
     })
-    @IsOptional()
+    @IsNotEmpty()
     @IsDateString()
     readonly programStartDate?: string
 }
