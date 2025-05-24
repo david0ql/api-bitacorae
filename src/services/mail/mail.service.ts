@@ -123,14 +123,14 @@ export class MailService {
 	async sendNewSessionEmail(context: NewSessionEmailContext, files?: Express.Multer.File[]) {
 		await this.getPlatformVars()
 
-		const { to, businessName, expertName, sessionDateTime, conferenceLink, preparationNotes } = context
+		const { to, businessName, expertName, expertMail, sessionDateTime, conferenceLink, preparationNotes } = context
 		const { notificationEmail } = this.varCommons
 
 		const subject = 'Nueva sesión creada'
 
 		await this.mailerService.sendMail({
 			to,
-			...(notificationEmail ? { cc: notificationEmail } : {}),
+			cc: [notificationEmail, expertMail].filter(Boolean),
 			subject,
 			template: 'create-session',
 			context: {
@@ -144,7 +144,7 @@ export class MailService {
 			},
 			attachments: files?.map((file) => ({
 				filename: file.originalname,
-				path: file.path,
+				path: file.path
 			})) ?? []
 		})
 	}
@@ -152,7 +152,7 @@ export class MailService {
 	async sendNewSessionActivityEmail(context: NewSessionActivityEmailContext, file?: Express.Multer.File) {
 		await this.getPlatformVars()
 
-		const { to, businessName, expertName, sessionDateTime } = context
+		const { to, businessName, expertName, expertEmail, sessionDateTime } = context
 		const { notificationEmail } = this.varCommons
 
 		const subject = 'Nueva actividad de sesión creada'
@@ -160,7 +160,7 @@ export class MailService {
 
 		await this.mailerService.sendMail({
 			to,
-			...(notificationEmail ? { cc: notificationEmail } : {}),
+			cc: [notificationEmail, expertEmail].filter(Boolean),
 			subject,
 			template: 'create-session-activity',
 			context: {
@@ -181,7 +181,7 @@ export class MailService {
 	async sendEndedSessionEmail(context: EndedSessionEmailContext) {
 		await this.getPlatformVars()
 
-		const { to, businessName, expertName, sessionDateTime } = context
+		const { to, businessName, expertName, expertMail, sessionDateTime } = context
 		const { notificationEmail } = this.varCommons
 
 		const subject = 'Sesión finalizada'
@@ -189,7 +189,7 @@ export class MailService {
 
 		await this.mailerService.sendMail({
 			to,
-			...(notificationEmail ? { cc: notificationEmail } : {}),
+			cc: [notificationEmail, expertMail].filter(Boolean),
 			subject,
 			template: 'ended-session',
 			context: {
@@ -206,14 +206,14 @@ export class MailService {
 	async sendApprovedSessionEmailContext(context: ApprovedSessionEmailContext, file: FileInfo) {
 		await this.getPlatformVars()
 
-		const { to, businessName } = context
+		const { to, businessName, expertMail } = context
 		const { notificationEmail } = this.varCommons
 
 		const subject = 'Sesión aprobada'
 
 		await this.mailerService.sendMail({
 			to,
-			...(notificationEmail ? { cc: notificationEmail } : {}),
+			cc: [notificationEmail, expertMail].filter(Boolean),
 			subject,
 			template: 'approved-session',
 			context: {

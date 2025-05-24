@@ -207,12 +207,13 @@ export class SessionService {
 				const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
 
 				const { email: businessEmail, name: businessName } = accompaniment.business?.user || { email: '', name: '' }
-				const expertName = accompaniment.expert?.user?.name || ''
+				const { email: expertMail, name: expertName } = accompaniment.expert?.user || { email: '', name: '' }
 
 				this.mailService.sendNewSessionEmail({
 					to: businessEmail,
 					businessName,
 					expertName,
+					expertMail,
 					sessionDateTime,
 					conferenceLink,
 					preparationNotes
@@ -456,9 +457,15 @@ export class SessionService {
 		try {
 			const sessionDateTime = this.dateService.formatDate(this.dateService.parseToDate(session.startDatetime))
 			const { email: businessEmail, name: businessName } = session.accompaniment?.business?.user || { email: '', name: '' }
-			const expertName = session.accompaniment?.expert?.user?.name || ''
+			const { email: expertMail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
 
-			this.mailService.sendEndedSessionEmail({ to: businessEmail, businessName, expertName, sessionDateTime })
+			this.mailService.sendEndedSessionEmail({
+				to: businessEmail,
+				businessName,
+				expertName,
+				expertMail,
+				sessionDateTime
+			})
 		} catch (e) {
 			console.error('Error sending ended session email:', e)
 		}
@@ -494,8 +501,13 @@ export class SessionService {
 
 		try {
 			const { email: businessEmail, name: businessName } = session.accompaniment?.business?.user || { email: '', name: '' }
+			const { email: expertMail } = session.accompaniment?.expert?.user || { email: '', name: '' }
 
-			this.mailService.sendApprovedSessionEmailContext({ to: businessEmail, businessName }, file)
+			this.mailService.sendApprovedSessionEmailContext({
+				to: businessEmail,
+				businessName,
+				expertMail
+			}, file)
 		} catch (e) {
 			console.error('Error sending approved session email:', e)
 		}

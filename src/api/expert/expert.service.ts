@@ -69,7 +69,7 @@ export class ExpertService {
 
 			const user = this.userRepository.create({
 				roleId: 3,
-				name: firstName,
+				name: `${firstName} ${lastName}`,
 				email,
 				password: hash
 			})
@@ -102,7 +102,7 @@ export class ExpertService {
 
 			try {
 				this.mailService.sendWelcomeEmail({
-					name: firstName,
+					name: `${firstName} ${lastName}`,
 					email,
 					password
 				})

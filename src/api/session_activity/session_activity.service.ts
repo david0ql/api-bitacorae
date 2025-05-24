@@ -82,12 +82,13 @@ export class SessionActivityService {
 				const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
 
 				const { email: businessEmail, name: businessName } = session.accompaniment?.business?.user || { email: '', name: '' }
-				const expertName = session.accompaniment?.expert?.user?.name || ''
+				const { email: expertEmail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
 
 				this.mailService.sendNewSessionActivityEmail({
 					to: businessEmail,
 					businessName,
 					expertName,
+					expertEmail,
 					sessionDateTime
 				}, file)
 			} catch (e) {

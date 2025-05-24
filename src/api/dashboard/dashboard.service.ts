@@ -18,9 +18,14 @@ export class DashboardService {
 			WHERE
 				u.active = 1
 		`)
+		const accompanimentHours = await this.dataSource.query(`
+			SELECT
+				SUM(a.total_hours) AS totalHours
+			FROM
+				accompaniment a
+		`)
 		const sessionHours = await this.dataSource.query(`
 			SELECT
-				IFNULL(ROUND(SUM(TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime))), 0) AS totalHours,
 				IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
 			FROM
 				session s
@@ -28,9 +33,9 @@ export class DashboardService {
 		const chartData1 = {
 			bussiness_count: createBussines[0].business_count,
 			bussiness_active_count: activeBussines[0].business_active_count,
-			session_hours: sessionHours[0].totalHours,
+			accompaniment_hours: accompanimentHours[0].totalHours,
 			session_hours_completed: sessionHours[0].completedHours,
-			percentage: Math.round(sessionHours[0].completedHours / sessionHours[0].totalHours * 100) || 0
+			percentage: Math.round(sessionHours[0].completedHours / accompanimentHours[0].totalHours * 100) || 0
 		}
 //*********** */
 		const businessSize = (await this.dataSource.query(`
