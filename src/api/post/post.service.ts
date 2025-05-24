@@ -102,6 +102,35 @@ export class PostService {
 		return new PageDto(items, pageMetaDto)
 	}
 
+	async findLast() {
+		const sql = `
+			SELECT
+				p.id AS id,
+				p.title AS title,
+				CONCAT(?, '/', p.file_path) AS fileUrl,
+				p.content AS content,
+				DATE_FORMAT(p.post_date, '%Y-%m-%d %H:%i:%s') AS postDate,
+				CONCAT('[', GROUP_CONCAT(JSON_OBJECT('value', pc.id, 'label', pc.name)), ']') AS categories,
+				DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt
+			FROM
+				post p
+				LEFT JOIN post_category_rel pcr ON pcr.post_id = p.id
+				LEFT JOIN post_category pc ON pc.id = pcr.category_id
+			WHERE DATE(p.post_date) <= NOW()
+			GROUP BY p.id
+			ORDER BY p.id DESC
+			LIMIT 1
+		`
+
+		const rawItems = await this.postRepository.query(sql, [envVars.APP_URL])
+		const items = rawItems.map(item => {
+			const categories = item.categories ? JSON.parse(item.categories) : []
+			return { ...item, categories }
+		})
+
+		return items[0]
+	}
+
 	async update(id: number, updatePostDto: UpdatePostDto, file?: Express.Multer.File) {
 		const fullPath = file ? this.fileUploadService.getFullPath('post', file.filename) : undefined
 		if(!id) {

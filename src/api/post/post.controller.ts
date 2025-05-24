@@ -36,6 +36,12 @@ export class PostController {
 		return this.postService.findAll(user, pageOptionsDto)
 	}
 
+	@Get('lastPost')
+	@HttpCode(200)
+	findLast() {
+		return this.postService.findLast()
+	}
+
 	@Patch(':id')
 	@HttpCode(200)
 	@UseInterceptors(FileUploadInterceptor('file', 'post'))
