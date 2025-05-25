@@ -204,7 +204,7 @@ export class SessionService {
 			await this.sessionPreparationFileRepository.save(sessionPreparationFiles)
 
 			try {
-				const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
+				const sessionDateFormat = this.dateService.formatDate(new Date(session.startDatetime))
 
 				const { email: businessEmail, name: businessName } = accompaniment.business?.user || { email: '', name: '' }
 				const { email: expertMail, name: expertName } = accompaniment.expert?.user || { email: '', name: '' }
@@ -214,7 +214,9 @@ export class SessionService {
 					businessName,
 					expertName,
 					expertMail,
-					sessionDateTime,
+					startDate,
+					endDate,
+					sessionDateFormat,
 					conferenceLink,
 					preparationNotes
 				}, files)

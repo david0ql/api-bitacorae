@@ -3,7 +3,9 @@ export interface NewSessionEmailContext {
 	businessName: string
 	expertName: string
 	expertMail: string
-	sessionDateTime: string
+	startDate: Date
+	endDate: Date
+	sessionDateFormat: string
 	conferenceLink: string | undefined
 	preparationNotes: string | undefined
 }

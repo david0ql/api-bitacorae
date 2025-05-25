@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common'
 import { MailerService } from '@nestjs-modules/mailer'
 import * as fs from 'fs'
 import * as path from 'path'
+import { tmpdir } from 'os'
 import * as sanitizeHtml from 'sanitize-html'
+import { createEvent, EventAttributes } from 'ics'
 import Handlebars from 'handlebars'
 
 import { WelcomeEmailContext } from './interfaces/welcome-email-context.interface'
@@ -95,6 +97,29 @@ export class MailService {
 		}
 	}
 
+	private generateCalendarEventFile(event: EventAttributes): string {
+		const { error, value } = createEvent(event)
+		if (error || !value) {
+			throw new Error('No se pudo generar el archivo ICS')
+		}
+
+		const calendarFilePath = path.join(tmpdir(), `session-${Date.now()}.ics`)
+		fs.writeFileSync(calendarFilePath, value)
+		return calendarFilePath
+	}
+
+	private formatDateArray(date: Date): [number, number, number, number, number] {
+		return [
+			date.getFullYear(),
+			date.getMonth() + 1,
+			date.getDate(),
+			date.getHours(),
+			date.getMinutes()
+		]
+	}
+
+
+
 	async sendWelcomeEmail(context: WelcomeEmailContext) {
 		await this.getPlatformVars()
 
@@ -123,30 +148,55 @@ export class MailService {
 	async sendNewSessionEmail(context: NewSessionEmailContext, files?: Express.Multer.File[]) {
 		await this.getPlatformVars()
 
-		const { to, businessName, expertName, expertMail, sessionDateTime, conferenceLink, preparationNotes } = context
 		const { notificationEmail } = this.varCommons
-
+		const { to, businessName, expertName, expertMail, startDate, endDate, sessionDateFormat, conferenceLink, preparationNotes } = context
 		const subject = 'Nueva sesión creada'
 
-		await this.mailerService.sendMail({
-			to,
-			cc: [notificationEmail, expertMail].filter(Boolean),
-			subject,
-			template: 'create-session',
-			context: {
-				...this.varCommons,
-				title: subject,
-				businessName,
-				expertName,
-				sessionDateTime,
-				conferenceLink,
-				preparationNotes
-			},
-			attachments: files?.map((file) => ({
-				filename: file.originalname,
-				path: file.path
-			})) ?? []
-		})
+		const event: EventAttributes = {
+			title: `Sesión con ${expertName}`,
+			description: 'Sesión programada',
+			start: this.formatDateArray(startDate),
+			end: this.formatDateArray(endDate),
+			location: conferenceLink || 'Reunión virtual',
+			url: conferenceLink || '',
+			status: 'CONFIRMED',
+			busyStatus: 'BUSY',
+			organizer: { name: expertName, email: expertMail }
+		}
+
+		let calendarFilePath: string = ''
+
+		try {
+			calendarFilePath = this.generateCalendarEventFile(event)
+
+			const attachments = [
+				...(files?.map(f => ({ filename: f.originalname, path: f.path })) ?? []),
+				{ filename: 'session.ics', path: calendarFilePath }
+			]
+
+			await this.mailerService.sendMail({
+				to,
+				cc: [notificationEmail, expertMail].filter(Boolean),
+				subject,
+				template: 'create-session',
+				context: {
+					...this.varCommons,
+					title: subject,
+					businessName,
+					expertName,
+					sessionDateFormat,
+					conferenceLink,
+					preparationNotes
+				},
+				attachments
+			})
+		} finally {
+			if (calendarFilePath) {
+				fs.promises.unlink(calendarFilePath).catch(err =>
+					console.warn('No se pudo eliminar el archivo temporal:', err)
+				)
+			}
+		}
 	}
 
 	async sendNewSessionActivityEmail(context: NewSessionActivityEmailContext, file?: Express.Multer.File) {
