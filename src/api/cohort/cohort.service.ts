@@ -1,8 +1,9 @@
 import { Repository } from 'typeorm'
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
 import { Cohort } from 'src/entities/Cohort'
+import { DateService } from 'src/services/date/date.service'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -14,11 +15,27 @@ import { UpdateCohortDto } from './dto/update-cohort.dto'
 export class CohortService {
 	constructor(
 		@InjectRepository(Cohort)
-		private readonly cohortRepository: Repository<Cohort>
+		private readonly cohortRepository: Repository<Cohort>,
+
+		private readonly dateService: DateService
 	) {}
 
 	create(createCohortDto: CreateCohortDto) {
 		const { name, order, startDate, endDate } = createCohortDto
+
+		const startDateVal = this.dateService.parseToDate(startDate)
+		const endDateVal = this.dateService.parseToDate(endDate)
+
+		const diffInHours = this.dateService.getHoursDiff(startDateVal, endDateVal)
+		const now = this.dateService.getNow()
+
+		if (diffInHours <= 0) {
+			throw new BadRequestException('La fecha de inicio debe ser menor a la fecha de fin')
+		}
+
+		if (endDateVal < now) {
+			throw new BadRequestException('La fecha fin debe ser posterior a la actual')
+		}
 
 		const cohort = this.cohortRepository.create({ name, order, startDate, endDate })
 
@@ -50,6 +67,22 @@ export class CohortService {
 		if(!id) return { affected: 0 }
 
 		const { name, order, startDate, endDate } = updateCohortDto
+
+		if(startDate && endDate) {
+			const startDateVal = this.dateService.parseToDate(startDate)
+			const endDateVal = this.dateService.parseToDate(endDate)
+
+			const diffInHours = this.dateService.getHoursDiff(startDateVal, endDateVal)
+			const now = this.dateService.getNow()
+
+			if (diffInHours <= 0) {
+				throw new BadRequestException('La fecha de inicio debe ser menor a la fecha de fin')
+			}
+
+			if (endDateVal < now) {
+				throw new BadRequestException('La fecha fin debe ser posterior a la actual')
+			}
+		}
 
 		return this.cohortRepository.update(id, { name, order, startDate, endDate })
 	}
