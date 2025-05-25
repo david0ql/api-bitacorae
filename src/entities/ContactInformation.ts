@@ -58,22 +58,47 @@ export class ContactInformation {
   @Column("int", { name: "education_level_id", nullable: true })
   educationLevelId: number | null;
 
-  @Column("varchar", { name: "facebook", nullable: true, length: 255 })
+  @Column("varchar", {
+    name: "facebook",
+    nullable: true,
+    length: 255,
+    default: () => "''",
+  })
   facebook: string | null;
 
-  @Column("varchar", { name: "instagram", nullable: true, length: 255 })
+  @Column("varchar", {
+    name: "instagram",
+    nullable: true,
+    length: 255,
+    default: () => "''",
+  })
   instagram: string | null;
 
-  @Column("varchar", { name: "twitter", nullable: true, length: 255 })
+  @Column("varchar", {
+    name: "twitter",
+    nullable: true,
+    length: 255,
+    default: () => "''",
+  })
   twitter: string | null;
 
-  @Column("varchar", { name: "website", nullable: true, length: 255 })
+  @Column("varchar", {
+    name: "website",
+    nullable: true,
+    length: 255,
+    default: () => "''",
+  })
   website: string | null;
 
-  @Column("varchar", { name: "linkedin", nullable: true, length: 255 })
+  @Column("varchar", {
+    name: "linkedin",
+    nullable: true,
+    length: 255,
+    default: () => "''",
+  })
   linkedin: string | null;
 
-  @Column("longtext", { name: "profile", nullable: true })
+  @Column("longtext", { name: "profile", nullable: true, default: () => "''" })
   profile: string | null;
 
   @Column("timestamp", {

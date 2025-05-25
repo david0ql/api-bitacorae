@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm'
+import { DataSource, Repository } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import * as bcrypt from 'bcrypt'
@@ -17,6 +17,7 @@ import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 import { MailService } from 'src/services/mail/mail.service'
 
 import envVars from 'src/config/env'
+import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 
 @Injectable()
 export class ExpertService {
@@ -27,6 +28,7 @@ export class ExpertService {
 		@InjectRepository(User)
 		private readonly userRepository: Repository<User>,
 
+		private readonly dataSource: DataSource,
 		private readonly fileUploadService: FileUploadService,
 		private readonly mailService: MailService
 	) {}
@@ -163,6 +165,37 @@ export class ExpertService {
 		return new PageDto(items, pageMetaDto)
 	}
 
+	async findAllForBusiness(user: JwtUser) {
+		const { id: userId } = user
+
+		let businessId = await this.dataSource.query(`
+			SELECT b.id
+			FROM business b
+			INNER JOIN user u ON b.user_id = u.id
+			WHERE u.id = ?
+		`, [userId])
+
+		if (!businessId || !businessId.length) return []
+
+		businessId = businessId[0].id
+
+		const experts = await this.expertRepository
+			.createQueryBuilder('e')
+			.select([
+				'e.id AS value',
+				'CONCAT(e.firstName, " ", e.lastName, " - ", e.email) AS label'
+			])
+			.innerJoin('e.accompaniments', 'a')
+			.where('a.businessId = :businessId', { businessId })
+			.groupBy('e.id')
+			.orderBy('e.firstName', 'ASC')
+			.addOrderBy('e.lastName', 'ASC')
+			.addOrderBy('e.email', 'ASC')
+			.getRawMany()
+
+		return experts || []
+	}
+
 	async findAllByFilter(filter: string) {
 		if(!filter) return []
 
@@ -176,7 +209,6 @@ export class ExpertService {
 			.where('e.firstName LIKE :filter OR e.lastName LIKE :filter OR e.email LIKE :filter', { filter: `%${filter}%` })
 			.andWhere('user.active = 1')
 			.take(10)
-			.setParameters({appUrl: envVars.APP_URL})
 			.getRawMany()
 
 		return experts || []

@@ -19,6 +19,7 @@ import { PdfService } from 'src/services/pdf/pdf.service'
 import { DateService } from 'src/services/date/date.service'
 
 import envVars from 'src/config/env'
+import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 
 @Injectable()
 export class SessionService {
@@ -321,6 +322,64 @@ export class SessionService {
 		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 
 		return new PageDto(items, pageMetaDto)
+	}
+
+	async findAllForBusiness(user: JwtUser, pageOptionsDto: PageOptionsDto): Promise<PageDto<Session>> {
+		const { id: userId } = user
+		const { take, skip, order } = pageOptionsDto
+
+		let businessId = await this.dataSource.query(`
+			SELECT b.id
+			FROM business b
+			INNER JOIN user u ON b.user_id = u.id
+			WHERE u.id = ?
+		`, [userId])
+
+		if (!businessId || !businessId.length) return new PageDto([], new PageMetaDto({ pageOptionsDto, totalCount: 0 }))
+
+		businessId = businessId[0].id
+
+		const sql = `
+			SELECT
+				s.id AS id,
+				s.title AS title,
+				e.id AS expertId,
+				CONCAT(e.first_name, ' ', e.last_name) AS expertName,
+				ct.name AS consultorType,
+				ct.id AS consultorTypeId,
+				DATE_FORMAT(s.start_datetime, '%Y-%m-%d %H:%i:%s') AS startDatetime,
+				DATE_FORMAT(s.end_datetime, '%Y-%m-%d %H:%i:%s') AS endDatetime,
+				TIMESTAMPDIFF(MINUTE, s.start_datetime, s.end_datetime) AS duration,
+				ss.id AS statusId,
+				ss.name AS status
+			FROM
+				session s
+				INNER JOIN accompaniment a ON s.accompaniment_id = a.id
+				INNER JOIN expert e ON a.expert_id = e.id
+				INNER JOIN consultor_type ct ON e.consultor_type_id = ct.id
+				INNER JOIN session_status ss ON s.status_id = ss.id
+				LEFT JOIN session_preparation_file spf ON spf.session_id = s.id
+			WHERE a.business_id = ?
+			GROUP BY s.id
+			ORDER BY s.start_datetime ${order}
+			LIMIT ${take} OFFSET ${skip}
+		`
+
+		const countSql = `
+			SELECT COUNT(DISTINCT s.id) AS total
+			FROM session s
+			INNER JOIN accompaniment a ON s.accompaniment_id = a.id
+			WHERE a.business_id = ?
+		`
+
+		const [rawItems, countResult] = await Promise.all([
+			this.dataSource.query(sql, [businessId]),
+			this.dataSource.query(countSql, [businessId])
+		])
+
+		const totalCount = Number(countResult[0]?.total) ?? 0
+		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
+		return new PageDto(rawItems, pageMetaDto)
 	}
 
 	async findAllByFilter(filter: string) {

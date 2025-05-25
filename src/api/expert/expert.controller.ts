@@ -12,6 +12,8 @@ import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
+import { JwtUser } from '../auth/interfaces/jwt-user.interface'
+import { CurrentUser } from '../auth/decorators/current-user.decorator'
 
 @Controller('expert')
 @ApiBearerAuth()
@@ -34,16 +36,22 @@ export class ExpertController {
 		return this.expertService.findAll(pageOptionsDto)
 	}
 
-	@Get(':id')
+	@Get('/forBusiness')
 	@HttpCode(200)
-	findOne(@Param('id') id: string) {
-		return this.expertService.findOne(+id)
+	findAllForBusiness(@CurrentUser() user: JwtUser) {
+		return this.expertService.findAllForBusiness(user)
 	}
 
 	@Get('/byFilter/:filter')
 	@HttpCode(200)
 	findAllByFilter(@Param('filter') filter: string) {
 		return this.expertService.findAllByFilter(filter)
+	}
+
+	@Get(':id')
+	@HttpCode(200)
+	findOne(@Param('id') id: string) {
+		return this.expertService.findOne(+id)
 	}
 
 	@Patch(':id')

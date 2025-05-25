@@ -13,6 +13,8 @@ import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
+import { JwtUser } from '../auth/interfaces/jwt-user.interface'
+import { CurrentUser } from '../auth/decorators/current-user.decorator'
 
 @Controller('session')
 @ApiBearerAuth()
@@ -39,6 +41,12 @@ export class SessionController {
 	@HttpCode(200)
 	findAllByAccompanimentAndExpert(@Param('accompanimentId') accompanimentId: string, @Param('expertId') expertId: string, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Session>> {
 		return this.sessionService.findAllByAccompanimentAndExpert(+accompanimentId, +expertId, pageOptionsDto)
+	}
+
+	@Get('/forBusiness')
+	@HttpCode(200)
+	findAllByBusiness(@CurrentUser() user: JwtUser, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Session>> {
+		return this.sessionService.findAllForBusiness(user, pageOptionsDto)
 	}
 
 	@Get(':id')

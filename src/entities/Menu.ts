@@ -10,7 +10,7 @@ import {
 } from "typeorm";
 import { Role } from "./Role";
 
-@Index("parent_id", ["parentId"], {})
+@Index("menu_ibfk_1", ["parentId"], {})
 @Entity("menu", { schema: "dbbitacorae" })
 export class Menu {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
@@ -42,7 +42,7 @@ export class Menu {
 
   @ManyToOne(() => Menu, (menu) => menu.menus, {
     onDelete: "SET NULL",
-    onUpdate: "RESTRICT",
+    onUpdate: "CASCADE",
   })
   @JoinColumn([{ name: "parent_id", referencedColumnName: "id" }])
   parent: Menu;
