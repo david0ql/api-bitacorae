@@ -35,6 +35,12 @@ export class SessionController {
 		return this.sessionService.findAllByAccompaniment(+id, pageOptionsDto)
 	}
 
+	@Get('/byAccompanimentAndExpert/:accompanimentId/:expertId')
+	@HttpCode(200)
+	findAllByAccompanimentAndExpert(@Param('accompanimentId') accompanimentId: string, @Param('expertId') expertId: string, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Session>> {
+		return this.sessionService.findAllByAccompanimentAndExpert(+accompanimentId, +expertId, pageOptionsDto)
+	}
+
 	@Get(':id')
 	@HttpCode(200)
 	findOne(@Param('id') id: string) {

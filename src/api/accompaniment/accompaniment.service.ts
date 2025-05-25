@@ -98,7 +98,12 @@ export class AccompanimentService {
 		if (roleId === 3) {
 			const expert = await this.expertRepository.findOne({ where: { userId: id }, select: ['id'] })
 			if (!expert) throw new BadRequestException(`No se encontró un experto con el ID de usuario ${id}`)
-			whereConditions.push(`a.expert_id = ?`)
+			whereConditions.push(`
+				b.id IN (
+					SELECT DISTINCT a.business_id
+					FROM accompaniment a
+					WHERE a.expert_id = ?
+				)`)
 			params.push(expert.id)
 		}
 
@@ -114,6 +119,8 @@ export class AccompanimentService {
 		const sql = `
 			SELECT
 				b.id AS id,
+				e.id AS expertId,
+				a.id AS accompanimentId,
 				b.social_reason AS socialReason,
 				CONCAT(c.first_name, ' ', c.last_name) AS name,
 				CONCAT("${envVars.APP_URL}", "/", c.photo) AS photo,
@@ -128,6 +135,7 @@ export class AccompanimentService {
 				INNER JOIN strengthening_area sa ON sa.id = b.strengthening_area_id
 				LEFT JOIN contact_information c ON c.business_id = b.id
 				LEFT JOIN accompaniment a ON a.business_id = b.id
+				LEFT JOIN expert e ON e.id = a.expert_id
 				LEFT JOIN session s ON s.accompaniment_id = a.id
 			${whereClause}
 			GROUP BY b.id
