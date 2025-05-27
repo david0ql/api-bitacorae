@@ -18,6 +18,7 @@ import { Platform } from 'src/entities/Platform'
 import { Repository } from 'typeorm'
 
 import envVars from 'src/config/env'
+import { RespondedSessionEmailContext } from './interfaces/responded-session-email-context.interface'
 
 Handlebars.registerHelper('sanitizeHtmlEmail', (html: string) => {
 	const clean = sanitizeHtml(html, {
@@ -213,6 +214,35 @@ export class MailService {
 			cc: [notificationEmail, expertEmail].filter(Boolean),
 			subject,
 			template: 'create-session-activity',
+			context: {
+				...this.varCommons,
+				title: subject,
+				businessName,
+				expertName,
+				sessionDateTime,
+				url
+			},
+			attachments: file ? [{
+				filename: file.originalname,
+				path: file.path
+			}] : []
+		})
+	}
+
+	async sendRespondedSessionEmail(context: RespondedSessionEmailContext, file?: Express.Multer.File) {
+		await this.getPlatformVars()
+
+		const { to, businessName, expertName, businessEmail, sessionDateTime } = context
+		const { notificationEmail } = this.varCommons
+
+		const subject = 'Actividad de sesión respondida'
+		const url = 'https://google.com'
+
+		await this.mailerService.sendMail({
+			to,
+			cc: [notificationEmail, businessEmail].filter(Boolean),
+			subject,
+			template: 'respond-session-activity',
 			context: {
 				...this.varCommons,
 				title: subject,

@@ -45,9 +45,9 @@ export class CreateSessionDto {
 	@ApiProperty({
 		description: 'Conference link for the session',
 		example: 'https://example.com/conference',
-		required: false
+		required: true
 	})
-	@IsOptional()
+	@IsNotEmpty()
 	@IsString()
 	readonly conferenceLink?: string;
 

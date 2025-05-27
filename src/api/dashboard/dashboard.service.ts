@@ -8,21 +8,19 @@ export class DashboardService {
 	) {}
 
 	async findAll() {
-		const createBussines = await this.dataSource.query(`SELECT COUNT(b.id) AS business_count FROM business b`)
-		const activeBussines = await this.dataSource.query(`
+		const dataBusiness = await this.dataSource.query(`
+			SELECT
+				COUNT(b.id) AS business_count,
+				SUM(b.assigned_hours) totalHours
+			FROM
+				business b
+		`)
+		const activeBusiness = await this.dataSource.query(`
 			SELECT
 				COUNT(DISTINCT b.id) AS business_active_count
 			FROM
 				business b
-				INNER JOIN user u ON b.user_id = u.id
-			WHERE
-				u.active = 1
-		`)
-		const accompanimentHours = await this.dataSource.query(`
-			SELECT
-				SUM(a.total_hours) AS totalHours
-			FROM
-				accompaniment a
+				INNER JOIN accompaniment a ON a.business_id = b.id
 		`)
 		const sessionHours = await this.dataSource.query(`
 			SELECT
@@ -31,11 +29,11 @@ export class DashboardService {
 				session s
 		`)
 		const chartData1 = {
-			bussiness_count: createBussines[0].business_count,
-			bussiness_active_count: activeBussines[0].business_active_count,
-			accompaniment_hours: accompanimentHours[0].totalHours,
+			business_count: dataBusiness[0].business_count,
+			business_active_count: activeBusiness[0].business_active_count,
+			assigned_hours: dataBusiness[0].totalHours,
 			session_hours_completed: sessionHours[0].completedHours,
-			percentage: Math.round(sessionHours[0].completedHours / accompanimentHours[0].totalHours * 100) || 0
+			percentage: Math.round(sessionHours[0].completedHours / dataBusiness[0].totalHours * 100) || 0
 		}
 //*********** */
 		const businessSize = (await this.dataSource.query(`

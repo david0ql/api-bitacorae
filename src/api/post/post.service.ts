@@ -71,9 +71,9 @@ export class PostService {
 				p.title AS title,
 				CONCAT(?, '/', p.file_path) AS fileUrl,
 				p.content AS content,
-				DATE_FORMAT(p.post_date, '%Y-%m-%d %H:%i:%s') AS postDate,
+				p.post_date AS postDate,
 				CONCAT('[', GROUP_CONCAT(JSON_OBJECT('value', pc.id, 'label', pc.name)), ']') AS categories,
-				DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt
+				p.created_at AS createdAt
 			FROM
 				post p
 				LEFT JOIN post_category_rel pcr ON pcr.post_id = p.id
@@ -93,7 +93,12 @@ export class PostService {
 
 		const items = rawItems.map(item => {
 			const categories = item.categories ? JSON.parse(item.categories) : []
-			return { ...item, categories }
+			return {
+				...item,
+				postDate: this.dateService.formatDate(item.postDate),
+				createdAt: this.dateService.formatDate(item.createdAt),
+				categories
+			}
 		})
 
 		const totalCount = Number(countResult[0]?.total) ?? 0
@@ -109,9 +114,9 @@ export class PostService {
 				p.title AS title,
 				CONCAT(?, '/', p.file_path) AS fileUrl,
 				p.content AS content,
-				DATE_FORMAT(p.post_date, '%Y-%m-%d %H:%i:%s') AS postDate,
+				p.post_date AS postDate,
 				CONCAT('[', GROUP_CONCAT(JSON_OBJECT('value', pc.id, 'label', pc.name)), ']') AS categories,
-				DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt
+				p.created_at AS createdAt
 			FROM
 				post p
 				LEFT JOIN post_category_rel pcr ON pcr.post_id = p.id
@@ -125,7 +130,12 @@ export class PostService {
 		const rawItems = await this.postRepository.query(sql, [envVars.APP_URL])
 		const items = rawItems.map(item => {
 			const categories = item.categories ? JSON.parse(item.categories) : []
-			return { ...item, categories }
+			return {
+				...item,
+				postDate: this.dateService.formatDate(item.postDate),
+				createdAt: this.dateService.formatDate(item.createdAt),
+				categories
+			}
 		})
 
 		return items[0]

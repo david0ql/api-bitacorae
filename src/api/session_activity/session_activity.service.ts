@@ -192,7 +192,35 @@ export class SessionActivityService {
 				deliverableFilePath: fullPath
 			})
 
-			return this.sessionActivityResponseRepository.save(sessionActivityResponse)
+			const savedResponse = await this.sessionActivityResponseRepository.save(sessionActivityResponse)
+
+			try {
+				const session = await this.sessionRepository.findOne({
+					where: { id: sessionActivity.sessionId },
+					relations: ['accompaniment', 'accompaniment.business.user', 'accompaniment.expert.user']
+				})
+
+				if (!session) {
+					throw new BadRequestException(`Sesión con id ${sessionActivity.sessionId} no encontrada`)
+				}
+
+				const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
+
+				const { email: businessEmail, name: businessName } = session.accompaniment?.business?.user || { email: '', name: '' }
+				const { email: expertEmail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
+
+				this.mailService.sendRespondedSessionEmail({
+					to: expertEmail,
+					businessName,
+					expertName,
+					businessEmail,
+					sessionDateTime
+				}, file)
+			} catch (e) {
+				console.error('Error sending responded session activity email:', e)
+			}
+
+			return savedResponse
 		} catch (e) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
