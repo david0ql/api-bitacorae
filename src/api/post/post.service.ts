@@ -71,9 +71,11 @@ export class PostService {
 				p.title AS title,
 				CONCAT(?, '/', p.file_path) AS fileUrl,
 				p.content AS content,
-				p.post_date AS postDate,
 				CONCAT('[', GROUP_CONCAT(JSON_OBJECT('value', pc.id, 'label', pc.name)), ']') AS categories,
-				p.created_at AS createdAt
+				p.post_date AS postDateBase,
+				DATE_FORMAT(p.post_date, '%Y-%m-%d %H:%i:%s') AS postDate,
+				p.created_at AS createdAtBase,
+				DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt
 			FROM
 				post p
 				LEFT JOIN post_category_rel pcr ON pcr.post_id = p.id
@@ -95,8 +97,8 @@ export class PostService {
 			const categories = item.categories ? JSON.parse(item.categories) : []
 			return {
 				...item,
-				postDate: this.dateService.formatDate(item.postDate),
-				createdAt: this.dateService.formatDate(item.createdAt),
+				postDateFormat: this.dateService.formatDate(item.postDateBase),
+				createdAtFormat: this.dateService.formatDate(item.createdAtBase),
 				categories
 			}
 		})
@@ -114,9 +116,11 @@ export class PostService {
 				p.title AS title,
 				CONCAT(?, '/', p.file_path) AS fileUrl,
 				p.content AS content,
-				p.post_date AS postDate,
 				CONCAT('[', GROUP_CONCAT(JSON_OBJECT('value', pc.id, 'label', pc.name)), ']') AS categories,
-				p.created_at AS createdAt
+				p.post_date AS postDateBase,
+				DATE_FORMAT(p.post_date, '%Y-%m-%d %H:%i:%s') AS postDate,
+				p.created_at AS createdAtBase,
+				DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt
 			FROM
 				post p
 				LEFT JOIN post_category_rel pcr ON pcr.post_id = p.id
@@ -132,8 +136,8 @@ export class PostService {
 			const categories = item.categories ? JSON.parse(item.categories) : []
 			return {
 				...item,
-				postDate: this.dateService.formatDate(item.postDate),
-				createdAt: this.dateService.formatDate(item.createdAt),
+				postDateFormat: this.dateService.formatDate(item.postDateBase),
+				createdAtFormat: this.dateService.formatDate(item.createdAtBase),
 				categories
 			}
 		})

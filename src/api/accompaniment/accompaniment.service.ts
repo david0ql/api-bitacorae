@@ -58,6 +58,13 @@ export class AccompanimentService {
 			throw new BadRequestException(`No se encontró un área de fortalecimiento con el ID ${strengtheningAreaId}`)
 		}
 
+		const existingAccompaniment = await this.accompanimentRepository.findOne({
+			where: { businessId, expertId }
+		})
+		if (existingAccompaniment) {
+			throw new BadRequestException(`La empresa con el ID ${businessId} ya está siendo acompañada por el experto con el ID ${expertId}`)
+		}
+
 		if(totalHours < maxHoursPerSession) {
 			throw new BadRequestException(`El total de horas (${totalHours}) no puede ser menor a las horas máximas por sesión (${maxHoursPerSession})`)
 		}
@@ -92,35 +99,9 @@ export class AccompanimentService {
 		const { id, roleId } = user
 		const { take, skip, order } = pageOptionsDto
 
-		let whereConditions: string[] = []
-		let params: any[] = []
-
-		if (roleId === 3) {
-			const expert = await this.expertRepository.findOne({ where: { userId: id }, select: ['id'] })
-			if (!expert) throw new BadRequestException(`No se encontró un experto con el ID de usuario ${id}`)
-			whereConditions.push(`
-				b.id IN (
-					SELECT DISTINCT a.business_id
-					FROM accompaniment a
-					WHERE a.expert_id = ?
-				)`)
-			params.push(expert.id)
-		}
-
-		if (roleId === 4) {
-			const business = await this.businessRepository.findOne({ where: { userId: id }, select: ['id'] })
-			if (!business) throw new BadRequestException(`No se encontró una empresa con el ID de usuario ${id}`)
-			whereConditions.push(`b.id = ?`)
-			params.push(business.id)
-		}
-
-		const whereClause = whereConditions.length ? `WHERE ${whereConditions.join(' AND ')}` : ''
-
-		const sql = `
+		let sql = `
 			SELECT
 				b.id AS id,
-				e.id AS expertId,
-				a.id AS accompanimentId,
 				b.social_reason AS socialReason,
 				CONCAT(c.first_name, ' ', c.last_name) AS name,
 				CONCAT("${envVars.APP_URL}", "/", c.photo) AS photo,
@@ -135,24 +116,74 @@ export class AccompanimentService {
 				INNER JOIN strengthening_area sa ON sa.id = b.strengthening_area_id
 				LEFT JOIN contact_information c ON c.business_id = b.id
 				LEFT JOIN accompaniment a ON a.business_id = b.id
-				LEFT JOIN expert e ON e.id = a.expert_id
 				LEFT JOIN session s ON s.accompaniment_id = a.id
-			${whereClause}
 			GROUP BY b.id
 			ORDER BY b.id ${order}
 			LIMIT ${take} OFFSET ${skip}
 		`
 
-		const countSql = `
+		let countSql = `
 			SELECT COUNT(DISTINCT b.id) AS total
 			FROM business b
 			LEFT JOIN accompaniment a ON a.business_id = b.id
-			${whereClause}
 		`
 
+		if (roleId === 3) {
+			const expert = await this.expertRepository.findOne({ where: { userId: id }, select: ['id'] })
+			if (!expert) throw new BadRequestException(`No se encontró un experto con el ID de usuario ${id}`)
+
+			sql = `
+				WITH expert_accompaniment AS (
+					SELECT
+						a.business_id,
+						a.id AS accompaniment_id,
+						a.expert_id
+					FROM accompaniment a
+					WHERE a.expert_id = ${expert.id}
+				)
+
+				SELECT
+					b.id AS id,
+					ea.expert_id AS expertId,
+					ea.accompaniment_id AS accompanimentId,
+					b.social_reason AS socialReason,
+					CONCAT(c.first_name, ' ', c.last_name) AS name,
+					CONCAT("${envVars.APP_URL}", "/", c.photo) AS photo,
+					bs.name AS size,
+					sa.name AS strengthening,
+					b.assigned_hours AS assignedHours,
+					IFNULL(COUNT(DISTINCT s.id), 0) AS scheduledSessions,
+					IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
+				FROM
+					business b
+					INNER JOIN business_size bs ON bs.id = b.business_size_id
+					INNER JOIN strengthening_area sa ON sa.id = b.strengthening_area_id
+					LEFT JOIN contact_information c ON c.business_id = b.id
+					LEFT JOIN accompaniment a ON a.business_id = b.id
+					LEFT JOIN session s ON s.accompaniment_id = a.id
+					INNER JOIN expert_accompaniment ea ON ea.business_id = b.id
+				GROUP BY b.id
+				ORDER BY b.id ${order}
+				LIMIT ${take} OFFSET ${skip}
+			`
+
+			countSql = `
+				WITH expert_accompaniment AS (
+					SELECT
+						a.business_id
+					FROM accompaniment a
+					WHERE a.expert_id = ${expert.id}
+				)
+
+				SELECT COUNT(DISTINCT b.id) AS total
+				FROM business b
+				INNER JOIN expert_accompaniment ea ON ea.business_id = b.id
+			`
+		}
+
 		const [items, countResult] = await Promise.all([
-			this.dataSource.query(sql, params),
-			this.dataSource.query(countSql, params)
+			this.dataSource.query(sql),
+			this.dataSource.query(countSql)
 		])
 
 		const totalCount = Number(countResult[0]?.total) ?? 0
@@ -325,6 +356,27 @@ export class AccompanimentService {
 			if (existingAccompaniment && existingAccompaniment.id !== id) {
 				throw new BadRequestException(`La empresa con el ID ${businessId} ya está siendo acompañada por el experto con el ID ${expertId}`)
 			}
+		}
+
+		if(totalHours && maxHoursPerSession && totalHours < maxHoursPerSession) {
+			throw new BadRequestException(`El total de horas (${totalHours}) no puede ser menor a las horas máximas por sesión (${maxHoursPerSession})`)
+		}
+
+		const usedHoursResult = await this.accompanimentRepository
+			.createQueryBuilder("accompaniment")
+			.select("SUM(accompaniment.totalHours)", "usedHours")
+			.where("accompaniment.businessId = :businessId", { businessId })
+			.andWhere("accompaniment.id != :id", { id })
+			.getRawOne()
+
+		const usedHours = Number(usedHoursResult.usedHours || 0)
+		const business = await this.businessRepository.findOne({ where: { id: businessId } })
+		const remainingHours = business ? business.assignedHours - usedHours : 0
+
+		if (totalHours && totalHours > remainingHours) {
+			throw new BadRequestException(
+				`El total de horas (${totalHours}) excede las horas disponibles (${remainingHours}) para la empresa`
+			)
 		}
 
 		return this.accompanimentRepository.update(id, {

@@ -38,7 +38,7 @@ export class SessionAttachmentService {
 		}
 
 		if (!file && !externalPath) {
-			throw new BadRequestException('Debe proporcionar un archivo o una ruta externa')
+			throw new BadRequestException('Debe proporcionar un archivo o un enlace externo')
 		}
 
 		try {
