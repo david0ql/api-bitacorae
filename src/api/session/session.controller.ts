@@ -51,8 +51,8 @@ export class SessionController {
 
 	@Get(':id')
 	@HttpCode(200)
-	findOne(@Param('id') id: string) {
-		return this.sessionService.findOne(+id)
+	findOne(@CurrentUser() user: JwtUser, @Param('id') id: string) {
+		return this.sessionService.findOne(user, +id)
 	}
 
 	@Get('/byFilter/:filter')

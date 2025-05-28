@@ -21,14 +21,21 @@ export function FileUploadInterceptor(
 
 			const storage = fileUploadService.getMulterStorage(folder)
 
+			const multerOptions = {
+				storage,
+				limits: {
+					fileSize: 500 * 1024 * 1024 // 500 MB limit
+				}
+			}
+
 			let multerInterceptor: any
 
 			if (Array.isArray(fieldNameOrFields)) {
-				multerInterceptor = FileFieldsInterceptor(fieldNameOrFields, { storage })
+				multerInterceptor = FileFieldsInterceptor(fieldNameOrFields, multerOptions)
 			} else if (multiple) {
-				multerInterceptor = FilesInterceptor(fieldNameOrFields, maxCount, { storage })
+				multerInterceptor = FilesInterceptor(fieldNameOrFields, maxCount, multerOptions)
 			} else {
-				multerInterceptor = FileInterceptor(fieldNameOrFields, { storage })
+				multerInterceptor = FileInterceptor(fieldNameOrFields, multerOptions)
 			}
 
 			const interceptorInstance = new multerInterceptor()

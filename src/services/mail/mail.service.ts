@@ -128,7 +128,6 @@ export class MailService {
 		const { notificationEmail } = this.varCommons
 
 		const subject = 'Bienvenido a Bitácora-e'
-		const url = 'https://google.com'
 
 		await this.mailerService.sendMail({
 			to: email,
@@ -140,8 +139,7 @@ export class MailService {
 				title: subject,
 				name,
 				email,
-				password,
-				url
+				password
 			}
 		})
 	}
@@ -203,11 +201,18 @@ export class MailService {
 	async sendNewSessionActivityEmail(context: NewSessionActivityEmailContext, file?: Express.Multer.File) {
 		await this.getPlatformVars()
 
-		const { to, businessName, expertName, expertEmail, sessionDateTime } = context
-		const { notificationEmail } = this.varCommons
+		const {
+			sessionId,
+			to,
+			businessName,
+			expertName,
+			expertEmail,
+			sessionDateTime
+		} = context
+		const { webUrl, notificationEmail } = this.varCommons
 
 		const subject = 'Nueva actividad de sesión creada'
-		const url = 'https://google.com'
+		const url = `${webUrl}/#/home/accompaniment/updateSession/${sessionId}`
 
 		await this.mailerService.sendMail({
 			to,
@@ -232,11 +237,18 @@ export class MailService {
 	async sendRespondedSessionEmail(context: RespondedSessionEmailContext, file?: Express.Multer.File) {
 		await this.getPlatformVars()
 
-		const { to, businessName, expertName, businessEmail, sessionDateTime } = context
-		const { notificationEmail } = this.varCommons
+		const {
+			sessionId,
+			to,
+			businessName,
+			expertName,
+			businessEmail,
+			sessionDateTime
+		} = context
+		const { webUrl, notificationEmail } = this.varCommons
 
 		const subject = 'Actividad de sesión respondida'
-		const url = 'https://google.com'
+		const url = `${webUrl}/#/home/accompaniment/updateSession/${sessionId}`
 
 		await this.mailerService.sendMail({
 			to,
@@ -261,11 +273,18 @@ export class MailService {
 	async sendEndedSessionEmail(context: EndedSessionEmailContext) {
 		await this.getPlatformVars()
 
-		const { to, businessName, expertName, expertMail, sessionDateTime } = context
-		const { notificationEmail } = this.varCommons
+		const {
+			sessionId,
+			to,
+			businessName,
+			expertName,
+			expertMail,
+			sessionDateTime
+		} = context
+		const { webUrl, notificationEmail } = this.varCommons
 
 		const subject = 'Sesión finalizada'
-		const url = 'https://google.com'
+		const url = `${webUrl}/#/home/accompaniment/updateSession/${sessionId}`
 
 		await this.mailerService.sendMail({
 			to,

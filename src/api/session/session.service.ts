@@ -399,7 +399,8 @@ export class SessionService {
 		return session || []
 	}
 
-	async findOne(id: number) {
+	async findOne(user: JwtUser, id: number) {
+		const { id: userId } = user
 		if (!id) return {}
 
 		const rawSession = await this.sessionRepository
@@ -426,9 +427,12 @@ export class SessionService {
 			])
 			.innerJoin('session.status', 'status')
 			.innerJoin('session.accompaniment', 'accompaniment')
+			.innerJoin('accompaniment.business', 'business')
+			.innerJoin('accompaniment.expert', 'expert')
 			.leftJoin('session.sessionAttachments', 'sa', 'sa.session_id = session.id')
 			.leftJoin('session_preparation_file', 'spf', 'spf.session_id = session.id')
 			.where('session.id = :id', { id })
+			.andWhere('(business.userId = :userId OR expert.userId = :userId)', { userId })
 			.groupBy('session.id')
 			.setParameters({ appUrl: envVars.APP_URL })
 			.getRawOne()
@@ -568,6 +572,7 @@ export class SessionService {
 			const { email: expertMail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
 
 			this.mailService.sendEndedSessionEmail({
+				sessionId: session.id,
 				to: businessEmail,
 				businessName,
 				expertName,

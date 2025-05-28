@@ -85,6 +85,7 @@ export class SessionActivityService {
 				const { email: expertEmail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
 
 				this.mailService.sendNewSessionActivityEmail({
+					sessionId: session.id,
 					to: businessEmail,
 					businessName,
 					expertName,
@@ -210,6 +211,7 @@ export class SessionActivityService {
 				const { email: expertEmail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
 
 				this.mailService.sendRespondedSessionEmail({
+					sessionId: session.id,
 					to: expertEmail,
 					businessName,
 					expertName,
