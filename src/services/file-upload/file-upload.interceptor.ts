@@ -24,7 +24,7 @@ export function FileUploadInterceptor(
 			const multerOptions = {
 				storage,
 				limits: {
-					fileSize: 500 * 1024 * 1024 // 500 MB limit
+					fileSize: 1000 * 1024 * 1024 // 1 GB
 				}
 			}
 
