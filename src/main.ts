@@ -5,11 +5,15 @@ import { join } from 'path'
 
 import { AppModule } from './app.module'
 
-import envVars from './config/env'
 import { NestExpressApplication } from '@nestjs/platform-express'
+import { json, urlencoded } from 'express'
+import envVars from './config/env'
 
 async function bootstrap() {
 	const app = await NestFactory.create<NestExpressApplication>(AppModule)
+
+	app.use(json({ limit: '2048mb' })) // 2 GB limit for JSON payloads
+	app.use(urlencoded({ extended: true, limit: '2048mb' })) // 2 GB limit for URL-encoded payloads
 
 	app.useGlobalPipes(new ValidationPipe({
 		forbidNonWhitelisted: true,
