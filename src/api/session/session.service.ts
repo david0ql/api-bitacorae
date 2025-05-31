@@ -400,7 +400,7 @@ export class SessionService {
 	}
 
 	async findOne(user: JwtUser, id: number) {
-		const { id: userId } = user
+		const { id: userId, roleId } = user
 		if (!id) return {}
 
 		const rawSession = await this.sessionRepository
@@ -432,7 +432,7 @@ export class SessionService {
 			.leftJoin('session.sessionAttachments', 'sa', 'sa.session_id = session.id')
 			.leftJoin('session_preparation_file', 'spf', 'spf.session_id = session.id')
 			.where('session.id = :id', { id })
-			.andWhere('(business.userId = :userId OR expert.userId = :userId)', { userId })
+			.andWhere(roleId !== 1 && roleId !== 2 ? '(business.userId = :userId OR expert.userId = :userId)' : '1=1', { userId })
 			.groupBy('session.id')
 			.setParameters({ appUrl: envVars.APP_URL })
 			.getRawOne()
