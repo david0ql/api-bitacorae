@@ -98,7 +98,7 @@ export class ContactInformation {
   })
   linkedin: string | null;
 
-  @Column("longtext", { name: "profile", nullable: true, default: () => "''" })
+  @Column("longtext", { name: "profile", nullable: true })
   profile: string | null;
 
   @Column("timestamp", {

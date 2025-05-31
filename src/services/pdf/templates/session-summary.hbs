@@ -139,6 +139,18 @@
 			table td:nth-child(2) {
 				width: 60%;
 			}
+
+			.richTextContainer figure, img, image {
+				max-width: 500px;
+				max-height: 500px;
+				width: 100%;
+				height: auto;
+				object-fit: contain;
+			}
+
+			p {
+				margin: 0;
+			}
 		</style>
 	</head>
 	<body>
@@ -152,7 +164,7 @@
 			<h2>{{stitle}}</h2>
 		</div>
 
-		<div class="section">
+		<div class="section richTextContainer">
 			<h3 class="headerSection">Datos de la Empresa</h3>
 			<table>
 				<tr>
@@ -194,7 +206,7 @@
 			</table>
 		</div>
 
-		<div class="section">
+		<div class="section richTextContainer">
 			<h3 class="headerSection">Datos de Acompañamiento</h3>
 			<table>
 				<tr>
@@ -212,7 +224,7 @@
 			</table>
 		</div>
 
-		<div class="section">
+		<div class="section richTextContainer">
 			<h3 class="headerSection">Datos de {{eType}}</h3>
 			<table>
 				<tr>
@@ -246,7 +258,7 @@
 			</table>
 		</div>
 
-		<div class="section">
+		<div class="section richTextContainer">
 			<h3 class="headerSection">Datos de la Sesión</h3>
 
 			<div class="field">

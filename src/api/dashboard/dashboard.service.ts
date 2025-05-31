@@ -205,13 +205,12 @@ export class DashboardService {
 				ct.name,
 				COUNT(DISTINCT b.id) AS total_business,
 				ROUND((COUNT(DISTINCT b.id) * 100.0 / (SELECT COUNT(id) FROM business)), 1) AS porcentaje,
-				IFNULL(SUM(TIMESTAMPDIFF(MINUTE, s.start_datetime, s.end_datetime)) / 60, 0) AS total_horas
+				SUM(a.total_hours) AS total_horas
 			FROM
 				consultor_type ct
 				INNER JOIN expert e ON e.consultor_type_id = ct.id
 				INNER JOIN accompaniment a ON a.expert_id = e.id
 				LEFT JOIN business b ON a.business_id = b.id
-				LEFT JOIN session s ON a.id = s.accompaniment_id
 			GROUP BY ct.id, ct.name
 			ORDER BY ct.id
 		`)

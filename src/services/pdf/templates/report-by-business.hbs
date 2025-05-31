@@ -156,6 +156,18 @@
 				border-top: 1px solid #ccc;
 				margin-block: 15px;
 			}
+
+			.richTextContainer figure, img, image {
+				max-width: 500px;
+				max-height: 500px;
+				width: 100%;
+				height: auto;
+				object-fit: contain;
+			}
+
+			p {
+				margin: 0;
+			}
 		</style>
 	</head>
 	<body>
@@ -208,7 +220,7 @@
 		</div>
 
 		{{#each accompaniments}}
-			<div class="section">
+			<div class="section richTextContainer">
 				<h2 class="headerSectionRelevant">Acompañamiento #{{inc @index}}</h2>
 
 				<h3 class="headerSection">Datos del acompañamiento</h3>
@@ -229,7 +241,7 @@
 
 
 				<h3 class="headerSection">Datos de {{eType}}</h3>
-				<table>
+				<table class="richTextContainer">
 					<tr>
 						<td><span class="label">Nombre:</span></td>
 						<td><span class="value">{{eName}}</span></td>
@@ -262,7 +274,7 @@
 
 				<h3 class="headerSection">Sesiones</h3>
 				{{#if sessions.length}}
-					<ol class="sessionsList">
+					<ol class="sessionsList richTextContainer">
 						{{#each sessions}}
 							<li>
 								<h3 class="headerItemList">{{stitle}}</h3>
