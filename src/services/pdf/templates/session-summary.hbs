@@ -34,12 +34,15 @@
 				display: flex;
 				justify-content: center;
 				align-items: center;
+				gap: 60px;
+				margin-bottom: 20px;
 			}
 
 			.imgHeader {
 				max-width: 100%;
-				min-height: 50px;
-				max-height: 70px;
+				width: fit-content;
+				min-height: 80px;
+				max-height: 100px;
 				object-fit: contain;
 				margin: 0;
 			}
@@ -109,7 +112,7 @@
 				font-weight: 400;
 				font-family: 'WindSong';
 				font-style: normal;
-				font-size: 22px;
+				font-size: 28px;
 			}
 
 			ul {
@@ -151,11 +154,18 @@
 			p {
 				margin: 0;
 			}
+
+			a {
+				color: #349cfc;
+				text-decoration: none;
+				overflow-wrap: break-word;
+			}
 		</style>
 	</head>
 	<body>
 		<div class="containerImgHeader">
-			<img src="{{reportHeaderImageUrl}}" alt="Logo Bictoria" class="imgHeader" />
+			<img src="{{programImageUrl}}" alt="Logo Platform" class="imgHeader" />
+			<img src="{{reportHeaderImageUrl}}" alt="Logo Report Header" class="imgHeader" />
 		</div>
 		<h1>ACTA DE SESIÓN DE ACOMPAÑAMIENTO</h1>
 		<h2>{{programName}}</h2>
@@ -189,19 +199,43 @@
 				</tr>
 				<tr>
 					<td><span class="label">Facebook:</span></td>
-					<td><span class="value">{{bFacebook}}</span></td>
+					<td>
+						{{#if (eq bFacebook "No registra.")}}
+							<span class="value">{{bFacebook}}</span>
+						{{else}}
+							<a href="{{bFacebook}}" class="value">{{bFacebook}}</a>
+						{{/if}}
+					</td>
 				</tr>
 				<tr>
 					<td><span class="label">Instagram:</span></td>
-					<td><span class="value">{{bInstagram}}</span></td>
+					<td>
+						{{#if (eq bInstagram "No registra.")}}
+							<span class="value">{{bInstagram}}</span>
+						{{else}}
+							<a href="{{bInstagram}}" class="value">{{bInstagram}}</a>
+						{{/if}}
+					</td>
 				</tr>
 				<tr>
 					<td><span class="label">Twitter / X:</span></td>
-					<td><span class="value">{{bTwitter}}</span></td>
+					<td>
+						{{#if (eq bTwitter "No registra.")}}
+							<span class="value">{{bTwitter}}</span>
+						{{else}}
+							<a href="{{bTwitter}}" class="value">{{bTwitter}}</a>
+						{{/if}}
+					</td>
 				</tr>
 				<tr>
 					<td><span class="label">Sitio web:</span></td>
-					<td><span class="value">{{bWebsite}}</span></td>
+					<td>
+						{{#if (eq bWebsite "No registra.")}}
+							<span class="value">{{bWebsite}}</span>
+						{{else}}
+							<a href="{{bWebsite}}" class="value">{{bWebsite}}</a>
+						{{/if}}
+					</td>
 				</tr>
 			</table>
 		</div>

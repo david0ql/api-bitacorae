@@ -37,6 +37,7 @@ import { ReportTypeModule } from './api/report-type/report-type.module'
 import { ReportModule } from './api/report/report.module'
 import { DashboardModule } from './api/dashboard/dashboard.module'
 import { SessionStatusModule } from './api/session_status/session_status.module'
+import { ImageUploadModule } from './api/image-upload/image-upload.module'
 
 import { Business } from 'src/entities/Business'
 import { BusinessSize } from './entities/BusinessSize'
@@ -173,7 +174,8 @@ import envVars from './config/env'
 		ReportTypeModule,
 		ReportModule,
 		DashboardModule,
-		SessionStatusModule
+		SessionStatusModule,
+		ImageUploadModule
 	],
 	controllers: [],
 	providers: []

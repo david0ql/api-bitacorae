@@ -26,6 +26,10 @@ Handlebars.registerHelper('isNumber', (value) => {
 	return typeof value === 'number' && !isNaN(value)
 })
 
+Handlebars.registerHelper('eq', function(a, b) {
+	return a === b
+})
+
 Handlebars.registerHelper('sanitizeHtmlPdf', (html: string) => {
 	const clean = sanitizeHtml(html, {
 		allowedTags: [
@@ -90,9 +94,11 @@ export class PdfService implements OnModuleDestroy {
 		const platform = await this.platformRepository.findOne({ where: {} })
 
 		const reportHeaderImageUrl = platform?.reportHeaderImagePath ? `${envVars.APP_URL}/${platform.reportHeaderImagePath}` : ''
+		const programImageUrl = platform?.logoPath ? `${envVars.APP_URL}/${platform.logoPath}` : ''
 		const programName = platform?.programName || 'Consultorio Empresarial de Colsubsidio operado por BICTIA'
 
 		const html = template({
+			programImageUrl,
 			reportHeaderImageUrl,
 			programName,
 			...data

@@ -422,8 +422,16 @@ export class SessionService {
 				'CONCAT(:appUrl, "/", session.file_path_approved) AS filePathApproved',
 				'status.id AS statusId',
 				'status.name AS status',
-				`GROUP_CONCAT(CONCAT(:appUrl, "/", spf.file_path) SEPARATOR '||') AS preparationFiles`,
-				`GROUP_CONCAT(CONCAT(:appUrl, "/", sa.file_path) SEPARATOR '||') AS attachments`
+				`(
+					SELECT GROUP_CONCAT(CONCAT(:appUrl, "/", spf.file_path) SEPARATOR '||')
+					FROM session_preparation_file spf
+					WHERE spf.session_id = session.id
+				) AS preparationFiles`,
+				`(
+					SELECT GROUP_CONCAT(CONCAT(:appUrl, "/", sa.file_path) SEPARATOR '||')
+					FROM session_attachment sa
+					WHERE sa.session_id = session.id
+				) AS attachments`
 			])
 			.innerJoin('session.status', 'status')
 			.innerJoin('session.accompaniment', 'accompaniment')
