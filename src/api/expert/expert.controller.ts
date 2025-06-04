@@ -48,6 +48,12 @@ export class ExpertController {
 		return this.expertService.findAllByFilter(filter)
 	}
 
+	@Get('/byAccompaniment/:id')
+	@HttpCode(200)
+	findAllByAccompaniment(@Param('id') id: string) {
+		return this.expertService.findAllByAccompaniment(+id)
+	}
+
 	@Get(':id')
 	@HttpCode(200)
 	findOne(@Param('id') id: string) {

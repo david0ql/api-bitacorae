@@ -252,6 +252,18 @@ export class BusinessService {
 		return business || {}
 	}
 
+	async findName(id: number) {
+		if(!id) return {}
+
+		const business = await this.businessRepository
+			.createQueryBuilder('b')
+			.select(['b.id AS id', 'b.social_reason AS socialReason'])
+			.where('b.id = :id', { id })
+			.getRawOne()
+
+		return business || {}
+	}
+
 	async update(id: number, updateBusinessDto: UpdateBusinessDto, file?: Express.Multer.File) {
 		const fullPath = file ? this.fileUploadService.getFullPath('business', file.filename) : undefined
 		if(!id) {

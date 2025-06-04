@@ -40,6 +40,12 @@ export class BusinessController {
 		return this.businessService.findOne(+id)
 	}
 
+	@Get('/name/:id')
+	@HttpCode(200)
+	findName(@Param('id') id: string) {
+		return this.businessService.findName(+id)
+	}
+
 	@Get('/byFilter/:filter')
 	@HttpCode(200)
 	findAllByFilter(@Param('filter') filter: string) {

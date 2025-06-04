@@ -299,6 +299,28 @@ export class AccompanimentService {
 		return new PageDto(items, pageMetaDto)
 	}
 
+	async findAllByBusinessForExpert(bussinesId: number, user: JwtUser,) {
+		if(!bussinesId) return {}
+		const { id: userId } = user
+
+		const expert = await this.expertRepository.findOne({ where: { userId }, select: ['id'] })
+		if (!expert) throw new BadRequestException(`No se encontró un experto con el ID de usuario ${userId}`)
+
+		const accompaniment = await this.accompanimentRepository.findOne({
+			select: {
+				id: true,
+				businessId: true,
+				expertId: true,
+				totalHours: true,
+				maxHoursPerSession: true,
+				strengtheningAreaId: true
+			},
+			where: { businessId: bussinesId, expertId: expert.id }
+		})
+
+		return accompaniment || {}
+	}
+
 	async findOne(id: number) {
 		if(!id) return {}
 

@@ -44,6 +44,12 @@ export class AccompanimentController {
 		return this.accompanimentService.findAllByExpert(+id, pageOptionsDto)
 	}
 
+	@Get('/byBusinessForExpert/:bussinesId')
+	@HttpCode(200)
+	findOneByBusinessForExpert(@Param('bussinesId') bussinesId: string, @CurrentUser() user: JwtUser) {
+		return this.accompanimentService.findAllByBusinessForExpert(+bussinesId, user)
+	}
+
 	@Get(':id')
 	@HttpCode(200)
 	findOne(@Param('id') id: string) {

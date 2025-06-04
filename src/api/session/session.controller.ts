@@ -37,10 +37,10 @@ export class SessionController {
 		return this.sessionService.findAllByAccompaniment(+id, pageOptionsDto)
 	}
 
-	@Get('/byAccompanimentAndExpert/:accompanimentId/:expertId')
+	@Get('/byBusinessForExpert/:bussinesId')
 	@HttpCode(200)
-	findAllByAccompanimentAndExpert(@Param('accompanimentId') accompanimentId: string, @Param('expertId') expertId: string, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Session>> {
-		return this.sessionService.findAllByAccompanimentAndExpert(+accompanimentId, +expertId, pageOptionsDto)
+	findAllByBusinessForExpert(@Param('bussinesId') bussinesId: string, @CurrentUser() user: JwtUser, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Session>> {
+		return this.sessionService.findAllByBusinessForExpert(+bussinesId, user, pageOptionsDto)
 	}
 
 	@Get('/forBusiness')

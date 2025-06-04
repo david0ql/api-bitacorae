@@ -214,6 +214,23 @@ export class ExpertService {
 		return experts || []
 	}
 
+	async findAllByAccompaniment(id: number) {
+		if(!id) return {}
+
+		const experts = await this.expertRepository
+			.createQueryBuilder('e')
+			.select([
+				'e.id AS id',
+				'CONCAT(e.firstName, " ", e.lastName, " - ", e.email) AS name'
+			])
+			.innerJoin('e.accompaniments', 'a')
+			.where('a.id = :id', { id })
+			.groupBy('e.id')
+			.getRawOne()
+
+		return experts || {}
+	}
+
 	async findOne(id: number) {
 		if(!id) return {}
 

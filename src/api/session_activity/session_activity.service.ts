@@ -211,6 +211,8 @@ export class SessionActivityService {
 				const { email: expertEmail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
 
 				this.mailService.sendRespondedSessionEmail({
+					businessId: session.accompaniment?.business?.id,
+					accompanimentId: session.accompaniment?.id,
 					sessionId: session.id,
 					to: expertEmail,
 					businessName,

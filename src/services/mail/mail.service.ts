@@ -239,6 +239,8 @@ export class MailService {
 
 		const {
 			sessionId,
+			businessId,
+			accompanimentId,
 			to,
 			businessName,
 			expertName,
@@ -248,7 +250,7 @@ export class MailService {
 		const { webUrl, notificationEmail } = this.varCommons
 
 		const subject = 'Actividad de sesión respondida'
-		const url = `${webUrl}/#/home/accompaniment/updateSession/${sessionId}`
+		const url = `${webUrl}/#/home/accompaniment/detail/${businessId}/${accompanimentId}/updateSession/${sessionId}`
 
 		await this.mailerService.sendMail({
 			to,
