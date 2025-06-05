@@ -384,6 +384,20 @@ export class AccompanimentService {
 			throw new BadRequestException(`El total de horas (${totalHours}) no puede ser menor a las horas máximas por sesión (${maxHoursPerSession})`)
 		}
 
+		const sessionHours = await this.dataSource.query(`
+			SELECT ROUND(SUM(TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime)), 0) AS totalHours
+			FROM session s
+			WHERE s.accompaniment_id = ?
+		`, [id])
+
+		const totalSessionHours = Number(sessionHours[0]?.totalHours || 0)
+
+		if (totalHours && totalSessionHours > totalHours) {
+			throw new BadRequestException(
+				`El total de horas del acompañamiento (${totalHours}) no puede ser menor a las horas totales de las sesiones programadas (${totalSessionHours})`
+			)
+		}
+
 		const usedHoursResult = await this.accompanimentRepository
 			.createQueryBuilder("accompaniment")
 			.select("SUM(accompaniment.totalHours)", "usedHours")
