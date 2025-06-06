@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt'
 import { User } from 'src/entities/User'
 import { ContactInformation } from 'src/entities/ContactInformation'
 import { Expert } from 'src/entities/Expert'
+import { Business } from 'src/entities/Business'
 import { Admin } from 'src/entities/Admin'
 
 import { UpdateUserDto } from './dto/update-user.dto'
@@ -16,6 +17,7 @@ import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 
 import envVars from 'src/config/env'
 import { Auditor } from 'src/entities/Auditor'
+import { ChangePasswordByAdminDto } from './dto/change-password-by-admin.dto'
 
 @Injectable()
 export class UserService {
@@ -28,6 +30,9 @@ export class UserService {
 
 		@InjectRepository(Expert)
 		private readonly expertRepository: Repository<Expert>,
+
+		@InjectRepository(Business)
+		private readonly businessRepository: Repository<Business>,
 
 		@InjectRepository(Admin)
 		private readonly adminRepository: Repository<Admin>,
@@ -181,6 +186,42 @@ export class UserService {
 		const hash = bcrypt.hashSync(newPassword, salt)
 
 		return await this.userRepository.update(userId, { password: hash })
+	}
+
+	async changePasswordByAdmin(changePasswordByAdminDto: ChangePasswordByAdminDto) {
+		const { id, role, newPassword, confirmNewPassword } = changePasswordByAdminDto
+
+		if(newPassword !== confirmNewPassword) {
+			throw new BadRequestException('Las contraseñas no coinciden')
+		}
+
+		if(![3,4].includes(role)) {
+			throw new BadRequestException('No se puede cambiar la contraseña de este rol')
+		}
+
+		if(role === 3) {
+			const existingExpert = await this.expertRepository.findOne({ where: { id } })
+			if(!existingExpert) {
+				throw new BadRequestException('Experto no encontrado')
+			}
+
+			const salt = bcrypt.genSaltSync(10)
+			const hash = bcrypt.hashSync(newPassword, salt)
+
+			return await this.userRepository.update(existingExpert.userId, { password: hash })
+		}
+
+		if(role === 4) {
+			const existingBusiness = await this.businessRepository.findOne({ where: { id } })
+			if(!existingBusiness) {
+				throw new BadRequestException('Empresa no encontrada')
+			}
+
+			const salt = bcrypt.genSaltSync(10)
+			const hash = bcrypt.hashSync(newPassword, salt)
+
+			return await this.userRepository.update(existingBusiness.userId, { password: hash })
+		}
 	}
 
 	async update(user: JwtUser, updateUserDto: UpdateUserDto, file?: Express.Multer.File) {

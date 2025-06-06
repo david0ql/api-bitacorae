@@ -11,6 +11,7 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
+import { ChangePasswordByAdminDto } from './dto/change-password-by-admin.dto'
 
 @Controller('user')
 @ApiBearerAuth()
@@ -28,6 +29,12 @@ export class UserController {
 	@HttpCode(200)
 	changePassword(@CurrentUser() user: JwtUser, @Body() changePasswordDto: ChangePasswordDto) {
 		return this.userService.changePassword(user, changePasswordDto)
+	}
+
+	@Patch('/change-password-by-admin')
+	@HttpCode(200)
+	changePasswordByAdmin(@Body() changePasswordByAdminDto: ChangePasswordByAdminDto) {
+		return this.userService.changePasswordByAdmin(changePasswordByAdminDto)
 	}
 
 	@Patch()

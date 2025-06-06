@@ -241,7 +241,7 @@ export class DashboardService {
 			FROM
 				accompaniment a
 				INNER JOIN strengthening_area sa ON sa.id = a.strengthening_area_id
-			GROUP BY sa.id;
+			GROUP BY sa.id
 		`)).map((item) => {
 			return {
 				name: item.name,
