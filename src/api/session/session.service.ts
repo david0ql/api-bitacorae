@@ -57,12 +57,12 @@ export class SessionService {
 			relations: [
 				'status',
 				'accompaniment',
-				'accompaniment.strengtheningArea',
+				'accompaniment.strengtheningAreas',
 				'accompaniment.business.user',
-				'accompaniment.business.economicActivity',
+				'accompaniment.business.economicActivities',
 				'accompaniment.business.businessSize',
 				'accompaniment.expert.user',
-				'accompaniment.expert.strengtheningArea',
+				'accompaniment.expert.strengtheningAreas',
 				'accompaniment.expert.educationLevel',
 				'accompaniment.expert.consultorType'
 			]
@@ -92,17 +92,21 @@ export class SessionService {
 		signedDate?: string,
 		generationDate?: string
 	}) {
+		const expertStrengtheningAreas = session.accompaniment?.expert?.strengtheningAreas || []
+		const businessEconomicActivities = session.accompaniment?.business?.economicActivities || []
+		const accompanimentStrengtheningAreas = session.accompaniment?.strengtheningAreas || []
+
 		return this.pdfService.generateSessionPdf({
 			bSocialReason: session.accompaniment?.business?.socialReason || 'No registra.',
 			bPhone: session.accompaniment?.business?.phone || 'No registra.',
 			bEmail: session.accompaniment?.business?.email || 'No registra.',
-			bEconomicActivity: session.accompaniment?.business?.economicActivity?.name || 'No registra.',
+			bEconomicActivity: businessEconomicActivities.map(activity => activity.name).join(', ') || 'No registra.',
 			bBusinessSize: session.accompaniment?.business?.businessSize?.name || 'No registra.',
 			bFacebook: session.accompaniment?.business?.facebook || 'No registra.',
 			bInstagram: session.accompaniment?.business?.instagram || 'No registra.',
 			bTwitter: session.accompaniment?.business?.twitter || 'No registra.',
 			bWebsite: session.accompaniment?.business?.website || 'No registra.',
-			aStrengtheningArea: session.accompaniment?.strengtheningArea?.name || 'No registra.',
+			aStrengtheningArea: accompanimentStrengtheningAreas.map(area => area.name).join(', ') || 'No registra.',
 			aTotalHours: session.accompaniment?.totalHours || 'No registra.',
 			aRegisteredHours: diffInHours || 'No registra.',
 			eType: session.accompaniment?.expert?.consultorType.name || '',
@@ -110,7 +114,7 @@ export class SessionService {
 			eEmail: session.accompaniment?.expert?.user?.email || 'No registra.',
 			ePhone: session.accompaniment?.expert?.phone || 'No registra.',
 			eProfile: session.accompaniment?.expert?.profile || 'No registra.',
-			eStrengtheningArea: session.accompaniment?.expert?.strengtheningArea?.name || 'No registra.',
+			eStrengtheningArea: expertStrengtheningAreas.map(area => area.name).join(', ') || 'No registra.',
 			eEducationLevel: session.accompaniment?.expert?.educationLevel?.name || 'No registra.',
 			stitle: session.title || 'No registra.',
 			sPreparationNotes: session.preparationNotes || 'No registra.',

@@ -1,9 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
-import { Repository } from 'typeorm'
+import { In, Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 
 import { ContactInformation } from 'src/entities/ContactInformation'
 import { Business } from 'src/entities/Business'
+import { StrengtheningArea } from 'src/entities/StrengtheningArea'
 import { CreateContactInformationDto } from './dto/create-contact-information.dto'
 import { UpdateContactInformationDto } from './dto/update-contact-information.dto'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
@@ -19,10 +20,13 @@ export class ContactInformationService {
 		@InjectRepository(Business)
 		private readonly businessRepository: Repository<Business>,
 
+		@InjectRepository(StrengtheningArea)
+		private readonly strengtheningAreaRepository: Repository<StrengtheningArea>,
+
 		private readonly fileUploadService: FileUploadService
 	) {}
 
-	create(createContactInformationDto: CreateContactInformationDto, file?: Express.Multer.File) {
+	async create(createContactInformationDto: CreateContactInformationDto, file?: Express.Multer.File) {
 		const {
 			businessId,
 			firstName,
@@ -33,7 +37,7 @@ export class ContactInformationService {
 			documentNumber,
 			genderId,
 			experienceYears,
-			strengtheningAreaId,
+			strengtheningAreas,
 			educationLevelId,
 			facebook,
 			instagram,
@@ -54,6 +58,10 @@ export class ContactInformationService {
 		}
 
 		try {
+			const strengtheningAreaEntities = await this.strengtheningAreaRepository.findBy({
+				id: In(strengtheningAreas)
+			})
+
 			const contactInformation = this.contactInformationRepository.create({
 				businessId,
 				firstName,
@@ -65,7 +73,7 @@ export class ContactInformationService {
 				photo: fullPath,
 				genderId,
 				experienceYears,
-				strengtheningAreaId,
+				strengtheningAreas: strengtheningAreaEntities,
 				educationLevelId,
 				facebook,
 				instagram,
@@ -85,41 +93,54 @@ export class ContactInformationService {
 	}
 
 	async findOneByBusiness(id: number) {
-		if(!id) return {}
+		if (!id) return {}
 
-		const contactInformation = await this.contactInformationRepository
-			.createQueryBuilder('ci')
-			.select([
-				'ci.id AS id',
-				'ci.businessId AS businessId',
-				'ci.firstName AS firstName',
-				'ci.lastName AS lastName',
-				'ci.email AS email',
-				'ci.phone AS phone',
-				'ci.documentTypeId AS documentTypeId',
-				'ci.documentNumber AS documentNumber',
-				'CONCAT(:appUrl, "/", ci.photo) AS photo',
-				'ci.genderId AS genderId',
-				'ci.experienceYears AS experienceYears',
-				'ci.strengtheningAreaId AS strengtheningAreaId',
-				'ci.educationLevelId AS educationLevelId',
-				'el.name AS educationLevelName',
-				'ci.facebook AS facebook',
-				'ci.instagram AS instagram',
-				'ci.twitter AS twitter',
-				'ci.website AS website',
-				'ci.linkedin AS linkedin',
-				'ci.profile AS profile'
-			])
-			.leftJoin('ci.educationLevel', 'el')
-			.where('ci.businessId = :businessId', { businessId: id })
-			.setParameters({appUrl: envVars.APP_URL})
-			.getRawOne()
+		const [contactInformation] = await this.contactInformationRepository.query(`
+			SELECT
+				ci.id AS id,
+				ci.business_id AS businessId,
+				ci.first_name AS firstName,
+				ci.last_name AS lastName,
+				ci.email AS email,
+				ci.phone AS phone,
+				ci.document_type_id AS documentTypeId,
+				ci.document_number AS documentNumber,
+				CONCAT(?, '/', ci.photo) AS photo,
+				ci.gender_id AS genderId,
+				ci.experience_years AS experienceYears,
+				ci.education_level_id AS educationLevelId,
+				el.name AS educationLevelName,
+				ci.facebook AS facebook,
+				ci.instagram AS instagram,
+				ci.twitter AS twitter,
+				ci.website AS website,
+				ci.linkedin AS linkedin,
+				ci.profile AS profile,
+				IF(COUNT(sa.id) > 0,
+					CONCAT('[', GROUP_CONCAT(DISTINCT JSON_OBJECT(
+						'value', sa.id,
+						'label', sa.name
+					)), ']'),
+					NULL
+				) AS strengtheningAreas
+			FROM
+				contact_information ci
+				LEFT JOIN education_level el ON el.id = ci.education_level_id
+				LEFT JOIN contact_information_strengthening_area_rel csar ON csar.contact_information_id = ci.id
+				LEFT JOIN strengthening_area sa ON sa.id = csar.strengthening_area_id
+			WHERE ci.business_id = ?
+			GROUP BY ci.id
+		`, [envVars.APP_URL, id])
 
-		return contactInformation || {}
+		if (!contactInformation) return {}
+
+		return {
+			...contactInformation,
+			strengtheningAreas: contactInformation.strengtheningAreas ? JSON.parse(contactInformation.strengtheningAreas) : []
+		}
 	}
 
-	update(id: number, updateContactInformationDto: UpdateContactInformationDto, file?: Express.Multer.File) {
+	async update(id: number, updateContactInformationDto: UpdateContactInformationDto, file?: Express.Multer.File) {
 		const fullPath = file ? this.fileUploadService.getFullPath('user', file.filename) : undefined
 
 		if(!id) {
@@ -139,7 +160,7 @@ export class ContactInformationService {
 			documentNumber,
 			genderId,
 			experienceYears,
-			strengtheningAreaId,
+			strengtheningAreas,
 			educationLevelId,
 			facebook,
 			instagram,
@@ -149,25 +170,41 @@ export class ContactInformationService {
 			profile
 		} = updateContactInformationDto
 
-		return this.contactInformationRepository.update(id, {
-			businessId,
-			firstName,
-			lastName,
-			email,
-			phone,
-			documentTypeId,
-			documentNumber,
-			photo: fullPath,
-			genderId,
-			experienceYears,
-			strengtheningAreaId,
-			educationLevelId,
-			facebook,
-			instagram,
-			twitter,
-			website,
-			linkedin,
-			profile
+		const existingContactInformation = await this.contactInformationRepository.findOne({
+			where: { id },
+			relations: ['strengtheningAreas']
 		})
+
+		if (!existingContactInformation) {
+			if (fullPath) this.fileUploadService.deleteFile(fullPath)
+			return { affected: 0 }
+		}
+
+		const strengtheningAreaEntities = await this.strengtheningAreaRepository.findBy({
+			id: In(strengtheningAreas || []),
+		})
+
+		existingContactInformation.businessId = businessId ?? existingContactInformation.businessId
+		existingContactInformation.firstName = firstName ?? existingContactInformation.firstName
+		existingContactInformation.lastName = lastName ?? existingContactInformation.lastName
+		existingContactInformation.email = email ?? existingContactInformation.email
+		existingContactInformation.phone = phone ?? existingContactInformation.phone
+		existingContactInformation.documentTypeId = documentTypeId ?? existingContactInformation.documentTypeId
+		existingContactInformation.documentNumber = documentNumber ?? existingContactInformation.documentNumber
+		existingContactInformation.photo = fullPath ?? existingContactInformation.photo
+		existingContactInformation.genderId = genderId ?? existingContactInformation.genderId
+		existingContactInformation.experienceYears = experienceYears ?? existingContactInformation.experienceYears
+		existingContactInformation.educationLevelId = educationLevelId ?? existingContactInformation.educationLevelId
+		existingContactInformation.facebook = facebook ?? existingContactInformation.facebook
+		existingContactInformation.instagram = instagram ?? existingContactInformation.instagram
+		existingContactInformation.twitter = twitter ?? existingContactInformation.twitter
+		existingContactInformation.website = website ?? existingContactInformation.website
+		existingContactInformation.linkedin = linkedin ?? existingContactInformation.linkedin
+		existingContactInformation.profile = profile ?? existingContactInformation.profile
+		existingContactInformation.strengtheningAreas = strengtheningAreaEntities
+
+		await this.contactInformationRepository.save(existingContactInformation)
+
+		return { affected: 1 }
 	}
 }

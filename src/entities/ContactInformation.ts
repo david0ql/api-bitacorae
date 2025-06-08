@@ -3,18 +3,19 @@ import {
   Entity,
   Index,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
+import { StrengtheningArea } from "./StrengtheningArea";
 import { Business } from "./Business";
 import { DocumentType } from "./DocumentType";
 import { Gender } from "./Gender";
-import { StrengtheningArea } from "./StrengtheningArea";
 import { EducationLevel } from "./EducationLevel";
 
 @Index("document_type_id", ["documentTypeId"], {})
 @Index("gender_id", ["genderId"], {})
-@Index("strengthing_area_id", ["strengtheningAreaId"], {})
 @Index("education_level_id", ["educationLevelId"], {})
 @Index("contact_information_ibfk_1", ["businessId"], {})
 @Entity("contact_information", { schema: "dbbitacorae" })
@@ -51,9 +52,6 @@ export class ContactInformation {
 
   @Column("int", { name: "experience_years", nullable: true })
   experienceYears: number | null;
-
-  @Column("int", { name: "strengthening_area_id", nullable: true })
-  strengtheningAreaId: number | null;
 
   @Column("int", { name: "education_level_id", nullable: true })
   educationLevelId: number | null;
@@ -113,6 +111,22 @@ export class ContactInformation {
   })
   updatedAt: Date;
 
+  @ManyToMany(
+    () => StrengtheningArea,
+    (strengtheningArea) => strengtheningArea.contactInformations
+  )
+  @JoinTable({
+    name: "contact_information_strengthening_area_rel",
+    joinColumns: [
+      { name: "contact_information_id", referencedColumnName: "id" },
+    ],
+    inverseJoinColumns: [
+      { name: "strengthening_area_id", referencedColumnName: "id" },
+    ],
+    schema: "dbbitacorae",
+  })
+  strengtheningAreas: StrengtheningArea[];
+
   @ManyToOne(() => Business, (business) => business.contactInformations, {
     onDelete: "CASCADE",
     onUpdate: "CASCADE",
@@ -134,14 +148,6 @@ export class ContactInformation {
   })
   @JoinColumn([{ name: "gender_id", referencedColumnName: "id" }])
   gender: Gender;
-
-  @ManyToOne(
-    () => StrengtheningArea,
-    (strengtheningArea) => strengtheningArea.contactInformations,
-    { onDelete: "RESTRICT", onUpdate: "RESTRICT" }
-  )
-  @JoinColumn([{ name: "strengthening_area_id", referencedColumnName: "id" }])
-  strengtheningArea: StrengtheningArea;
 
   @ManyToOne(
     () => EducationLevel,

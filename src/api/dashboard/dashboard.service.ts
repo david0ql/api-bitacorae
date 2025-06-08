@@ -221,7 +221,8 @@ export class DashboardService {
 				COUNT(*) AS value
 			FROM
 				business b
-				INNER JOIN economic_activity ea ON b.economic_activity_id = ea.id
+				INNER JOIN business_economic_activity_rel beaa ON b.id = beaa.business_id
+				INNER JOIN economic_activity ea ON ea.id = beaa.economic_activity_id
 			GROUP BY ea.id
 		`)).map((item) => {
 			return {
@@ -240,7 +241,8 @@ export class DashboardService {
 				COUNT(*) AS value
 			FROM
 				accompaniment a
-				INNER JOIN strengthening_area sa ON sa.id = a.strengthening_area_id
+				INNER JOIN accompaniment_strengthening_area_rel asar ON asar.accompaniment_id = a.id
+				INNER JOIN strengthening_area sa ON sa.id = asar.strengthening_area_id
 			GROUP BY sa.id
 		`)).map((item) => {
 			return {

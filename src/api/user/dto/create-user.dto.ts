@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger"
-import { Type } from "class-transformer"
-import { IsNotEmpty, IsNumber, IsOptional, IsString, ValidateIf } from "class-validator"
+import { Transform, Type } from "class-transformer"
+import { ArrayNotEmpty, IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateIf } from "class-validator"
 
 export class CreateUserDto {
 	@ApiProperty({
@@ -82,16 +82,23 @@ export class CreateUserDto {
 	readonly educationLevelId: number
 
 	@ApiProperty({
-		description: 'Strengthening area ID',
-		example: 1,
-		required: false,
-		nullable: true
+		description: 'The strengthening areas IDs',
+		example: [1, 2],
+		required: false
+	})
+	@Transform(({ value }) => {
+		try {
+			if (typeof value === 'string') return value.split(',').map(Number)
+			return value
+		} catch {
+			return []
+		}
 	})
 	@IsOptional()
-	@ValidateIf(value => value !== null)
-	@Type(() => Number)
-	@IsNumber()
-	readonly strengtheningAreaId: number
+	@IsArray()
+	@ArrayNotEmpty()
+	@IsNumber({}, { each: true })
+	readonly strengtheningAreas?: number[]
 
 	@ApiProperty({
 		description: 'Experience years',

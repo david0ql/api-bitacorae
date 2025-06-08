@@ -3,6 +3,8 @@ import {
   Entity,
   Index,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -14,7 +16,6 @@ import { StrengtheningArea } from "./StrengtheningArea";
 
 @Index("business_id", ["businessId"], {})
 @Index("expert_id", ["expertId"], {})
-@Index("strengthening_area_id", ["strengtheningAreaId"], {})
 @Entity("accompaniment", { schema: "dbbitacorae" })
 export class Accompaniment {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
@@ -31,9 +32,6 @@ export class Accompaniment {
 
   @Column("int", { name: "max_hours_per_session" })
   maxHoursPerSession: number;
-
-  @Column("int", { name: "strengthening_area_id" })
-  strengtheningAreaId: number;
 
   @Column("timestamp", {
     name: "created_at",
@@ -64,11 +62,17 @@ export class Accompaniment {
   @JoinColumn([{ name: "expert_id", referencedColumnName: "id" }])
   expert: Expert;
 
-  @ManyToOne(
+  @ManyToMany(
     () => StrengtheningArea,
-    (strengtheningArea) => strengtheningArea.accompaniments,
-    { onDelete: "RESTRICT", onUpdate: "RESTRICT" }
+    (strengtheningArea) => strengtheningArea.accompaniments
   )
-  @JoinColumn([{ name: "strengthening_area_id", referencedColumnName: "id" }])
-  strengtheningArea: StrengtheningArea;
+  @JoinTable({
+    name: "accompaniment_strengthening_area_rel",
+    joinColumns: [{ name: "accompaniment_id", referencedColumnName: "id" }],
+    inverseJoinColumns: [
+      { name: "strengthening_area_id", referencedColumnName: "id" },
+    ],
+    schema: "dbbitacorae",
+  })
+  strengtheningAreas: StrengtheningArea[];
 }

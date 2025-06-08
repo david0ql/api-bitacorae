@@ -3,6 +3,8 @@ import {
   Entity,
   Index,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -11,15 +13,14 @@ import { Gender } from "./Gender";
 import { User } from "./User";
 import { DocumentType } from "./DocumentType";
 import { ConsultorType } from "./ConsultorType";
-import { StrengtheningArea } from "./StrengtheningArea";
 import { EducationLevel } from "./EducationLevel";
 import { Report } from "./Report";
 import { Accompaniment } from "./Accompaniment";
+import { StrengtheningArea } from "./StrengtheningArea";
 
 @Index("user_id", ["userId"], {})
 @Index("document_type_id", ["documentTypeId"], {})
 @Index("consultor_type_id", ["consultorTypeId"], {})
-@Index("strengthing_area_id", ["strengtheningAreaId"], {})
 @Index("education_level_id", ["educationLevelId"], {})
 @Index("expert_gender_FK", ["genderId"], {})
 @Entity("expert", { schema: "dbbitacorae" })
@@ -59,9 +60,6 @@ export class Expert {
 
   @Column("int", { name: "experience_years", nullable: true })
   experienceYears: number | null;
-
-  @Column("int", { name: "strengthening_area_id", default: () => "'1'" })
-  strengtheningAreaId: number;
 
   @Column("int", { name: "education_level_id", default: () => "'1'" })
   educationLevelId: number;
@@ -124,14 +122,6 @@ export class Expert {
   @JoinColumn([{ name: "consultor_type_id", referencedColumnName: "id" }])
   consultorType: ConsultorType;
 
-  @ManyToOne(
-    () => StrengtheningArea,
-    (strengtheningArea) => strengtheningArea.experts,
-    { onDelete: "RESTRICT", onUpdate: "RESTRICT" }
-  )
-  @JoinColumn([{ name: "strengthening_area_id", referencedColumnName: "id" }])
-  strengtheningArea: StrengtheningArea;
-
   @ManyToOne(() => EducationLevel, (educationLevel) => educationLevel.experts, {
     onDelete: "RESTRICT",
     onUpdate: "RESTRICT",
@@ -144,4 +134,18 @@ export class Expert {
 
   @OneToMany(() => Accompaniment, (accompaniment) => accompaniment.expert)
   accompaniments: Accompaniment[];
+
+  @ManyToMany(
+    () => StrengtheningArea,
+    (strengtheningArea) => strengtheningArea.experts
+  )
+  @JoinTable({
+    name: "expert_strengthening_area_rel",
+    joinColumns: [{ name: "expert_id", referencedColumnName: "id" }],
+    inverseJoinColumns: [
+      { name: "strengthening_area_id", referencedColumnName: "id" },
+    ],
+    schema: "dbbitacorae",
+  })
+  strengtheningAreas: StrengtheningArea[];
 }

@@ -1,11 +1,11 @@
-import { DataSource, Repository } from 'typeorm'
+import { DataSource, In, Repository } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import * as bcrypt from 'bcrypt'
 
 import { User } from 'src/entities/User'
 import { Expert } from 'src/entities/Expert'
-import { ConsultorType } from 'src/entities/ConsultorType'
+import { StrengtheningArea } from 'src/entities/StrengtheningArea'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -28,6 +28,9 @@ export class ExpertService {
 		@InjectRepository(User)
 		private readonly userRepository: Repository<User>,
 
+		@InjectRepository(StrengtheningArea)
+		private readonly strengtheningAreaRepository: Repository<StrengtheningArea>,
+
 		private readonly dataSource: DataSource,
 		private readonly fileUploadService: FileUploadService,
 		private readonly mailService: MailService
@@ -44,7 +47,7 @@ export class ExpertService {
 			consultorTypeId,
 			genderId,
 			experienceYears,
-			strengtheningAreaId,
+			strengtheningAreas,
 			educationLevelId,
 			facebook,
 			instagram,
@@ -78,6 +81,10 @@ export class ExpertService {
 
 			const newUser = await this.userRepository.save(user)
 
+			const strengtheningAreaEntities = await this.strengtheningAreaRepository.findBy({
+				id: In(strengtheningAreas)
+			})
+
 			const expert = this.expertRepository.create({
 				userId: newUser.id,
 				firstName,
@@ -90,7 +97,7 @@ export class ExpertService {
 				consultorTypeId,
 				genderId,
 				experienceYears,
-				strengtheningAreaId,
+				strengtheningAreas: strengtheningAreaEntities,
 				educationLevelId,
 				facebook,
 				instagram,
@@ -121,46 +128,72 @@ export class ExpertService {
 		}
 	}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Expert>> {
-		const queryBuilder = this.expertRepository
-			.createQueryBuilder('e')
-			.select([
-				'e.id AS id',
-				'e.userId AS userId',
-				'e.firstName AS firstName',
-				'e.lastName AS lastName',
-				'e.email AS email',
-				'e.phone AS phone',
-				'e.documentTypeId AS documentTypeId',
-				'e.documentNumber AS documentNumber',
-				'CONCAT(:appUrl, "/", e.photo) AS photo',
-				'e.consultorTypeId AS consultorTypeId',
-				'consultorType.name AS consultorTypeName',
-				'e.genderId AS genderId',
-				'e.experienceYears AS experienceYears',
-				'e.strengtheningAreaId AS strengtheningAreaId',
-				'e.educationLevelId AS educationLevelId',
-				'e.facebook AS facebook',
-				'e.instagram AS instagram',
-				'e.twitter AS twitter',
-				'e.website AS website',
-				'e.linkedin AS linkedin',
-				'e.profile AS profile',
-				'user.active AS active',
-				`IF(user.active = 1, 'Si', 'No') AS userActive`
-			])
-			.innerJoin('e.user', 'user')
-			.innerJoin('e.consultorType', 'consultorType')
-			.orderBy('e.id', pageOptionsDto.order)
-			.skip(pageOptionsDto.skip)
-			.take(pageOptionsDto.take)
-			.setParameters({appUrl: envVars.APP_URL})
+	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<any>> {
+		const { take, skip, order } = pageOptionsDto
 
-		const [items, totalCount] = await Promise.all([
-			queryBuilder.getRawMany(),
-			queryBuilder.getCount()
+		const sql = `
+			SELECT
+				e.id AS id,
+				e.user_id AS userId,
+				e.first_name AS firstName,
+				e.last_name AS lastName,
+				e.email AS email,
+				e.phone AS phone,
+				e.document_type_id AS documentTypeId,
+				e.document_number AS documentNumber,
+				CONCAT(?, '/', e.photo) AS photo,
+				e.consultor_type_id AS consultorTypeId,
+				ct.name AS consultorTypeName,
+				e.gender_id AS genderId,
+				e.experience_years AS experienceYears,
+				e.education_level_id AS educationLevelId,
+				e.facebook AS facebook,
+				e.instagram AS instagram,
+				e.twitter AS twitter,
+				e.website AS website,
+				e.linkedin AS linkedin,
+				e.profile AS profile,
+				u.active AS active,
+				IF(u.active = 1, 'Si', 'No') AS userActive,
+				IF(COUNT(sa.id) > 0,
+					CONCAT('[',
+						GROUP_CONCAT(DISTINCT JSON_OBJECT(
+							'value', sa.id,
+							'label', sa.name
+						)),
+					']'),
+					NULL
+				) AS strengtheningAreas
+			FROM expert e
+			INNER JOIN user u ON u.id = e.user_id
+			INNER JOIN consultor_type ct ON ct.id = e.consultor_type_id
+			LEFT JOIN expert_strengthening_area_rel esa ON esa.expert_id = e.id
+			LEFT JOIN strengthening_area sa ON sa.id = esa.strengthening_area_id
+			GROUP BY e.id
+			ORDER BY e.id ${order}
+			LIMIT ${skip}, ${take}
+		`
+
+		const countSql = `
+			SELECT COUNT(DISTINCT e.id) AS total
+			FROM expert e
+		`
+
+		const [rawItems, countResult] = await Promise.all([
+			this.expertRepository.query(sql, [envVars.APP_URL]),
+			this.expertRepository.query(countSql)
 		])
 
+		const items = rawItems.map(item => {
+			const strengtheningAreas = item.strengtheningAreas ? JSON.parse(item.strengtheningAreas) : []
+
+			return {
+				...item,
+				strengtheningAreas
+			}
+		})
+
+		const totalCount = Number(countResult[0]?.total) ?? 0
 		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 		return new PageDto(items, pageMetaDto)
 	}
@@ -232,49 +265,62 @@ export class ExpertService {
 	}
 
 	async findOne(id: number) {
-		if(!id) return {}
+		if (!id) return {}
 
-		const expert = await this.expertRepository
-			.createQueryBuilder('e')
-			.select([
-				'e.id AS id',
-				'e.userId AS userId',
-				'e.firstName AS firstName',
-				'e.lastName AS lastName',
-				'e.email AS email',
-				'e.phone AS phone',
-				'e.documentTypeId AS documentTypeId',
-				'documentType.name AS documentTypeName',
-				'e.documentNumber AS documentNumber',
-				'CONCAT(:appUrl, "/", e.photo) AS photo',
-				'e.consultorTypeId AS consultorTypeId',
-				'consultorType.name AS consultorTypeName',
-				'e.genderId AS genderId',
-				'gender.name AS genderName',
-				'e.experienceYears AS experienceYears',
-				'e.strengtheningAreaId AS strengtheningAreaId',
-				'e.educationLevelId AS educationLevelId',
-				'strengtheningArea.name AS strengtheningAreaName',
-				'educationLevel.name AS educationLevelName',
-				'e.facebook AS facebook',
-				'e.instagram AS instagram',
-				'e.twitter AS twitter',
-				'e.website AS website',
-				'e.linkedin AS linkedin',
-				'e.profile AS profile',
-				'user.active AS active'
-			])
-			.innerJoin('e.user', 'user')
-			.innerJoin('e.consultorType', 'consultorType')
-			.innerJoin('e.documentType', 'documentType')
-			.innerJoin('e.gender', 'gender')
-			.innerJoin('e.strengtheningArea', 'strengtheningArea')
-			.innerJoin('e.educationLevel', 'educationLevel')
-			.where('e.id = :id', { id })
-			.setParameters({appUrl: envVars.APP_URL})
-			.getRawOne()
+		const [expert] = await this.expertRepository.query(`
+			SELECT
+				e.id AS id,
+				e.user_id AS userId,
+				e.first_name AS firstName,
+				e.last_name AS lastName,
+				e.email AS email,
+				e.phone AS phone,
+				e.document_type_id AS documentTypeId,
+				dt.name AS documentTypeName,
+				e.document_number AS documentNumber,
+				CONCAT(?, '/', e.photo) AS photo,
+				e.consultor_type_id AS consultorTypeId,
+				ct.name AS consultorTypeName,
+				e.gender_id AS genderId,
+				g.name AS genderName,
+				e.experience_years AS experienceYears,
+				e.education_level_id AS educationLevelId,
+				ed.name AS educationLevelName,
+				e.facebook AS facebook,
+				e.instagram AS instagram,
+				e.twitter AS twitter,
+				e.website AS website,
+				e.linkedin AS linkedin,
+				e.profile AS profile,
+				u.active AS active,
+				IF(COUNT(sa.id) > 0,
+					CONCAT('[',
+						GROUP_CONCAT(DISTINCT JSON_OBJECT(
+							'value', sa.id,
+							'label', sa.name
+						)),
+					']'),
+					NULL
+				) AS strengtheningAreas
+			FROM
+				expert e
+				INNER JOIN user u ON u.id = e.user_id
+				INNER JOIN consultor_type ct ON ct.id = e.consultor_type_id
+				INNER JOIN document_type dt ON dt.id = e.document_type_id
+				INNER JOIN gender g ON g.id = e.gender_id
+				INNER JOIN education_level ed ON ed.id = e.education_level_id
+				LEFT JOIN expert_strengthening_area_rel esar ON esar.expert_id = e.id
+				LEFT JOIN strengthening_area sa ON sa.id = esar.strengthening_area_id
+			WHERE e.id = ?
+			GROUP BY e.id
+		`, [envVars.APP_URL, id])
 
-		return expert || {}
+		if (!expert) return {}
+
+		return {
+			...expert,
+			strengtheningAreas: expert.strengtheningAreas ? JSON.parse(expert.strengtheningAreas) : []
+		}
 	}
 
 	async update(id: number, updateExpertDto: UpdateExpertDto, file?: Express.Multer.File) {
@@ -297,7 +343,7 @@ export class ExpertService {
 			consultorTypeId,
 			genderId,
 			experienceYears,
-			strengtheningAreaId,
+			strengtheningAreas,
 			educationLevelId,
 			facebook,
 			instagram,
@@ -311,6 +357,7 @@ export class ExpertService {
 			where: { email },
 			relations: ['experts']
 		})
+
 		if(existingUser && existingUser.experts[0]?.id !== id) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)
@@ -319,41 +366,48 @@ export class ExpertService {
 		}
 
 		try {
-			const result = await this.expertRepository.update(id, {
-				firstName,
-				lastName,
-				email,
-				phone,
-				documentTypeId,
-				documentNumber,
-				photo: fullPath,
-				consultorTypeId,
-				genderId,
-				experienceYears,
-				strengtheningAreaId,
-				educationLevelId,
-				facebook,
-				instagram,
-				twitter,
-				website,
-				linkedin,
-				profile
+			const existingExpert = await this.expertRepository.findOne({
+				where: { id },
+				relations: ['strengtheningAreas']
 			})
 
-			const expertData = await this.expertRepository.findOne({
-				select: { userId: true },
-				where: { id }
-			})
-
-			if(expertData) {
-				await this.userRepository.update(expertData.userId, {
-					active,
-					name: firstName,
-					email
-				})
+			if (!existingExpert) {
+				if (fullPath) this.fileUploadService.deleteFile(fullPath)
+				return { affected: 0 }
 			}
 
-			return result
+			const strengtheningAreaEntities = await this.strengtheningAreaRepository.findBy({
+				id: In(strengtheningAreas || []),
+			})
+
+			existingExpert.firstName = firstName ?? existingExpert.firstName
+			existingExpert.lastName = lastName ?? existingExpert.lastName
+			existingExpert.email = email ?? existingExpert.email
+			existingExpert.phone = phone ?? existingExpert.phone
+			existingExpert.documentTypeId = documentTypeId ?? existingExpert.documentTypeId
+			existingExpert.documentNumber = documentNumber ?? existingExpert.documentNumber
+			existingExpert.photo = fullPath ?? existingExpert.photo
+			existingExpert.consultorTypeId = consultorTypeId ?? existingExpert.consultorTypeId
+			existingExpert.genderId = genderId ?? existingExpert.genderId
+			existingExpert.experienceYears = experienceYears ?? existingExpert.experienceYears
+			existingExpert.educationLevelId = educationLevelId ?? existingExpert.educationLevelId
+			existingExpert.facebook = facebook ?? existingExpert.facebook
+			existingExpert.instagram = instagram ?? existingExpert.instagram
+			existingExpert.twitter = twitter ?? existingExpert.twitter
+			existingExpert.website = website ?? existingExpert.website
+			existingExpert.linkedin = linkedin ?? existingExpert.linkedin
+			existingExpert.profile = profile ?? existingExpert.profile
+			existingExpert.strengtheningAreas = strengtheningAreaEntities
+
+			await this.expertRepository.save(existingExpert)
+
+			await this.userRepository.update(existingExpert.userId, {
+				active,
+				name: firstName,
+				email
+			})
+
+			return { affected: 1 }
 		} catch (e) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)

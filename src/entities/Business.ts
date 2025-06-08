@@ -3,31 +3,31 @@ import {
   Entity,
   Index,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
+import { EconomicActivity } from "./EconomicActivity";
+import { StrengtheningArea } from "./StrengtheningArea";
 import { Report } from "./Report";
 import { ContactInformation } from "./ContactInformation";
 import { Accompaniment } from "./Accompaniment";
 import { User } from "./User";
 import { DocumentType } from "./DocumentType";
-import { EconomicActivity } from "./EconomicActivity";
 import { BusinessSize } from "./BusinessSize";
 import { Position } from "./Position";
 import { ProductStatus } from "./ProductStatus";
 import { MarketScope } from "./MarketScope";
-import { StrengtheningArea } from "./StrengtheningArea";
 import { Cohort } from "./Cohort";
 
 @Index("user_id", ["userId"], {})
 @Index("document_type_id", ["documentTypeId"], {})
-@Index("economic_activity_id", ["economicActivityId"], {})
 @Index("business_size_id", ["businessSizeId"], {})
 @Index("position_id", ["positionId"], {})
 @Index("product_status_id", ["productStatusId"], {})
 @Index("market_scope_id", ["marketScopeId"], {})
-@Index("strengthing_area_id", ["strengtheningAreaId"], {})
 @Index("cohort_id", ["cohortId"], {})
 @Entity("business", { schema: "dbbitacorae" })
 export class Business {
@@ -54,9 +54,6 @@ export class Business {
 
   @Column("varchar", { name: "email", length: 255 })
   email: string;
-
-  @Column("int", { name: "economic_activity_id" })
-  economicActivityId: number;
 
   @Column("int", { name: "business_size_id" })
   businessSizeId: number;
@@ -112,9 +109,6 @@ export class Business {
   @Column("longtext", { name: "business_segmentation", nullable: true })
   businessSegmentation: string | null;
 
-  @Column("int", { name: "strengthening_area_id" })
-  strengtheningAreaId: number;
-
   @Column("int", { name: "assigned_hours" })
   assignedHours: number;
 
@@ -138,6 +132,34 @@ export class Business {
     default: () => "CURRENT_TIMESTAMP",
   })
   updatedAt: Date;
+
+  @ManyToMany(
+    () => EconomicActivity,
+    (economicActivity) => economicActivity.businesses
+  )
+  @JoinTable({
+    name: "business_economic_activity_rel",
+    joinColumns: [{ name: "business_id", referencedColumnName: "id" }],
+    inverseJoinColumns: [
+      { name: "economic_activity_id", referencedColumnName: "id" },
+    ],
+    schema: "dbbitacorae",
+  })
+  economicActivities: EconomicActivity[];
+
+  @ManyToMany(
+    () => StrengtheningArea,
+    (strengtheningArea) => strengtheningArea.businesses
+  )
+  @JoinTable({
+    name: "business_strengthening_area_rel",
+    joinColumns: [{ name: "business_id", referencedColumnName: "id" }],
+    inverseJoinColumns: [
+      { name: "strengthening_area_id", referencedColumnName: "id" },
+    ],
+    schema: "dbbitacorae",
+  })
+  strengtheningAreas: StrengtheningArea[];
 
   @OneToMany(() => Report, (report) => report.business)
   reports: Report[];
@@ -164,14 +186,6 @@ export class Business {
   })
   @JoinColumn([{ name: "document_type_id", referencedColumnName: "id" }])
   documentType: DocumentType;
-
-  @ManyToOne(
-    () => EconomicActivity,
-    (economicActivity) => economicActivity.businesses,
-    { onDelete: "RESTRICT", onUpdate: "RESTRICT" }
-  )
-  @JoinColumn([{ name: "economic_activity_id", referencedColumnName: "id" }])
-  economicActivity: EconomicActivity;
 
   @ManyToOne(() => BusinessSize, (businessSize) => businessSize.businesses, {
     onDelete: "RESTRICT",
@@ -200,14 +214,6 @@ export class Business {
   })
   @JoinColumn([{ name: "market_scope_id", referencedColumnName: "id" }])
   marketScope: MarketScope;
-
-  @ManyToOne(
-    () => StrengtheningArea,
-    (strengtheningArea) => strengtheningArea.businesses,
-    { onDelete: "RESTRICT", onUpdate: "RESTRICT" }
-  )
-  @JoinColumn([{ name: "strengthening_area_id", referencedColumnName: "id" }])
-  strengtheningArea: StrengtheningArea;
 
   @ManyToOne(() => Cohort, (cohort) => cohort.businesses, {
     onDelete: "RESTRICT",

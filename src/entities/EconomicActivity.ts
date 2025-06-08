@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Business } from "./Business";
 
 @Entity("economic_activity", { schema: "dbbitacorae" })
@@ -21,6 +21,6 @@ export class EconomicActivity {
   })
   updatedAt: Date;
 
-  @OneToMany(() => Business, (business) => business.economicActivity)
+  @ManyToMany(() => Business, (business) => business.economicActivities)
   businesses: Business[];
 }

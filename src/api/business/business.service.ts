@@ -1,10 +1,12 @@
-import { DataSource, Repository } from 'typeorm'
+import { DataSource, In, Repository } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import * as bcrypt from 'bcrypt'
 
 import { User } from 'src/entities/User'
 import { Business } from 'src/entities/Business'
+import { StrengtheningArea } from 'src/entities/StrengtheningArea'
+import { EconomicActivity } from 'src/entities/EconomicActivity'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -26,6 +28,12 @@ export class BusinessService {
 		@InjectRepository(User)
 		private readonly userRepository: Repository<User>,
 
+		@InjectRepository(StrengtheningArea)
+		private readonly strengtheningAreaRepository: Repository<StrengtheningArea>,
+
+		@InjectRepository(EconomicActivity)
+		private readonly economicActivityAreaRepository: Repository<EconomicActivity>,
+
 		private readonly dataSource: DataSource,
 		private readonly fileUploadService: FileUploadService,
 		private readonly mailService: MailService
@@ -39,7 +47,7 @@ export class BusinessService {
 			address,
 			phone,
 			email,
-			economicActivityId,
+			economicActivities,
 			businessSizeId,
 			numberOfEmployees,
 			lastYearSales,
@@ -58,7 +66,7 @@ export class BusinessService {
 			marketScopeId,
 			businessPlan,
 			businessSegmentation,
-			strengtheningAreaId,
+			strengtheningAreas,
 			assignedHours,
 			cohortId,
 			diagnostic,
@@ -88,6 +96,14 @@ export class BusinessService {
 
 			const newUser = await this.userRepository.save(user)
 
+			const economicActivityEntities = await this.economicActivityAreaRepository.findBy({
+				id: In(economicActivities)
+			})
+
+			const strengtheningAreaEntities = await this.strengtheningAreaRepository.findBy({
+				id: In(strengtheningAreas)
+			})
+
 			const business = this.businessRepository.create({
 				userId: newUser.id,
 				socialReason,
@@ -96,7 +112,7 @@ export class BusinessService {
 				address,
 				phone,
 				email,
-				economicActivityId,
+				economicActivities: economicActivityEntities,
 				businessSizeId,
 				numberOfEmployees,
 				lastYearSales,
@@ -115,7 +131,7 @@ export class BusinessService {
 				marketScopeId,
 				businessPlan,
 				businessSegmentation,
-				strengtheningAreaId,
+				strengtheningAreas: strengtheningAreaEntities,
 				assignedHours,
 				cohortId,
 				diagnostic,
@@ -200,56 +216,74 @@ export class BusinessService {
 	}
 
 	async findOne(id: number) {
-		if(!id) return {}
+		if (!id) return {}
 
-		const business = await this.businessRepository
-			.createQueryBuilder('b')
-			.select([
-				'b.id AS id',
-				'b.social_reason AS socialReason',
-				'b.document_type_id AS documentTypeId',
-				'b.document_number AS documentNumber',
-				'b.address AS address',
-				'b.phone AS phone',
-				'b.email AS email',
-				'b.economic_activity_id AS economicActivityId',
-				'economicActivity.name AS economicActivityName',
-				'b.business_size_id AS businessSizeId',
-				'b.number_of_employees AS numberOfEmployees',
-				'b.last_year_sales AS lastYearSales',
-				'b.two_years_ago_sales AS twoYearsAgoSales',
-				'b.three_years_ago_sales AS threeYearsAgoSales',
-				'b.facebook AS facebook',
-				'b.instagram AS instagram',
-				'b.twitter AS twitter',
-				'b.website AS website',
-				'b.linkedin AS linkedin',
-				'b.position_id AS positionId',
-				'b.has_founded_before AS hasFoundedBefore',
-				'b.observation AS observation',
-				'b.number_of_people_leading AS numberOfPeopleLeading',
-				'b.product_status_id AS productStatusId',
-				'productStatus.name AS productStatusName',
-				'b.market_scope_id AS marketScopeId',
-				'marketScope.name AS marketScopeName',
-				'b.business_plan AS businessPlan',
-				'b.business_segmentation AS businessSegmentation',
-				'b.strengthening_area_id AS strengtheningAreaId',
-				'strengtheningArea.name AS strengtheningAreaName',
-				'b.assigned_hours AS assignedHours',
-				'b.cohort_id AS cohortId',
-				'b.diagnostic AS diagnostic',
-				'CONCAT(:appUrl, "/", b.evidence) AS evidence'
-			])
-			.where('b.id = :id', { id })
-			.innerJoin('b.strengtheningArea', 'strengtheningArea')
-			.innerJoin('b.economicActivity', 'economicActivity')
-			.innerJoin('b.marketScope', 'marketScope')
-			.innerJoin('b.productStatus', 'productStatus')
-			.setParameters({appUrl: envVars.APP_URL})
-			.getRawOne()
+		const [business] = await this.businessRepository.query(`
+			SELECT
+				b.id AS id,
+				b.social_reason AS socialReason,
+				b.document_type_id AS documentTypeId,
+				b.document_number AS documentNumber,
+				b.address AS address,
+				b.phone AS phone,
+				b.email AS email,
+				b.business_size_id AS businessSizeId,
+				b.number_of_employees AS numberOfEmployees,
+				b.last_year_sales AS lastYearSales,
+				b.two_years_ago_sales AS twoYearsAgoSales,
+				b.three_years_ago_sales AS threeYearsAgoSales,
+				b.facebook AS facebook,
+				b.instagram AS instagram,
+				b.twitter AS twitter,
+				b.website AS website,
+				b.linkedin AS linkedin,
+				b.position_id AS positionId,
+				b.has_founded_before AS hasFoundedBefore,
+				b.observation AS observation,
+				b.number_of_people_leading AS numberOfPeopleLeading,
+				b.product_status_id AS productStatusId,
+				ps.name AS productStatusName,
+				b.market_scope_id AS marketScopeId,
+				ms.name AS marketScopeName,
+				b.business_plan AS businessPlan,
+				b.business_segmentation AS businessSegmentation,
+				b.assigned_hours AS assignedHours,
+				b.cohort_id AS cohortId,
+				b.diagnostic AS diagnostic,
+				CONCAT(?, '/', b.evidence) AS evidence,
+				IF(COUNT(DISTINCT bs.id) > 0,
+					CONCAT('[', GROUP_CONCAT(DISTINCT JSON_OBJECT(
+						'value', bs.id,
+						'label', bs.name
+					)), ']'),
+					NULL
+				) AS economicActivities,
+				IF(COUNT(DISTINCT s.id) > 0,
+					CONCAT('[', GROUP_CONCAT(DISTINCT JSON_OBJECT(
+						'value', s.id,
+						'label', s.name
+					)), ']'),
+					NULL
+				) AS strengtheningAreas
+			FROM
+				business b
+				INNER JOIN market_scope ms ON ms.id = b.market_scope_id
+				INNER JOIN product_status ps ON ps.id = b.product_status_id
+				LEFT JOIN business_strengthening_area_rel bsa ON bsa.business_id = b.id
+				LEFT JOIN strengthening_area s ON s.id = bsa.strengthening_area_id
+				LEFT JOIN business_economic_activity_rel beaa ON beaa.business_id = b.id
+				LEFT JOIN economic_activity bs ON bs.id = beaa.economic_activity_id
+			WHERE b.id = ?
+			GROUP BY b.id
+		`, [envVars.APP_URL, id])
 
-		return business || {}
+		if (!business) return {}
+
+		return {
+			...business,
+			economicActivities: business.economicActivities ? JSON.parse(business.economicActivities) : [],
+			strengtheningAreas: business.strengtheningAreas ? JSON.parse(business.strengtheningAreas) : []
+		}
 	}
 
 	async findName(id: number) {
@@ -281,7 +315,7 @@ export class BusinessService {
 			address,
 			phone,
 			email,
-			economicActivityId,
+			economicActivities,
 			businessSizeId,
 			numberOfEmployees,
 			lastYearSales,
@@ -300,7 +334,7 @@ export class BusinessService {
 			marketScopeId,
 			businessPlan,
 			businessSegmentation,
-			strengtheningAreaId,
+			strengtheningAreas,
 			assignedHours,
 			cohortId,
 			diagnostic
@@ -320,53 +354,64 @@ export class BusinessService {
 		}
 
 		try {
-			const result = this.businessRepository.update(id, {
-				socialReason,
-				documentTypeId,
-				documentNumber,
-				address,
-				phone,
-				email,
-				economicActivityId,
-				businessSizeId,
-				numberOfEmployees,
-				lastYearSales,
-				twoYearsAgoSales,
-				threeYearsAgoSales,
-				facebook,
-				instagram,
-				twitter,
-				website,
-				linkedin,
-				positionId,
-				hasFoundedBefore,
-				observation,
-				numberOfPeopleLeading,
-				productStatusId,
-				marketScopeId,
-				businessPlan,
-				businessSegmentation,
-				strengtheningAreaId,
-				assignedHours,
-				cohortId,
-				diagnostic,
-				evidence: fullPath
+			const existingBusiness = await this.businessRepository.findOne({
+				where: { id },
+				relations: ['economicActivities', 'strengtheningAreas']
 			})
 
-			const businessData = await this.businessRepository.findOne({
-				select: { userId: true },
-				where: { id }
-			})
-
-			if(businessData) {
-				await this.userRepository.update(businessData.userId, {
-					active,
-					name: socialReason,
-					email
-				})
+			if (!existingBusiness) {
+				if (fullPath) this.fileUploadService.deleteFile(fullPath)
+				return { affected: 0 }
 			}
 
-			return { result }
+			const economicActivityEntities = await this.economicActivityAreaRepository.findBy({
+				id: In(economicActivities || [])
+			})
+
+			const strengtheningAreaEntities = await this.strengtheningAreaRepository.findBy({
+				id: In(strengtheningAreas || [])
+			})
+
+			existingBusiness.socialReason = socialReason ?? existingBusiness.socialReason
+			existingBusiness.documentTypeId = documentTypeId ?? existingBusiness.documentTypeId
+			existingBusiness.documentNumber = documentNumber ?? existingBusiness.documentNumber
+			existingBusiness.address = address ?? existingBusiness.address
+			existingBusiness.phone = phone ?? existingBusiness.phone
+			existingBusiness.email = email ?? existingBusiness.email
+			existingBusiness.economicActivities = economicActivityEntities
+			existingBusiness.businessSizeId = businessSizeId ?? existingBusiness.businessSizeId
+			existingBusiness.numberOfEmployees = numberOfEmployees ?? existingBusiness.numberOfEmployees
+			existingBusiness.lastYearSales = lastYearSales ?? existingBusiness.lastYearSales
+			existingBusiness.twoYearsAgoSales = twoYearsAgoSales ?? existingBusiness.twoYearsAgoSales
+			existingBusiness.threeYearsAgoSales = threeYearsAgoSales ?? existingBusiness.threeYearsAgoSales
+			existingBusiness.facebook = facebook ?? existingBusiness.facebook
+			existingBusiness.instagram = instagram ?? existingBusiness.instagram
+			existingBusiness.twitter = twitter ?? existingBusiness.twitter
+			existingBusiness.website = website ?? existingBusiness.website
+			existingBusiness.linkedin = linkedin ?? existingBusiness.linkedin
+			existingBusiness.positionId = positionId ?? existingBusiness.positionId
+			existingBusiness.hasFoundedBefore = hasFoundedBefore ?? existingBusiness.hasFoundedBefore
+			existingBusiness.observation = observation ?? existingBusiness.observation
+			existingBusiness.numberOfPeopleLeading = numberOfPeopleLeading ?? existingBusiness.numberOfPeopleLeading
+			existingBusiness.productStatusId = productStatusId ?? existingBusiness.productStatusId
+			existingBusiness.marketScopeId = marketScopeId ?? existingBusiness.marketScopeId
+			existingBusiness.businessPlan = businessPlan ?? existingBusiness.businessPlan
+			existingBusiness.businessSegmentation = businessSegmentation ?? existingBusiness.businessSegmentation
+			existingBusiness.strengtheningAreas = strengtheningAreaEntities
+			existingBusiness.assignedHours = assignedHours ?? existingBusiness.assignedHours
+			existingBusiness.cohortId = cohortId ?? existingBusiness.cohortId
+			existingBusiness.diagnostic = diagnostic ?? existingBusiness.diagnostic
+			existingBusiness.evidence = fullPath ?? existingBusiness.evidence
+
+			await this.businessRepository.save(existingBusiness)
+
+			await this.userRepository.update(existingBusiness.userId, {
+				active,
+				name: socialReason,
+				email
+			})
+
+			return { affected: 1 }
 		} catch (e) {
 			if (fullPath) {
 				this.fileUploadService.deleteFile(fullPath)

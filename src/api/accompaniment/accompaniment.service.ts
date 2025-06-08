@@ -1,4 +1,4 @@
-import { DataSource, Repository } from 'typeorm'
+import { DataSource, In, Repository } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
@@ -40,7 +40,7 @@ export class AccompanimentService {
 			expertId,
 			totalHours,
 			maxHoursPerSession,
-			strengtheningAreaId
+			strengtheningAreas
 		} = createAccompanimentDto
 
 		const business = await this.businessRepository.findOne({ where: { id: businessId } })
@@ -51,11 +51,6 @@ export class AccompanimentService {
 		const expert = await this.expertRepository.findOne({ where: { id: expertId } })
 		if (!expert) {
 			throw new BadRequestException(`No se encontró un experto con el ID ${expertId}`)
-		}
-
-		const strengtheningArea = await this.strengtheningAreaRepository.findOne({ where: { id: strengtheningAreaId } })
-		if (!strengtheningArea) {
-			throw new BadRequestException(`No se encontró un área de fortalecimiento con el ID ${strengtheningAreaId}`)
 		}
 
 		const existingAccompaniment = await this.accompanimentRepository.findOne({
@@ -84,12 +79,16 @@ export class AccompanimentService {
 			)
 		}
 
+		const strengtheningAreaEntities = await this.strengtheningAreaRepository.findBy({
+			id: In(strengtheningAreas)
+		})
+
 		const accompaniment = this.accompanimentRepository.create({
 			businessId,
 			expertId,
 			totalHours,
 			maxHoursPerSession,
-			strengtheningAreaId
+			strengtheningAreas: strengtheningAreaEntities
 		})
 
 		return this.accompanimentRepository.save(accompaniment)
@@ -106,17 +105,24 @@ export class AccompanimentService {
 				CONCAT(c.first_name, ' ', c.last_name) AS name,
 				CONCAT("${envVars.APP_URL}", "/", c.photo) AS photo,
 				bs.name AS size,
-				sa.name AS strengthening,
+				IF(COUNT(DISTINCT sa.id) > 0,
+					CONCAT('[', GROUP_CONCAT(DISTINCT JSON_OBJECT(
+						'value', sa.id,
+						'label', sa.name
+					)), ']'),
+					NULL
+				) AS strengtheningAreas,
 				b.assigned_hours AS assignedHours,
 				IFNULL(COUNT(DISTINCT s.id), 0) AS scheduledSessions,
 				IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
 			FROM
 				business b
 				INNER JOIN business_size bs ON bs.id = b.business_size_id
-				INNER JOIN strengthening_area sa ON sa.id = b.strengthening_area_id
 				LEFT JOIN contact_information c ON c.business_id = b.id
 				LEFT JOIN accompaniment a ON a.business_id = b.id
 				LEFT JOIN session s ON s.accompaniment_id = a.id
+				LEFT JOIN accompaniment_strengthening_area_rel asar ON asar.accompaniment_id = a.id
+				LEFT JOIN strengthening_area sa ON sa.id = asar.strengthening_area_id
 			GROUP BY b.id
 			ORDER BY b.id ${order}
 			LIMIT ${take} OFFSET ${skip}
@@ -150,17 +156,24 @@ export class AccompanimentService {
 					CONCAT(c.first_name, ' ', c.last_name) AS name,
 					CONCAT("${envVars.APP_URL}", "/", c.photo) AS photo,
 					bs.name AS size,
-					sa.name AS strengthening,
+					IF(COUNT(DISTINCT sa.id) > 0,
+						CONCAT('[', GROUP_CONCAT(DISTINCT JSON_OBJECT(
+							'value', sa.id,
+							'label', sa.name
+						)), ']'),
+						NULL
+					) AS strengtheningAreas,
 					b.assigned_hours AS assignedHours,
 					IFNULL(COUNT(DISTINCT s.id), 0) AS scheduledSessions,
 					IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
 				FROM
 					business b
 					INNER JOIN business_size bs ON bs.id = b.business_size_id
-					INNER JOIN strengthening_area sa ON sa.id = b.strengthening_area_id
 					LEFT JOIN contact_information c ON c.business_id = b.id
 					LEFT JOIN accompaniment a ON a.business_id = b.id
 					LEFT JOIN session s ON s.accompaniment_id = a.id
+					LEFT JOIN accompaniment_strengthening_area_rel asar ON asar.accompaniment_id = a.id
+					LEFT JOIN strengthening_area sa ON sa.id = asar.strengthening_area_id
 					INNER JOIN expert_accompaniment ea ON ea.business_id = b.id
 				GROUP BY b.id
 				ORDER BY b.id ${order}
@@ -181,10 +194,19 @@ export class AccompanimentService {
 			`
 		}
 
-		const [items, countResult] = await Promise.all([
+		const [rawItems, countResult] = await Promise.all([
 			this.dataSource.query(sql),
 			this.dataSource.query(countSql)
 		])
+
+		const items = rawItems.map(item => {
+			const strengtheningAreas = item.strengtheningAreas ? JSON.parse(item.strengtheningAreas) : []
+
+			return {
+				...item,
+				strengtheningAreas
+			}
+		})
 
 		const totalCount = Number(countResult[0]?.total) ?? 0
 		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
@@ -313,12 +335,24 @@ export class AccompanimentService {
 				expertId: true,
 				totalHours: true,
 				maxHoursPerSession: true,
-				strengtheningAreaId: true
+				strengtheningAreas: {
+					id: true,
+					name: true
+				}
 			},
-			where: { businessId: bussinesId, expertId: expert.id }
+			where: { businessId: bussinesId, expertId: expert.id },
+			relations: ['strengtheningAreas']
 		})
 
-		return accompaniment || {}
+		if (!accompaniment) return {}
+
+		return {
+			...accompaniment,
+			strengtheningAreas: accompaniment.strengtheningAreas.map(area => ({
+				value: area.id,
+				label: area.name
+			}))
+		}
 	}
 
 	async findOne(id: number) {
@@ -331,12 +365,24 @@ export class AccompanimentService {
 				expertId: true,
 				totalHours: true,
 				maxHoursPerSession: true,
-				strengtheningAreaId: true
+				strengtheningAreas: {
+					id: true,
+					name: true
+				}
 			},
-			where: { id }
+			where: { id },
+			relations: ['strengtheningAreas']
 		})
 
-		return accompaniment || {}
+		if (!accompaniment) return {}
+
+		return {
+			...accompaniment,
+			strengtheningAreas: accompaniment.strengtheningAreas.map(area => ({
+				value: area.id,
+				label: area.name
+			}))
+		}
 	}
 
 	async update(id: number, updateAccompanimentDto: UpdateAccompanimentDto) {
@@ -347,7 +393,7 @@ export class AccompanimentService {
 			expertId,
 			totalHours,
 			maxHoursPerSession,
-			strengtheningAreaId
+			strengtheningAreas
 		} = updateAccompanimentDto
 
 		if(businessId) {
@@ -361,13 +407,6 @@ export class AccompanimentService {
 			const expert = await this.expertRepository.findOne({ where: { id: expertId } })
 			if (!expert) {
 				throw new BadRequestException(`No se encontró un experto con el ID ${expertId}`)
-			}
-		}
-
-		if(strengtheningAreaId) {
-			const strengtheningArea = await this.strengtheningAreaRepository.findOne({ where: { id: strengtheningAreaId } })
-			if (!strengtheningArea) {
-				throw new BadRequestException(`No se encontró un área de fortalecimiento con el ID ${strengtheningAreaId}`)
 			}
 		}
 
@@ -415,13 +454,28 @@ export class AccompanimentService {
 			)
 		}
 
-		return this.accompanimentRepository.update(id, {
-			businessId,
-			expertId,
-			totalHours,
-			maxHoursPerSession,
-			strengtheningAreaId
+		const existingAccompaniment = await this.accompanimentRepository.findOne({
+			where: { id },
+			relations: ['strengtheningAreas']
 		})
+
+		if (!existingAccompaniment) {
+			throw new BadRequestException(`No se encontró un acompañamiento con el ID ${id}`)
+		}
+
+		const strengtheningAreaEntities = await this.strengtheningAreaRepository.findBy({
+			id: In(strengtheningAreas || [])
+		})
+
+		existingAccompaniment.businessId = businessId ?? existingAccompaniment.businessId
+		existingAccompaniment.expertId = expertId ?? existingAccompaniment.expertId
+		existingAccompaniment.totalHours = totalHours ?? existingAccompaniment.totalHours
+		existingAccompaniment.maxHoursPerSession = maxHoursPerSession ?? existingAccompaniment.maxHoursPerSession
+		existingAccompaniment.strengtheningAreas = strengtheningAreaEntities
+
+		await this.accompanimentRepository.save(existingAccompaniment)
+
+		return { affected: 1 }
 	}
 
 	async remove(id: number) {

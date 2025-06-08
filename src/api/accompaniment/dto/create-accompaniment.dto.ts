@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsNumber } from "class-validator";
+import { Transform } from "class-transformer";
+import { ArrayNotEmpty, IsArray, IsNotEmpty, IsNumber } from "class-validator";
 
 export class CreateAccompanimentDto {
 	@ApiProperty({ description: 'ID del negocio', example: 1 })
@@ -22,8 +23,20 @@ export class CreateAccompanimentDto {
 	@IsNumber()
 	maxHoursPerSession: number;
 
-	@ApiProperty({ description: 'ID del área de fortalecimiento', example: 1 })
-	@IsNotEmpty()
-	@IsNumber()
-	strengtheningAreaId: number;
+	@ApiProperty({
+		description: 'Áreas de fortalecimiento (IDs)',
+		example: [1, 2]
+	})
+	@Transform(({ value }) => {
+		try {
+			if (typeof value === 'string') return value.split(',').map(Number);
+			return value;
+		} catch {
+			return [];
+		}
+	})
+	@IsArray()
+	@ArrayNotEmpty()
+	@IsNumber({}, { each: true })
+	readonly strengtheningAreas: number[];
 }

@@ -56,12 +56,12 @@ export class ReportService {
 			relations: [
 				'status',
 				'accompaniment',
-				'accompaniment.strengtheningArea',
+				'accompaniment.strengtheningAreas',
 				'accompaniment.business.user',
-				'accompaniment.business.economicActivity',
+				'accompaniment.business.economicActivities',
 				'accompaniment.business.businessSize',
 				'accompaniment.expert.user',
-				'accompaniment.expert.strengtheningArea',
+				'accompaniment.expert.strengtheningAreas',
 				'accompaniment.expert.educationLevel',
 				'accompaniment.expert.consultorType'
 			]
@@ -71,13 +71,13 @@ export class ReportService {
 	private async getBusinessWithRelations(businessId: number, expertId?: number) {
 		const query = this.businessRepository.createQueryBuilder('business')
 			.leftJoinAndSelect('business.user', 'user')
-			.leftJoinAndSelect('business.economicActivity', 'economicActivity')
+			.leftJoinAndSelect('business.economicActivities', 'economicActivities')
 			.leftJoinAndSelect('business.businessSize', 'businessSize')
 			.leftJoinAndSelect('business.accompaniments', 'accompaniments')
-			.leftJoinAndSelect('accompaniments.strengtheningArea', 'strengtheningArea')
+			.leftJoinAndSelect('accompaniments.strengtheningAreas', 'strengtheningAreas')
 			.leftJoinAndSelect('accompaniments.expert', 'expert')
 			.leftJoinAndSelect('expert.user', 'expertUser')
-			.leftJoinAndSelect('expert.strengtheningArea', 'expertStrengtheningArea')
+			.leftJoinAndSelect('expert.strengtheningAreas', 'expertStrengtheningAreas')
 			.leftJoinAndSelect('expert.educationLevel', 'educationLevel')
 			.leftJoinAndSelect('expert.consultorType', 'consultorType')
 			.leftJoinAndSelect('accompaniments.sessions', 'sessions')
@@ -96,16 +96,16 @@ export class ReportService {
 			where: { id: expertId },
 			relations: [
 				'user',
-				'strengtheningArea',
+				'strengtheningAreas',
 				'educationLevel',
 				'consultorType',
 				'accompaniments',
-				'accompaniments.strengtheningArea',
+				'accompaniments.strengtheningAreas',
 				'accompaniments.sessions',
 				'accompaniments.sessions.status',
 				'accompaniments.business',
 				'accompaniments.business.user',
-				'accompaniments.business.economicActivity',
+				'accompaniments.business.economicActivities',
 				'accompaniments.business.businessSize'
 			]
 		})
@@ -155,17 +155,21 @@ export class ReportService {
 	}
 
 	private async generateSessionPdfData(session: Session, diffInHours: number, preparationFiles, attachments, generationDate, activities) {
+		const expertStrengtheningAreas = session.accompaniment?.expert?.strengtheningAreas || []
+		const businessEconomicActivities = session.accompaniment?.business?.economicActivities || []
+		const accompanimentStrengtheningAreas = session.accompaniment?.strengtheningAreas || []
+
 		return this.pdfService.generateReportBySessionPdf({
 			bSocialReason: session.accompaniment?.business?.socialReason || 'No registra.',
 			bPhone: session.accompaniment?.business?.phone || 'No registra.',
 			bEmail: session.accompaniment?.business?.email || 'No registra.',
-			bEconomicActivity: session.accompaniment?.business?.economicActivity?.name || 'No registra.',
+			bEconomicActivity: businessEconomicActivities.map(activity => activity.name).join(', ') || 'No registra.',
 			bBusinessSize: session.accompaniment?.business?.businessSize?.name || 'No registra.',
 			bFacebook: session.accompaniment?.business?.facebook || 'No registra.',
 			bInstagram: session.accompaniment?.business?.instagram || 'No registra.',
 			bTwitter: session.accompaniment?.business?.twitter || 'No registra.',
 			bWebsite: session.accompaniment?.business?.website || 'No registra.',
-			aStrengtheningArea: session.accompaniment?.strengtheningArea?.name || 'No registra.',
+			aStrengtheningArea: accompanimentStrengtheningAreas.map(area => area.name).join(', ') || 'No registra.',
 			aTotalHours: session.accompaniment?.totalHours || 'No registra.',
 			aRegisteredHours: diffInHours || 'No registra.',
 			eType: session.accompaniment?.expert?.consultorType.name || '',
@@ -173,7 +177,7 @@ export class ReportService {
 			eEmail: session.accompaniment?.expert?.user?.email || 'No registra.',
 			ePhone: session.accompaniment?.expert?.phone || 'No registra.',
 			eProfile: session.accompaniment?.expert?.profile || 'No registra.',
-			eStrengtheningArea: session.accompaniment?.expert?.strengtheningArea?.name || 'No registra.',
+			eStrengtheningArea: expertStrengtheningAreas.map(area => area.name).join(', ') || 'No registra.',
 			eEducationLevel: session.accompaniment?.expert?.educationLevel?.name || 'No registra.',
 			stitle: session.title || 'No registra.',
 			sPreparationNotes: session.preparationNotes || 'No registra.',
@@ -214,9 +218,11 @@ export class ReportService {
 				)
 
 				const expert = accompaniment.expert
+				const expertStrengtheningAreas = expert?.strengtheningAreas || []
+				const accompanimentStrengtheningAreas = accompaniment.strengtheningAreas || []
 
 				return {
-					aStrengtheningArea: accompaniment.strengtheningArea?.name || 'No registra.',
+					aStrengtheningArea: accompanimentStrengtheningAreas.map(area => area.name).join(', ') || 'No registra.',
 					aTotalHours: accompaniment.totalHours || 'No registra.',
 					aRegisteredHours: totalRegisteredHours || 'No registra.',
 					eType: expert?.consultorType?.name || 'No registra.',
@@ -224,7 +230,7 @@ export class ReportService {
 					eEmail: expert?.user?.email || 'No registra.',
 					ePhone: expert?.phone || 'No registra.',
 					eProfile: expert?.profile || 'No registra.',
-					eStrengtheningArea: expert?.strengtheningArea?.name || 'No registra.',
+					eStrengtheningArea: expertStrengtheningAreas.map(area => area.name).join(', ') || 'No registra.',
 					eEducationLevel: expert?.educationLevel?.name || 'No registra.',
 					eTotalHours: accompaniment.totalHours || 'No registra.',
 					sessions
@@ -232,11 +238,12 @@ export class ReportService {
 			})
 		)
 
+		const businessEconomicActivities = business.economicActivities || []
 		return {
 			bSocialReason: business.socialReason || 'No registra.',
 			bPhone: business.phone || 'No registra.',
 			bEmail: business.email || 'No registra.',
-			bEconomicActivity: business.economicActivity?.name || 'No registra.',
+			bEconomicActivity: businessEconomicActivities.map(activity => activity.name).join(', ') || 'No registra.',
 			bBusinessSize: business.businessSize?.name || 'No registra.',
 			bFacebook: business.facebook || 'No registra.',
 			bInstagram: business.instagram || 'No registra.',
@@ -287,16 +294,18 @@ export class ReportService {
 				}
 
 				const business = accompaniment.business
+				const businessEconomicActivities = business.economicActivities || []
+				const accompanimentStrengtheningAreas = accompaniment.strengtheningAreas || []
 
 				return {
-					aStrengtheningArea: accompaniment.strengtheningArea?.name || 'No registra.',
+					aStrengtheningArea: accompanimentStrengtheningAreas.map(area => area.name).join(', ') || 'No registra.',
 					aTotalHours: aTotalHours || 'No registra.',
 					aRegisteredHours: aRegisteredHours || 'No registra.',
 
 					bSocialReason: business?.socialReason || 'No registra.',
 					bPhone: business?.phone || 'No registra.',
 					bEmail: business?.email || 'No registra.',
-					bEconomicActivity: business?.economicActivity?.name || 'No registra.',
+					bEconomicActivity: businessEconomicActivities.map(activity => activity.name).join(', ') || 'No registra.',
 					bBusinessSize: business?.businessSize?.name || 'No registra.',
 					bFacebook: business?.facebook || 'No registra.',
 					bInstagram: business?.instagram || 'No registra.',
@@ -308,13 +317,15 @@ export class ReportService {
 			})
 		)
 
+		const expertStrengtheningAreas = expert.strengtheningAreas || []
+
 		return {
 			eType: expert.consultorType?.name || 'No registra.',
 			eName: expert.firstName + expert.lastName || 'No registra.',
 			eEmail: expert.user?.email || 'No registra.',
 			ePhone: expert.phone || 'No registra.',
 			eProfile: expert.profile || 'No registra.',
-			eStrengtheningArea: expert.strengtheningArea?.name || 'No registra.',
+			eStrengtheningArea: expertStrengtheningAreas.map(area => area.name).join(', ') || 'No registra.',
 			eEducationLevel: expert.educationLevel?.name || 'No registra.',
 			eTotalHours: eTotalHours || 'No registra.',
 			eRegisteredHours: eRegisteredHours || 'No registra.',

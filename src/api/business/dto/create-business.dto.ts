@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { Type } from "class-transformer";
-import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
+import { Transform, Type } from "class-transformer";
+import { ArrayNotEmpty, IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateBusinessDto {
 	@ApiProperty({
@@ -53,16 +53,24 @@ export class CreateBusinessDto {
 	readonly email: string
 
 	@ApiProperty({
-		description: 'Economic activity ID',
-		example: 1
+		description: 'The economic activity IDs',
+		example: [1, 2]
 	})
-	@IsNotEmpty()
-	@Type(() => Number)
-	@IsNumber()
-	readonly economicActivityId: number
+	@Transform(({ value }) => {
+		try {
+			if (typeof value === 'string') return value.split(',').map(Number);
+			return value;
+		} catch {
+			return [];
+		}
+	})
+	@IsArray()
+	@ArrayNotEmpty()
+	@IsNumber({}, { each: true })
+	readonly economicActivities: number[]
 
 	@ApiProperty({
-		description: 'Economic activity ID',
+		description: 'Business size ID',
 		example: 1
 	})
 	@IsNotEmpty()
@@ -222,13 +230,21 @@ export class CreateBusinessDto {
 	readonly businessSegmentation: string
 
 	@ApiProperty({
-		description: 'Strengthening area ID',
-		example: 1
+		description: 'The strengthening areas IDs',
+		example: [1, 2]
 	})
-	@IsNotEmpty()
-	@Type(() => Number)
-	@IsNumber()
-	readonly strengtheningAreaId: number
+	@Transform(({ value }) => {
+		try {
+			if (typeof value === 'string') return value.split(',').map(Number);
+			return value;
+		} catch {
+			return [];
+		}
+	})
+	@IsArray()
+	@ArrayNotEmpty()
+	@IsNumber({}, { each: true })
+	readonly strengtheningAreas: number[]
 
 	@ApiProperty({
 		description: 'Assigned hours',

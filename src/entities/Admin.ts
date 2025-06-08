@@ -3,6 +3,8 @@ import {
   Entity,
   Index,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -10,14 +12,13 @@ import {
 import { DocumentType } from "./DocumentType";
 import { EducationLevel } from "./EducationLevel";
 import { Gender } from "./Gender";
-import { StrengtheningArea } from "./StrengtheningArea";
 import { User } from "./User";
+import { StrengtheningArea } from "./StrengtheningArea";
 
 @Index("unique_user_id", ["userId"], { unique: true })
 @Index("document_type_id", ["documentTypeId"], {})
 @Index("gender_id", ["genderId"], {})
 @Index("education_level_id", ["educationLevelId"], {})
-@Index("strengthening_area_id", ["strengtheningAreaId"], {})
 @Entity("admin", { schema: "dbbitacorae" })
 export class Admin {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
@@ -52,9 +53,6 @@ export class Admin {
 
   @Column("int", { name: "experience_years", nullable: true })
   experienceYears: number | null;
-
-  @Column("int", { name: "strengthening_area_id", nullable: true })
-  strengtheningAreaId: number | null;
 
   @Column("varchar", { name: "facebook", nullable: true, length: 255 })
   facebook: string | null;
@@ -107,18 +105,24 @@ export class Admin {
   @JoinColumn([{ name: "gender_id", referencedColumnName: "id" }])
   gender: Gender;
 
-  @ManyToOne(
-    () => StrengtheningArea,
-    (strengtheningArea) => strengtheningArea.admins,
-    { onDelete: "RESTRICT", onUpdate: "RESTRICT" }
-  )
-  @JoinColumn([{ name: "strengthening_area_id", referencedColumnName: "id" }])
-  strengtheningArea: StrengtheningArea;
-
   @OneToOne(() => User, (user) => user.admin, {
     onDelete: "CASCADE",
     onUpdate: "CASCADE",
   })
   @JoinColumn([{ name: "user_id", referencedColumnName: "id" }])
   user: User;
+
+  @ManyToMany(
+    () => StrengtheningArea,
+    (strengtheningArea) => strengtheningArea.admins
+  )
+  @JoinTable({
+    name: "admin_strengthening_area_rel",
+    joinColumns: [{ name: "admin_id", referencedColumnName: "id" }],
+    inverseJoinColumns: [
+      { name: "strengthening_area_id", referencedColumnName: "id" },
+    ],
+    schema: "dbbitacorae",
+  })
+  strengtheningAreas: StrengtheningArea[];
 }

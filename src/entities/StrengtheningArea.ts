@@ -3,17 +3,17 @@ import {
   Entity,
   Index,
   JoinColumn,
+  ManyToMany,
   ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
+import { Auditor } from "./Auditor";
+import { Business } from "./Business";
+import { ContactInformation } from "./ContactInformation";
+import { StrengtheningLevel } from "./StrengtheningLevel";
+import { Accompaniment } from "./Accompaniment";
 import { Admin } from "./Admin";
 import { Expert } from "./Expert";
-import { ContactInformation } from "./ContactInformation";
-import { Accompaniment } from "./Accompaniment";
-import { StrengtheningLevel } from "./StrengtheningLevel";
-import { Business } from "./Business";
-import { Auditor } from "./Auditor";
 
 @Index("strengthening_area_strengthening_level_FK", ["levelId"], {})
 @Entity("strengthening_area", { schema: "dbbitacorae" })
@@ -39,23 +39,17 @@ export class StrengtheningArea {
   })
   updatedAt: Date;
 
-  @OneToMany(() => Admin, (admin) => admin.strengtheningArea)
-  admins: Admin[];
+  @ManyToMany(() => Auditor, (auditor) => auditor.strengtheningAreas)
+  auditors: Auditor[];
 
-  @OneToMany(() => Expert, (expert) => expert.strengtheningArea)
-  experts: Expert[];
+  @ManyToMany(() => Business, (business) => business.strengtheningAreas)
+  businesses: Business[];
 
-  @OneToMany(
+  @ManyToMany(
     () => ContactInformation,
-    (contactInformation) => contactInformation.strengtheningArea
+    (contactInformation) => contactInformation.strengtheningAreas
   )
   contactInformations: ContactInformation[];
-
-  @OneToMany(
-    () => Accompaniment,
-    (accompaniment) => accompaniment.strengtheningArea
-  )
-  accompaniments: Accompaniment[];
 
   @ManyToOne(
     () => StrengtheningLevel,
@@ -65,9 +59,15 @@ export class StrengtheningArea {
   @JoinColumn([{ name: "level_id", referencedColumnName: "id" }])
   level: StrengtheningLevel;
 
-  @OneToMany(() => Business, (business) => business.strengtheningArea)
-  businesses: Business[];
+  @ManyToMany(
+    () => Accompaniment,
+    (accompaniment) => accompaniment.strengtheningAreas
+  )
+  accompaniments: Accompaniment[];
 
-  @OneToMany(() => Auditor, (auditor) => auditor.strengtheningArea)
-  auditors: Auditor[];
+  @ManyToMany(() => Admin, (admin) => admin.strengtheningAreas)
+  admins: Admin[];
+
+  @ManyToMany(() => Expert, (expert) => expert.strengtheningAreas)
+  experts: Expert[];
 }

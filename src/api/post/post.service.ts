@@ -71,7 +71,15 @@ export class PostService {
 				p.title AS title,
 				CONCAT(?, '/', p.file_path) AS fileUrl,
 				p.content AS content,
-				CONCAT('[', GROUP_CONCAT(JSON_OBJECT('value', pc.id, 'label', pc.name)), ']') AS categories,
+				IF(COUNT(pc.id) > 0,
+					CONCAT('[',
+						GROUP_CONCAT(DISTINCT JSON_OBJECT(
+							'value', pc.id,
+							'label', pc.name
+						)),
+					']'),
+					NULL
+				) AS categories,
 				p.post_date AS postDateBase,
 				DATE_FORMAT(p.post_date, '%Y-%m-%d %H:%i:%s') AS postDate,
 				p.created_at AS createdAtBase,
@@ -116,7 +124,15 @@ export class PostService {
 				p.title AS title,
 				CONCAT(?, '/', p.file_path) AS fileUrl,
 				p.content AS content,
-				CONCAT('[', GROUP_CONCAT(JSON_OBJECT('value', pc.id, 'label', pc.name)), ']') AS categories,
+				IF(COUNT(pc.id) > 0,
+					CONCAT('[',
+						GROUP_CONCAT(DISTINCT JSON_OBJECT(
+							'value', pc.id,
+							'label', pc.name
+						)),
+					']'),
+					NULL
+				) AS categories,
 				p.post_date AS postDateBase,
 				DATE_FORMAT(p.post_date, '%Y-%m-%d %H:%i:%s') AS postDate,
 				p.created_at AS createdAtBase,

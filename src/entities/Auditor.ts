@@ -3,21 +3,22 @@ import {
   Entity,
   Index,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
+import { StrengtheningArea } from "./StrengtheningArea";
 import { DocumentType } from "./DocumentType";
 import { EducationLevel } from "./EducationLevel";
 import { Gender } from "./Gender";
-import { StrengtheningArea } from "./StrengtheningArea";
 import { User } from "./User";
 
 @Index("unique_user_id", ["userId"], { unique: true })
 @Index("document_type_id", ["documentTypeId"], {})
 @Index("gender_id", ["genderId"], {})
 @Index("education_level_id", ["educationLevelId"], {})
-@Index("strengthening_area_id", ["strengtheningAreaId"], {})
 @Entity("auditor", { schema: "dbbitacorae" })
 export class Auditor {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
@@ -53,9 +54,6 @@ export class Auditor {
   @Column("int", { name: "experience_years", nullable: true })
   experienceYears: number | null;
 
-  @Column("int", { name: "strengthening_area_id", nullable: true })
-  strengtheningAreaId: number | null;
-
   @Column("varchar", { name: "facebook", nullable: true, length: 255 })
   facebook: string | null;
 
@@ -86,6 +84,20 @@ export class Auditor {
   })
   updatedAt: Date;
 
+  @ManyToMany(
+    () => StrengtheningArea,
+    (strengtheningArea) => strengtheningArea.auditors
+  )
+  @JoinTable({
+    name: "auditor_strengthening_area_rel",
+    joinColumns: [{ name: "auditor_id", referencedColumnName: "id" }],
+    inverseJoinColumns: [
+      { name: "strengthening_area_id", referencedColumnName: "id" },
+    ],
+    schema: "dbbitacorae",
+  })
+  strengtheningAreas: StrengtheningArea[];
+
   @ManyToOne(() => DocumentType, (documentType) => documentType.auditors, {
     onDelete: "RESTRICT",
     onUpdate: "RESTRICT",
@@ -107,14 +119,6 @@ export class Auditor {
   })
   @JoinColumn([{ name: "gender_id", referencedColumnName: "id" }])
   gender: Gender;
-
-  @ManyToOne(
-    () => StrengtheningArea,
-    (strengtheningArea) => strengtheningArea.auditors,
-    { onDelete: "RESTRICT", onUpdate: "RESTRICT" }
-  )
-  @JoinColumn([{ name: "strengthening_area_id", referencedColumnName: "id" }])
-  strengtheningArea: StrengtheningArea;
 
   @OneToOne(() => User, (user) => user.auditor, {
     onDelete: "CASCADE",
