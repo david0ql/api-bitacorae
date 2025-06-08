@@ -19,6 +19,7 @@ import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 
 import envVars from 'src/config/env'
+import { MailService } from 'src/services/mail/mail.service'
 
 @Injectable()
 export class UserService {
@@ -44,7 +45,8 @@ export class UserService {
 		@InjectRepository(StrengtheningArea)
 		private readonly strengtheningAreaRepository: Repository<StrengtheningArea>,
 
-		private readonly fileUploadService: FileUploadService
+		private readonly fileUploadService: FileUploadService,
+		private readonly mailService: MailService
 	) {}
 
 	async findOne(user: JwtUser) {
@@ -269,6 +271,17 @@ export class UserService {
 			const salt = bcrypt.genSaltSync(10)
 			const hash = bcrypt.hashSync(newPassword, salt)
 
+			try {
+				this.mailService.sendChangePasswordEmail({
+					name: `${existingExpert.firstName} ${existingExpert.lastName}`,
+					email: existingExpert.email,
+					password: newPassword
+				})
+
+			} catch (e) {
+				console.error('Error sending change password email:', e)
+			}
+
 			return await this.userRepository.update(existingExpert.userId, { password: hash })
 		}
 
@@ -280,6 +293,17 @@ export class UserService {
 
 			const salt = bcrypt.genSaltSync(10)
 			const hash = bcrypt.hashSync(newPassword, salt)
+
+			try {
+				this.mailService.sendChangePasswordEmail({
+					name: `${existingBusiness.socialReason}`,
+					email: existingBusiness.email,
+					password: newPassword
+				})
+
+			} catch (e) {
+				console.error('Error sending change password email:', e)
+			}
 
 			return await this.userRepository.update(existingBusiness.userId, { password: hash })
 		}

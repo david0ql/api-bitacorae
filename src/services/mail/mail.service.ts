@@ -12,13 +12,14 @@ import { NewSessionEmailContext } from './interfaces/new-session-email-context.i
 import { NewSessionActivityEmailContext } from './interfaces/new-session-activity-email-context.interface'
 import { EndedSessionEmailContext } from './interfaces/ended-session-email-context.interface'
 import { ApprovedSessionEmailContext } from './interfaces/approved-session-email-context.inteface'
+import { RespondedSessionEmailContext } from './interfaces/responded-session-email-context.interface'
+import { ChangePasswordEmailContext } from './interfaces/change-password-email-context.interface'
 import { FileInfo } from '../pdf/interfaces/file-info.interface'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Platform } from 'src/entities/Platform'
 import { Repository } from 'typeorm'
 
 import envVars from 'src/config/env'
-import { RespondedSessionEmailContext } from './interfaces/responded-session-email-context.interface'
 
 Handlebars.registerHelper('sanitizeHtmlEmail', (html: string) => {
 	const clean = sanitizeHtml(html, {
@@ -326,6 +327,29 @@ export class MailService {
 				filename: file.fileName,
 				path: file.filePath
 			}]
+		})
+	}
+
+	async sendChangePasswordEmail(context: ChangePasswordEmailContext) {
+		await this.getPlatformVars()
+
+		const { name, email, password } = context
+		const { notificationEmail } = this.varCommons
+
+		const subject = 'Cambio de contraseña'
+
+		await this.mailerService.sendMail({
+			to: email,
+			...(notificationEmail ? { cc: notificationEmail } : {}),
+			subject,
+			template: 'change-password',
+			context: {
+				...this.varCommons,
+				title: subject,
+				name,
+				email,
+				password
+			}
 		})
 	}
 }
