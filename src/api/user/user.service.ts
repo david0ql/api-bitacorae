@@ -263,7 +263,10 @@ export class UserService {
 		}
 
 		if(role === 3) {
-			const existingExpert = await this.expertRepository.findOne({ where: { id } })
+			const existingExpert = await this.expertRepository.findOne({
+				where: { id },
+				relations: ['user']
+			})
 			if(!existingExpert) {
 				throw new BadRequestException('Experto no encontrado')
 			}
@@ -274,7 +277,7 @@ export class UserService {
 			try {
 				this.mailService.sendChangePasswordEmail({
 					name: `${existingExpert.firstName} ${existingExpert.lastName}`,
-					email: existingExpert.email,
+					email: existingExpert.user.email,
 					password: newPassword
 				})
 
@@ -286,7 +289,10 @@ export class UserService {
 		}
 
 		if(role === 4) {
-			const existingBusiness = await this.businessRepository.findOne({ where: { id } })
+			const existingBusiness = await this.businessRepository.findOne({
+				where: { id },
+				relations: ['user']
+			})
 			if(!existingBusiness) {
 				throw new BadRequestException('Empresa no encontrada')
 			}
@@ -297,7 +303,7 @@ export class UserService {
 			try {
 				this.mailService.sendChangePasswordEmail({
 					name: `${existingBusiness.socialReason}`,
-					email: existingBusiness.email,
+					email: existingBusiness.user.email,
 					password: newPassword
 				})
 
