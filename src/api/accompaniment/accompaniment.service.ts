@@ -113,16 +113,24 @@ export class AccompanimentService {
 					NULL
 				) AS strengtheningAreas,
 				b.assigned_hours AS assignedHours,
-				IFNULL(COUNT(DISTINCT s.id), 0) AS scheduledSessions,
-				IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
+				IFNULL(stats.scheduledSessions, 0) AS scheduledSessions,
+				IFNULL(stats.completedHours, 0) AS completedHours
 			FROM
 				business b
 				INNER JOIN business_size bs ON bs.id = b.business_size_id
 				LEFT JOIN contact_information c ON c.business_id = b.id
 				LEFT JOIN accompaniment a ON a.business_id = b.id
-				LEFT JOIN session s ON s.accompaniment_id = a.id
 				LEFT JOIN accompaniment_strengthening_area_rel asar ON asar.accompaniment_id = a.id
 				LEFT JOIN strengthening_area sa ON sa.id = asar.strengthening_area_id
+				LEFT JOIN (
+					SELECT
+						a.business_id,
+						COUNT(DISTINCT s.id) AS scheduledSessions,
+						ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)) AS completedHours
+					FROM accompaniment a
+					INNER JOIN session s ON s.accompaniment_id = a.id
+					GROUP BY a.business_id
+				) stats ON stats.business_id = b.id
 			GROUP BY b.id
 			ORDER BY b.id ${order}
 			LIMIT ${take} OFFSET ${skip}
@@ -146,6 +154,16 @@ export class AccompanimentService {
 						a.expert_id
 					FROM accompaniment a
 					WHERE a.expert_id = ${expert.id}
+				),
+				session_stats AS (
+					SELECT
+						a.id AS accompaniment_id,
+						COUNT(DISTINCT s.id) AS scheduledSessions,
+						ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)) AS completedHours
+					FROM accompaniment a
+					INNER JOIN session s ON s.accompaniment_id = a.id
+					WHERE a.expert_id = ${expert.id}
+					GROUP BY a.id
 				)
 
 				SELECT
@@ -164,17 +182,16 @@ export class AccompanimentService {
 						NULL
 					) AS strengtheningAreas,
 					b.assigned_hours AS assignedHours,
-					IFNULL(COUNT(DISTINCT s.id), 0) AS scheduledSessions,
-					IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
+					IFNULL(ss.scheduledSessions, 0) AS scheduledSessions,
+					IFNULL(ss.completedHours, 0) AS completedHours
 				FROM
 					business b
 					INNER JOIN business_size bs ON bs.id = b.business_size_id
 					LEFT JOIN contact_information c ON c.business_id = b.id
-					LEFT JOIN accompaniment a ON a.business_id = b.id
-					LEFT JOIN session s ON s.accompaniment_id = a.id
-					LEFT JOIN accompaniment_strengthening_area_rel asar ON asar.accompaniment_id = a.id
-					LEFT JOIN strengthening_area sa ON sa.id = asar.strengthening_area_id
 					INNER JOIN expert_accompaniment ea ON ea.business_id = b.id
+					LEFT JOIN accompaniment_strengthening_area_rel asar ON asar.accompaniment_id = ea.accompaniment_id
+					LEFT JOIN strengthening_area sa ON sa.id = asar.strengthening_area_id
+					LEFT JOIN session_stats ss ON ss.accompaniment_id = ea.accompaniment_id
 				GROUP BY b.id
 				ORDER BY b.id ${order}
 				LIMIT ${take} OFFSET ${skip}
