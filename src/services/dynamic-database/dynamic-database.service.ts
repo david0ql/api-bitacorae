@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common'
 import { DataSource } from 'typeorm'
+import { InjectDataSource } from '@nestjs/typeorm'
 import { Business } from 'src/entities/admin/Business'
 import envVars from 'src/config/env'
 
 @Injectable()
 export class DynamicDatabaseService {
 	constructor(
+		@InjectDataSource(envVars.DB_ALIAS_ADMIN)
 		private readonly adminDataSource: DataSource
 	) {}
 

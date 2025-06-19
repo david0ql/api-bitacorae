@@ -1,4 +1,4 @@
-import { DataSource, In } from 'typeorm'
+import { In } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
 
 import { Accompaniment } from 'src/entities/Accompaniment'
@@ -19,8 +19,7 @@ import envVars from 'src/config/env'
 @Injectable()
 export class AccompanimentService {
 	constructor(
-		private readonly dynamicDbService: DynamicDatabaseService,
-		private readonly dataSource: DataSource
+		private readonly dynamicDbService: DynamicDatabaseService
 	) {}
 
 	async create(createAccompanimentDto: CreateAccompanimentDto, businessName: string) {

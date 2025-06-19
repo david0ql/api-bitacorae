@@ -1,4 +1,3 @@
-import { DataSource } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
 
 import { Session } from 'src/entities/Session'
