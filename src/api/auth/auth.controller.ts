@@ -21,4 +21,10 @@ export class AuthController {
 	businessLogin(@Body() businessAuthDto: BusinessAuthDto) {
 		return this.authService.businessLogin(businessAuthDto)
 	}
+
+	@Post('sync-database')
+	@HttpCode(200)
+	async syncDatabase(@Body() body: { db_name: string }) {
+		return this.authService.syncDatabase(body.db_name)
+	}
 }

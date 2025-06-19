@@ -61,13 +61,13 @@ export class Business {
   @Column("int", { name: "number_of_employees" })
   numberOfEmployees: number;
 
-  @Column("double", { name: "last_year_sales", precision: 22 })
+  @Column("double", { name: "last_year_sales" })
   lastYearSales: number;
 
-  @Column("double", { name: "two_years_ago_sales", precision: 22 })
+  @Column("double", { name: "two_years_ago_sales" })
   twoYearsAgoSales: number;
 
-  @Column("double", { name: "three_years_ago_sales", precision: 22 })
+  @Column("double", { name: "three_years_ago_sales" })
   threeYearsAgoSales: number;
 
   @Column("varchar", { name: "facebook", nullable: true, length: 255 })

@@ -16,9 +16,7 @@ import { Report } from "./Report";
 import { SessionPreparationFile } from "./SessionPreparationFile";
 import { Chat } from "./Chat";
 
-@Index("business_id", ["businessId"], {})
-@Index("expert_id", ["expertId"], {})
-@Index("session_status_id", ["sessionStatusId"], {})
+@Index("session_status_id", ["statusId"], {})
 @Entity("session")
 export class Session {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })

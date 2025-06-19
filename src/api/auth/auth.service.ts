@@ -83,6 +83,77 @@ export class AuthService {
 		}
 	}
 
+	async syncDatabase(dbName: string) {
+		try {
+			// Buscar la empresa en la base de datos admin
+			const business = await this.businessRepository.findOne({
+				where: { dbName },
+				select: ['host', 'port', 'dbName']
+			})
+
+			if (!business) {
+				throw new NotFoundException(`No se encontró una empresa con el nombre de base de datos: ${dbName}`)
+			}
+
+			// Cargar dinámicamente todas las entidades del directorio principal (excluyendo subcarpetas como admin)
+			const fs = require('fs')
+			const path = require('path')
+			const entitiesDir = path.join(__dirname, '../../entities')
+			const entityFiles = fs.readdirSync(entitiesDir)
+				.filter(file => {
+					// Solo archivos .js (no directorios ni otros archivos)
+					const filePath = path.join(entitiesDir, file)
+					return fs.statSync(filePath).isFile() && file.endsWith('.js')
+				})
+				.map(file => file.replace('.js', ''))
+
+			const entities = entityFiles.map(entityName => {
+				try {
+					const entityModule = require(`../../entities/${entityName}`)
+					// Obtener la clase de entidad (asumiendo que es la exportación por defecto o tiene el mismo nombre)
+					const entityClass = entityModule[entityName] || entityModule.default || Object.values(entityModule)[0]
+					if (entityClass) {
+						return entityClass
+					}
+				} catch (error) {
+					// Silenciar errores de carga de entidades
+				}
+			}).filter(Boolean)
+
+			// Crear conexión dinámica con sincronización habilitada
+			const businessDataSource = new (require('typeorm').DataSource)({
+				type: 'mysql',
+				host: business.host,
+				port: business.port,
+				username: envVars.DB_USER_ADMIN,
+				password: envVars.DB_PASSWORD_ADMIN,
+				database: business.dbName,
+				synchronize: true, // Habilitar sincronización
+				timezone: 'local',
+				entities: entities
+			})
+
+			// Inicializar la conexión (esto creará todas las tablas)
+			await businessDataSource.initialize()
+			
+			// Cerrar la conexión
+			await businessDataSource.destroy()
+
+			return {
+				success: true,
+				message: `Base de datos ${dbName} sincronizada exitosamente`,
+				business: {
+					host: business.host,
+					port: business.port,
+					dbName: business.dbName
+				}
+			}
+		} catch (error) {
+			console.error('Error syncing database:', error)
+			throw new Error(`Error al sincronizar la base de datos ${dbName}: ${error.message}`)
+		}
+	}
+
 	private generateToken(payload: JwtPayload) {
 		return this.jwtService.sign(payload)
 	}

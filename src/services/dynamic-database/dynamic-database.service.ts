@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm'
 import { InjectDataSource } from '@nestjs/typeorm'
 import { Business } from 'src/entities/admin/Business'
 import envVars from 'src/config/env'
+import { join } from 'path'
 
 @Injectable()
 export class DynamicDatabaseService {
@@ -33,7 +34,8 @@ export class DynamicDatabaseService {
 				password: envVars.DB_PASSWORD_ADMIN,
 				database: business.dbName,
 				synchronize: false,
-				timezone: 'local'
+				timezone: 'local',
+				entities: [join(__dirname, '../../entities/**/*.{js,ts}')]
 			})
 
 			// Initialize the connection
