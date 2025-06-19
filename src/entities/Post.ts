@@ -7,7 +7,7 @@ import {
 } from "typeorm";
 import { PostCategory } from "./PostCategory";
 
-@Entity("post", { schema: "dbbitacorae" })
+@Entity("post")
 export class Post {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;
@@ -40,8 +40,7 @@ export class Post {
   @JoinTable({
     name: "post_category_rel",
     joinColumns: [{ name: "post_id", referencedColumnName: "id" }],
-    inverseJoinColumns: [{ name: "category_id", referencedColumnName: "id" }],
-    schema: "dbbitacorae",
+    inverseJoinColumns: [{ name: "category_id", referencedColumnName: "id" }]
   })
   postCategories: PostCategory[];
 }

@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common'
-import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { DocumentTypeService } from './document-type.service'
 import { DocumentTypeController } from './document-type.controller'
-import { DocumentType } from 'src/entities/DocumentType'
+import { DynamicDatabaseModule } from 'src/services/dynamic-database/dynamic-database.module'
 
 @Module({
 	controllers: [DocumentTypeController],
 	providers: [DocumentTypeService],
-	imports: [TypeOrmModule.forFeature([DocumentType])]
+	imports: [DynamicDatabaseModule]
 })
 
 export class DocumentTypeModule {}

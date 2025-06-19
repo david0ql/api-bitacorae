@@ -15,7 +15,7 @@ import { Session } from "./Session";
 @Index("session_id", ["sessionId"], {})
 @Index("expert_id", ["expertId"], {})
 @Index("business_id", ["businessId"], {})
-@Entity("report", { schema: "dbbitacorae" })
+@Entity("report")
 export class Report {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

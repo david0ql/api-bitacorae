@@ -5,7 +5,7 @@ import { ContactInformation } from "./ContactInformation";
 import { Business } from "./Business";
 import { Auditor } from "./Auditor";
 
-@Entity("document_type", { schema: "dbbitacorae" })
+@Entity("document_type")
 export class DocumentType {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

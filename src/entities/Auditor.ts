@@ -19,7 +19,7 @@ import { User } from "./User";
 @Index("document_type_id", ["documentTypeId"], {})
 @Index("gender_id", ["genderId"], {})
 @Index("education_level_id", ["educationLevelId"], {})
-@Entity("auditor", { schema: "dbbitacorae" })
+@Entity("auditor")
 export class Auditor {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;
@@ -93,8 +93,7 @@ export class Auditor {
     joinColumns: [{ name: "auditor_id", referencedColumnName: "id" }],
     inverseJoinColumns: [
       { name: "strengthening_area_id", referencedColumnName: "id" },
-    ],
-    schema: "dbbitacorae",
+    ]
   })
   strengtheningAreas: StrengtheningArea[];
 

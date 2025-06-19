@@ -15,9 +15,8 @@ import { ApprovedSessionEmailContext } from './interfaces/approved-session-email
 import { RespondedSessionEmailContext } from './interfaces/responded-session-email-context.interface'
 import { ChangePasswordEmailContext } from './interfaces/change-password-email-context.interface'
 import { FileInfo } from '../pdf/interfaces/file-info.interface'
-import { InjectRepository } from '@nestjs/typeorm'
 import { Platform } from 'src/entities/Platform'
-import { Repository } from 'typeorm'
+import { DynamicDatabaseService } from 'src/services/dynamic-database/dynamic-database.service'
 
 import envVars from 'src/config/env'
 
@@ -68,9 +67,7 @@ export class MailService {
 
 	constructor(
 		private readonly mailerService: MailerService,
-
-		@InjectRepository(Platform)
-		private readonly platformRepository: Repository<Platform>
+		private readonly dynamicDbService: DynamicDatabaseService
 	) { this.registerPartials() }
 
 	private registerPartials() {
@@ -84,18 +81,33 @@ export class MailService {
 		})
 	}
 
-	private async getPlatformVars() {
-		const platform = await this.platformRepository.findOne({ where: {} })
-		if(platform?.logoPath) {
-			this.varCommons.logoUrl = `${envVars.APP_URL}/${platform.logoPath}`
+	private async getPlatformVars(businessName: string) {
+		if (!businessName) return
+
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		
+		if (!businessDataSource) {
+			console.warn(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+			return
 		}
 
-		if(platform?.programName) {
-			this.varCommons.programName = platform.programName
-		}
+		try {
+			const platformRepository = businessDataSource.getRepository(Platform)
+			const platform = await platformRepository.findOne({ where: {} })
+			
+			if(platform?.logoPath) {
+				this.varCommons.logoUrl = `${envVars.APP_URL}/${platform.logoPath}`
+			}
 
-		if(platform?.notificationEmail) {
-			this.varCommons.notificationEmail = platform.notificationEmail
+			if(platform?.programName) {
+				this.varCommons.programName = platform.programName
+			}
+
+			if(platform?.notificationEmail) {
+				this.varCommons.notificationEmail = platform.notificationEmail
+			}
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 		}
 	}
 
@@ -120,10 +132,8 @@ export class MailService {
 		]
 	}
 
-
-
-	async sendWelcomeEmail(context: WelcomeEmailContext) {
-		await this.getPlatformVars()
+	async sendWelcomeEmail(context: WelcomeEmailContext, businessName: string) {
+		await this.getPlatformVars(businessName)
 
 		const { name, email, password } = context
 		const { notificationEmail } = this.varCommons
@@ -145,11 +155,11 @@ export class MailService {
 		})
 	}
 
-	async sendNewSessionEmail(context: NewSessionEmailContext, files?: Express.Multer.File[]) {
-		await this.getPlatformVars()
+	async sendNewSessionEmail(context: NewSessionEmailContext, businessName: string, files?: Express.Multer.File[]) {
+		await this.getPlatformVars(businessName)
 
 		const { notificationEmail } = this.varCommons
-		const { to, businessName, expertName, expertMail, startDate, endDate, sessionDateFormat, conferenceLink, preparationNotes } = context
+		const { to, businessName: contextBusinessName, expertName, expertMail, startDate, endDate, sessionDateFormat, conferenceLink, preparationNotes } = context
 		const subject = 'Nueva sesión creada'
 
 		const event: EventAttributes = {
@@ -182,7 +192,7 @@ export class MailService {
 				context: {
 					...this.varCommons,
 					title: subject,
-					businessName,
+					businessName: contextBusinessName,
 					expertName,
 					sessionDateFormat,
 					conferenceLink,
@@ -199,13 +209,13 @@ export class MailService {
 		}
 	}
 
-	async sendNewSessionActivityEmail(context: NewSessionActivityEmailContext, file?: Express.Multer.File) {
-		await this.getPlatformVars()
+	async sendNewSessionActivityEmail(context: NewSessionActivityEmailContext, businessName: string, file?: Express.Multer.File) {
+		await this.getPlatformVars(businessName)
 
 		const {
 			sessionId,
 			to,
-			businessName,
+			businessName: contextBusinessName,
 			expertName,
 			expertEmail,
 			sessionDateTime
@@ -223,7 +233,7 @@ export class MailService {
 			context: {
 				...this.varCommons,
 				title: subject,
-				businessName,
+				businessName: contextBusinessName,
 				expertName,
 				sessionDateTime,
 				url
@@ -235,15 +245,15 @@ export class MailService {
 		})
 	}
 
-	async sendRespondedSessionEmail(context: RespondedSessionEmailContext, file?: Express.Multer.File) {
-		await this.getPlatformVars()
+	async sendRespondedSessionEmail(context: RespondedSessionEmailContext, businessName: string, file?: Express.Multer.File) {
+		await this.getPlatformVars(businessName)
 
 		const {
 			sessionId,
 			businessId,
 			accompanimentId,
 			to,
-			businessName,
+			businessName: contextBusinessName,
 			expertName,
 			businessEmail,
 			sessionDateTime
@@ -261,7 +271,7 @@ export class MailService {
 			context: {
 				...this.varCommons,
 				title: subject,
-				businessName,
+				businessName: contextBusinessName,
 				expertName,
 				sessionDateTime,
 				url
@@ -273,13 +283,13 @@ export class MailService {
 		})
 	}
 
-	async sendEndedSessionEmail(context: EndedSessionEmailContext) {
-		await this.getPlatformVars()
+	async sendEndedSessionEmail(context: EndedSessionEmailContext, businessName: string) {
+		await this.getPlatformVars(businessName)
 
 		const {
 			sessionId,
 			to,
-			businessName,
+			businessName: contextBusinessName,
 			expertName,
 			expertMail,
 			sessionDateTime
@@ -297,7 +307,7 @@ export class MailService {
 			context: {
 				...this.varCommons,
 				title: subject,
-				businessName,
+				businessName: contextBusinessName,
 				expertName,
 				sessionDateTime,
 				url
@@ -305,10 +315,10 @@ export class MailService {
 		})
 	}
 
-	async sendApprovedSessionEmailContext(context: ApprovedSessionEmailContext, file: FileInfo) {
-		await this.getPlatformVars()
+	async sendApprovedSessionEmailContext(context: ApprovedSessionEmailContext, file: FileInfo, businessName: string) {
+		await this.getPlatformVars(businessName)
 
-		const { to, businessName } = context
+		const { to, businessName: contextBusinessName } = context
 		const { notificationEmail } = this.varCommons
 
 		const subject = 'Sesión aprobada'
@@ -321,7 +331,7 @@ export class MailService {
 			context: {
 				...this.varCommons,
 				title: subject,
-				businessName
+				businessName: contextBusinessName
 			},
 			attachments: [{
 				filename: file.fileName,
@@ -330,8 +340,8 @@ export class MailService {
 		})
 	}
 
-	async sendChangePasswordEmail(context: ChangePasswordEmailContext) {
-		await this.getPlatformVars()
+	async sendChangePasswordEmail(context: ChangePasswordEmailContext, businessName: string) {
+		await this.getPlatformVars(businessName)
 
 		const { name, email, password } = context
 		const { notificationEmail } = this.varCommons

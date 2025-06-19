@@ -12,6 +12,7 @@ import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.inte
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { ChangePasswordByAdminDto } from './dto/change-password-by-admin.dto'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('user')
 @ApiBearerAuth()
@@ -21,20 +22,20 @@ export class UserController {
 
 	@Get()
 	@HttpCode(200)
-	findOne(@CurrentUser() user: JwtUser) {
-		return this.userService.findOne(user)
+	findOne(@CurrentUser() user: JwtUser, @BusinessName() businessName: string) {
+		return this.userService.findOne(user, businessName)
 	}
 
 	@Patch('/change-password')
 	@HttpCode(200)
-	changePassword(@CurrentUser() user: JwtUser, @Body() changePasswordDto: ChangePasswordDto) {
-		return this.userService.changePassword(user, changePasswordDto)
+	changePassword(@CurrentUser() user: JwtUser, @Body() changePasswordDto: ChangePasswordDto, @BusinessName() businessName: string) {
+		return this.userService.changePassword(user, changePasswordDto, businessName)
 	}
 
 	@Patch('/change-password-by-admin')
 	@HttpCode(200)
-	changePasswordByAdmin(@Body() changePasswordByAdminDto: ChangePasswordByAdminDto) {
-		return this.userService.changePasswordByAdmin(changePasswordByAdminDto)
+	changePasswordByAdmin(@Body() changePasswordByAdminDto: ChangePasswordByAdminDto, @BusinessName() businessName: string) {
+		return this.userService.changePasswordByAdmin(changePasswordByAdminDto, businessName)
 	}
 
 	@Patch()
@@ -42,7 +43,7 @@ export class UserController {
 	@UseInterceptors(FileUploadInterceptor('file', 'user'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: UpdateUserDto })
-	update(@CurrentUser() user: JwtUser, @Body() updateUserDto: UpdateUserDto, @UploadedFile() file?: Express.Multer.File) {
-		return this.userService.update(user, updateUserDto, file)
+	update(@CurrentUser() user: JwtUser, @Body() updateUserDto: UpdateUserDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+		return this.userService.update(user, updateUserDto, businessName, file)
 	}
 }

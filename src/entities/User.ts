@@ -19,7 +19,7 @@ import { Auditor } from "./Auditor";
 
 @Index("email_unique", ["email"], { unique: true })
 @Index("role_id", ["roleId"], {})
-@Entity("user", { schema: "dbbitacorae" })
+@Entity("user")
 export class User {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

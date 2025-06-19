@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common'
 import { PdfService } from './pdf.service'
-import { TypeOrmModule } from '@nestjs/typeorm'
-import { Platform } from 'src/entities/Platform'
+import { DynamicDatabaseModule } from '../dynamic-database/dynamic-database.module'
 
 @Module({
-	imports: [TypeOrmModule.forFeature([Platform])],
+	imports: [DynamicDatabaseModule],
 	providers: [PdfService],
 	exports: [PdfService]
 })

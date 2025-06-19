@@ -11,7 +11,7 @@ import { User } from "./User";
 import { RolePermission } from "./RolePermission";
 import { Menu } from "./Menu";
 
-@Entity("role", { schema: "dbbitacorae" })
+@Entity("role")
 export class Role {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;
@@ -44,8 +44,7 @@ export class Role {
   @JoinTable({
     name: "role_menu",
     joinColumns: [{ name: "role_id", referencedColumnName: "id" }],
-    inverseJoinColumns: [{ name: "menu_id", referencedColumnName: "id" }],
-    schema: "dbbitacorae",
+    inverseJoinColumns: [{ name: "menu_id", referencedColumnName: "id" }]
   })
   menus: Menu[];
 }

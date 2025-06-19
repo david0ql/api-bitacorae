@@ -11,6 +11,7 @@ import { UpdateEconomicActivityDto } from './dto/update-economic-activity.dto'
 import { ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('economic-activity')
 @ApiBearerAuth()
@@ -20,25 +21,25 @@ export class EconomicActivityController {
 
 	@Post()
 	@HttpCode(200)
-	create(@Body() createEconomicActivityDto: CreateEconomicActivityDto) {
-		return this.economicActivityService.create(createEconomicActivityDto)
+	create(@Body() createEconomicActivityDto: CreateEconomicActivityDto, @BusinessName() businessName: string) {
+		return this.economicActivityService.create(createEconomicActivityDto, businessName)
 	}
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<EconomicActivity>> {
-		return this.economicActivityService.findAll(pageOptionsDto)
+	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<EconomicActivity>> {
+		return this.economicActivityService.findAll(pageOptionsDto, businessName)
 	}
 
 	@Patch(':id')
 	@HttpCode(200)
-	update(@Param('id') id: string, @Body() updateEconomicActivityDto: UpdateEconomicActivityDto) {
-		return this.economicActivityService.update(+id, updateEconomicActivityDto)
+	update(@Param('id') id: string, @Body() updateEconomicActivityDto: UpdateEconomicActivityDto, @BusinessName() businessName: string) {
+		return this.economicActivityService.update(+id, updateEconomicActivityDto, businessName)
 	}
 
 	@Delete(':id')
 	@HttpCode(200)
-	remove(@Param('id') id: string) {
-		return this.economicActivityService.remove(+id)
+	remove(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.economicActivityService.remove(+id, businessName)
 	}
 }

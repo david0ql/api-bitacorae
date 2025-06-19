@@ -1,9 +1,8 @@
-import { Repository } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
 
 import { Cohort } from 'src/entities/Cohort'
 import { DateService } from 'src/services/date/date.service'
+import { DynamicDatabaseService } from 'src/services/dynamic-database/dynamic-database.service'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -14,61 +13,19 @@ import { UpdateCohortDto } from './dto/update-cohort.dto'
 @Injectable()
 export class CohortService {
 	constructor(
-		@InjectRepository(Cohort)
-		private readonly cohortRepository: Repository<Cohort>,
-
+		private readonly dynamicDbService: DynamicDatabaseService,
 		private readonly dateService: DateService
 	) {}
 
-	create(createCohortDto: CreateCohortDto) {
+	async create(createCohortDto: CreateCohortDto, businessName: string) {
 		const { name, order, startDate, endDate } = createCohortDto
 
-		const startDateVal = this.dateService.parseToDate(startDate)
-		const endDateVal = this.dateService.parseToDate(endDate)
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
-		const diffInHours = this.dateService.getHoursDiff(startDateVal, endDateVal)
-		const now = this.dateService.getNow()
+		try {
+			const cohortRepository = businessDataSource.getRepository(Cohort)
 
-		if (diffInHours <= 0) {
-			throw new BadRequestException('La fecha de inicio debe ser menor a la fecha de fin')
-		}
-
-		if (endDateVal < now) {
-			throw new BadRequestException('La fecha fin debe ser posterior a la actual')
-		}
-
-		const cohort = this.cohortRepository.create({ name, order, startDate, endDate })
-
-		return this.cohortRepository.save(cohort)
-	}
-
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Cohort>> {
-		const queryBuilder = this.cohortRepository.createQueryBuilder('cohort')
-			.select([
-				'cohort.id',
-				'cohort.name',
-				'cohort.order',
-				'cohort.startDate',
-				'cohort.endDate'
-			])
-			.orderBy('cohort.order', pageOptionsDto.order)
-			.addOrderBy('cohort.name', pageOptionsDto.order)
-			.skip(pageOptionsDto.skip)
-			.take(pageOptionsDto.take)
-
-		const [ items, totalCount ] = await queryBuilder.getManyAndCount()
-
-		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
-
-		return new PageDto(items, pageMetaDto)
-	}
-
-	update(id: number, updateCohortDto: UpdateCohortDto) {
-		if(!id) return { affected: 0 }
-
-		const { name, order, startDate, endDate } = updateCohortDto
-
-		if(startDate && endDate) {
 			const startDateVal = this.dateService.parseToDate(startDate)
 			const endDateVal = this.dateService.parseToDate(endDate)
 
@@ -82,18 +39,90 @@ export class CohortService {
 			if (endDateVal < now) {
 				throw new BadRequestException('La fecha fin debe ser posterior a la actual')
 			}
-		}
 
-		return this.cohortRepository.update(id, { name, order, startDate, endDate })
+			const cohort = cohortRepository.create({ name, order, startDate, endDate })
+
+			return await cohortRepository.save(cohort)
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+		}
 	}
 
-	remove(id: number) {
-		if(!id) return { affected: 0 }
+	async findAll(pageOptionsDto: PageOptionsDto, businessName: string): Promise<PageDto<Cohort>> {
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
 		try {
-			return this.cohortRepository.delete(id)
+			const cohortRepository = businessDataSource.getRepository(Cohort)
+			
+			const queryBuilder = cohortRepository.createQueryBuilder('cohort')
+				.select([
+					'cohort.id',
+					'cohort.name',
+					'cohort.order',
+					'cohort.startDate',
+					'cohort.endDate'
+				])
+				.orderBy('cohort.order', pageOptionsDto.order)
+				.addOrderBy('cohort.name', pageOptionsDto.order)
+				.skip(pageOptionsDto.skip)
+				.take(pageOptionsDto.take)
+
+			const [ items, totalCount ] = await queryBuilder.getManyAndCount()
+
+			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
+
+			return new PageDto(items, pageMetaDto)
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+		}
+	}
+
+	async update(id: number, updateCohortDto: UpdateCohortDto, businessName: string) {
+		if(!id) return { affected: 0 }
+
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+
+		try {
+			const cohortRepository = businessDataSource.getRepository(Cohort)
+			const { name, order, startDate, endDate } = updateCohortDto
+
+			if(startDate && endDate) {
+				const startDateVal = this.dateService.parseToDate(startDate)
+				const endDateVal = this.dateService.parseToDate(endDate)
+
+				const diffInHours = this.dateService.getHoursDiff(startDateVal, endDateVal)
+				const now = this.dateService.getNow()
+
+				if (diffInHours <= 0) {
+					throw new BadRequestException('La fecha de inicio debe ser menor a la fecha de fin')
+				}
+
+				if (endDateVal < now) {
+					throw new BadRequestException('La fecha fin debe ser posterior a la actual')
+				}
+			}
+
+			return await cohortRepository.update(id, { name, order, startDate, endDate })
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+		}
+	}
+
+	async remove(id: number, businessName: string) {
+		if(!id) return { affected: 0 }
+
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+
+		try {
+			const cohortRepository = businessDataSource.getRepository(Cohort)
+			return await cohortRepository.delete(id)
 		} catch (e) {
 			throw new Error(`No se pudo eliminar el cohort con id ${id}`)
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 		}
 	}
 }

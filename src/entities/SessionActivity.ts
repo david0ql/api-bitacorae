@@ -13,7 +13,7 @@ import { SessionActivityResponse } from "./SessionActivityResponse";
 
 @Index("session_id", ["sessionId"], {})
 @Index("created_by_user_id", ["createdByUserId"], {})
-@Entity("session_activity", { schema: "dbbitacorae" })
+@Entity("session_activity")
 export class SessionActivity {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

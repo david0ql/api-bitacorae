@@ -11,7 +11,7 @@ import {
 import { Role } from "./Role";
 
 @Index("menu_ibfk_1", ["parentId"], {})
-@Entity("menu", { schema: "dbbitacorae" })
+@Entity("menu")
 export class Menu {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

@@ -8,6 +8,7 @@ import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('position')
 @ApiBearerAuth()
@@ -17,7 +18,7 @@ export class PositionController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Position>> {
-		return this.positionService.findAll(pageOptionsDto)
+	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<Position>> {
+		return this.positionService.findAll(pageOptionsDto, businessName)
 	}
 }

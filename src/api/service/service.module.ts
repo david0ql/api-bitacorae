@@ -1,15 +1,13 @@
-import { TypeOrmModule } from '@nestjs/typeorm'
 import { Module } from '@nestjs/common'
 
 import { ServiceService } from './service.service'
 import { ServiceController } from './service.controller'
-import { Service } from 'src/entities/Service'
-import { StrengtheningLevel } from 'src/entities/StrengtheningLevel'
+import { DynamicDatabaseModule } from 'src/services/dynamic-database/dynamic-database.module'
 
 @Module({
 	controllers: [ServiceController],
 	providers: [ServiceService],
-	imports: [TypeOrmModule.forFeature([Service, StrengtheningLevel])]
+	imports: [DynamicDatabaseModule]
 })
 
-export class ServiceModule { }
+export class ServiceModule {}

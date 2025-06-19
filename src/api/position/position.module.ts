@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common'
-import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { PositionService } from './position.service'
 import { PositionController } from './position.controller'
-import { Position } from 'src/entities/Position'
+import { DynamicDatabaseModule } from 'src/services/dynamic-database/dynamic-database.module'
 
 @Module({
 	controllers: [PositionController],
 	providers: [PositionService],
-	imports: [TypeOrmModule.forFeature([Position])]
+	imports: [DynamicDatabaseModule]
 })
 
 export class PositionModule {}

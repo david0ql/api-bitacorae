@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common'
-import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { ConsultorTypeService } from './consultor-type.service'
 import { ConsultorTypeController } from './consultor-type.controller'
-import { ConsultorType } from 'src/entities/ConsultorType'
+import { DynamicDatabaseModule } from 'src/services/dynamic-database/dynamic-database.module'
 
 @Module({
 	controllers: [ConsultorTypeController],
 	providers: [ConsultorTypeService],
-	imports: [TypeOrmModule.forFeature([ConsultorType])]
+	imports: [DynamicDatabaseModule]
 })
 
 export class ConsultorTypeModule {}

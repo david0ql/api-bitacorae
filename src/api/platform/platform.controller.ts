@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
 import { CreatePlatformDto } from './dto/create-platform.dto'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('platform')
 export class PlatformController {
@@ -22,13 +23,13 @@ export class PlatformController {
 	], 'platform'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreatePlatformDto })
-	create(@Body() createPlatformDto: CreatePlatformDto, @UploadedFiles() files: { logoFile?: Express.Multer.File[], reportHeaderImageFile?: Express.Multer.File[] }) {
-		return this.platformService.create(createPlatformDto, files)
+	create(@Body() createPlatformDto: CreatePlatformDto, @UploadedFiles() files: { logoFile?: Express.Multer.File[], reportHeaderImageFile?: Express.Multer.File[] }, @BusinessName() businessName: string) {
+		return this.platformService.create(createPlatformDto, files, businessName)
 	}
 
 	@Get()
 	@HttpCode(200)
-	findOne() {
-		return this.platformService.findOne()
+	findOne(@BusinessName() businessName: string) {
+		return this.platformService.findOne(businessName)
 	}
 }

@@ -11,7 +11,7 @@ import { User } from "./User";
 
 @Index("chat_id", ["chatId"], {})
 @Index("chat_message_user_fk", ["senderUserId"], {})
-@Entity("chat_message", { schema: "dbbitacorae" })
+@Entity("chat_message")
 export class ChatMessage {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

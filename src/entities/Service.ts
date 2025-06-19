@@ -9,7 +9,7 @@ import {
 import { StrengtheningLevel } from "./StrengtheningLevel";
 
 @Index("service_strengthening_level_FK", ["levelId"], {})
-@Entity("service", { schema: "dbbitacorae" })
+@Entity("service")
 export class Service {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

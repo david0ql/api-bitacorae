@@ -1,16 +1,13 @@
 import { Module } from '@nestjs/common'
-import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { ChatService } from './chat.service'
 import { ChatController } from './chat.controller'
-import { Chat } from 'src/entities/Chat'
-import { ChatMessage } from 'src/entities/ChatMessage'
-import { Session } from 'src/entities/Session'
+import { DynamicDatabaseModule } from 'src/services/dynamic-database/dynamic-database.module'
 
 @Module({
 	controllers: [ChatController],
 	providers: [ChatService],
-	imports: [TypeOrmModule.forFeature([Chat, ChatMessage, Session])]
+	imports: [DynamicDatabaseModule]
 })
 
 export class ChatModule {}

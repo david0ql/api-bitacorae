@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common'
-import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { MarketScopeService } from './market-scope.service'
 import { MarketScopeController } from './market-scope.controller'
-import { MarketScope } from 'src/entities/MarketScope'
+import { DynamicDatabaseModule } from 'src/services/dynamic-database/dynamic-database.module'
 
 @Module({
 	controllers: [MarketScopeController],
 	providers: [MarketScopeService],
-	imports: [TypeOrmModule.forFeature([MarketScope])]
+	imports: [DynamicDatabaseModule]
 })
 
 export class MarketScopeModule {}

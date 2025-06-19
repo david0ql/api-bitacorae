@@ -9,7 +9,7 @@ import {
 import { Session } from "./Session";
 
 @Index("session_id", ["sessionId"], {})
-@Entity("session_attachment", { schema: "dbbitacorae" })
+@Entity("session_attachment")
 export class SessionAttachment {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

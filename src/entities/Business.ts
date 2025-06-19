@@ -29,7 +29,7 @@ import { Cohort } from "./Cohort";
 @Index("product_status_id", ["productStatusId"], {})
 @Index("market_scope_id", ["marketScopeId"], {})
 @Index("cohort_id", ["cohortId"], {})
-@Entity("business", { schema: "dbbitacorae" })
+@Entity("business")
 export class Business {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;
@@ -143,7 +143,6 @@ export class Business {
     inverseJoinColumns: [
       { name: "economic_activity_id", referencedColumnName: "id" },
     ],
-    schema: "dbbitacorae",
   })
   economicActivities: EconomicActivity[];
 
@@ -157,7 +156,6 @@ export class Business {
     inverseJoinColumns: [
       { name: "strengthening_area_id", referencedColumnName: "id" },
     ],
-    schema: "dbbitacorae",
   })
   strengtheningAreas: StrengtheningArea[];
 

@@ -2,7 +2,7 @@ import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Service } from "./Service";
 import { StrengtheningArea } from "./StrengtheningArea";
 
-@Entity("strengthening_level", { schema: "dbbitacorae" })
+@Entity("strengthening_level")
 export class StrengtheningLevel {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

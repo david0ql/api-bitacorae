@@ -4,7 +4,7 @@ import { Expert } from "./Expert";
 import { ContactInformation } from "./ContactInformation";
 import { Auditor } from "./Auditor";
 
-@Entity("gender", { schema: "dbbitacorae" })
+@Entity("gender")
 export class Gender {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

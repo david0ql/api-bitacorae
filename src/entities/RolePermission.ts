@@ -11,7 +11,7 @@ import { Permission } from "./Permission";
 
 @Index("role_id", ["roleId"], {})
 @Index("permission_id", ["permissionId"], {})
-@Entity("role_permission", { schema: "dbbitacorae" })
+@Entity("role_permission")
 export class RolePermission {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

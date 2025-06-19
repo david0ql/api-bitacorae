@@ -1,17 +1,14 @@
 import { Module } from '@nestjs/common'
-import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { ContactInformationService } from './contact-information.service'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 import { ContactInformationController } from './contact-information.controller'
-import { ContactInformation } from 'src/entities/ContactInformation'
-import { Business } from 'src/entities/Business'
-import { StrengtheningArea } from 'src/entities/StrengtheningArea'
+import { DynamicDatabaseModule } from 'src/services/dynamic-database/dynamic-database.module'
 
 @Module({
 	controllers: [ContactInformationController],
 	providers: [ContactInformationService, FileUploadService],
-	imports: [TypeOrmModule.forFeature([ContactInformation, Business, StrengtheningArea])]
+	imports: [DynamicDatabaseModule]
 })
 
 export class ContactInformationModule {}

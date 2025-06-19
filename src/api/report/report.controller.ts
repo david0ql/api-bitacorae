@@ -10,6 +10,7 @@ import { CreateReportDto } from './dto/create-report.dto'
 import { ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('report')
 @ApiBearerAuth()
@@ -19,19 +20,19 @@ export class ReportController {
 
 	@Post()
 	@HttpCode(200)
-	create(@Body() createReportDto: CreateReportDto) {
-		return this.reportService.create(createReportDto)
+	create(@Body() createReportDto: CreateReportDto, @BusinessName() businessName: string) {
+		return this.reportService.create(createReportDto, businessName)
 	}
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Report>> {
-		return this.reportService.findAll(pageOptionsDto)
+	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<Report>> {
+		return this.reportService.findAll(pageOptionsDto, businessName)
 	}
 
 	@Delete(':id')
 	@HttpCode(200)
-	remove(@Param('id') id: string) {
-		return this.reportService.remove(+id)
+	remove(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.reportService.remove(+id, businessName)
 	}
 }

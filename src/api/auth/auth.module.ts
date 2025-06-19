@@ -4,7 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { AuthService } from './auth.service'
 import { AuthController } from './auth.controller'
-import { User } from 'src/entities/User'
+import { Business } from 'src/entities/admin/Business'
+import { DynamicDatabaseModule } from 'src/services/dynamic-database/dynamic-database.module'
 
 import { JwtStrategy } from './strategies/jwt.strategy'
 import { JwtAuthGuard } from './guards/jwt-auth.guard'
@@ -14,7 +15,8 @@ import envVars from 'src/config/env'
 
 @Module({
 	imports: [
-		TypeOrmModule.forFeature([User]),
+		TypeOrmModule.forFeature([Business], envVars.DB_ALIAS_ADMIN),
+		DynamicDatabaseModule,
 		JwtModule.register({
 			secret: envVars.JWT_SECRET,
 			// signOptions: { expiresIn: '1h' }

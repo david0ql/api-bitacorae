@@ -11,6 +11,7 @@ import { UpdateServiceDto } from './dto/update-service.dto'
 import { ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('service')
 @ApiBearerAuth()
@@ -20,25 +21,25 @@ export class ServiceController {
 
 	@Post()
 	@HttpCode(200)
-	create(@Body() createServiceDto: CreateServiceDto) {
-		return this.serviceService.create(createServiceDto)
+	create(@Body() createServiceDto: CreateServiceDto, @BusinessName() businessName: string) {
+		return this.serviceService.create(createServiceDto, businessName)
 	}
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Service>> {
-		return this.serviceService.findAll(pageOptionsDto)
+	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<Service>> {
+		return this.serviceService.findAll(pageOptionsDto, businessName)
 	}
 
 	@Patch(':id')
 	@HttpCode(200)
-	update(@Param('id') id: string, @Body() updateServiceDto: UpdateServiceDto) {
-		return this.serviceService.update(+id, updateServiceDto)
+	update(@Param('id') id: string, @Body() updateServiceDto: UpdateServiceDto, @BusinessName() businessName: string) {
+		return this.serviceService.update(+id, updateServiceDto, businessName)
 	}
 
 	@Delete(':id')
 	@HttpCode(200)
-	remove(@Param('id') id: string) {
-		return this.serviceService.remove(+id)
+	remove(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.serviceService.remove(+id, businessName)
 	}
 }

@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common'
-import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { ReportTypeService } from './report-type.service'
 import { ReportTypeController } from './report-type.controller'
-import { ReportType } from 'src/entities/ReportType'
+import { DynamicDatabaseModule } from 'src/services/dynamic-database/dynamic-database.module'
 
 @Module({
 	controllers: [ReportTypeController],
 	providers: [ReportTypeService],
-	imports: [TypeOrmModule.forFeature([ReportType])]
+	imports: [DynamicDatabaseModule]
 })
 
 export class ReportTypeModule {}

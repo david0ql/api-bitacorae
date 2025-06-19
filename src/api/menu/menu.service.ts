@@ -1,13 +1,11 @@
 import { Injectable } from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
 import { Menu } from 'src/entities/Menu'
-import { Repository } from 'typeorm'
+import { DynamicDatabaseService } from 'src/services/dynamic-database/dynamic-database.service'
 
 @Injectable()
 export class MenuService {
 	constructor(
-		@InjectRepository(Menu)
-		private readonly menuRepository: Repository<Menu>
+		private readonly dynamicDbService: DynamicDatabaseService
 	) {}
 
 	buildMenuTree(menus: Menu[], parentId: number | null = null): Menu[] {
@@ -19,22 +17,31 @@ export class MenuService {
 			}))
 	}
 
-	async findAll(roleId: number) {
-		const menus = await this.menuRepository.createQueryBuilder('menu')
-			.select([
-				'menu.id',
-				'menu.name',
-				'menu.path',
-				'menu.parentId',
-				'menu.order'
-			])
-			.innerJoin('menu.roles', 'role', 'role.id = :roleId', { roleId })
-			.orderBy('menu.id', 'ASC')
-			.addOrderBy('menu.order', 'ASC')
-			.getMany()
+	async findAll(roleId: number, businessName: string) {
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
-		const menuTree = this.buildMenuTree(menus)
+		try {
+			const menuRepository = businessDataSource.getRepository(Menu)
+			
+			const menus = await menuRepository.createQueryBuilder('menu')
+				.select([
+					'menu.id',
+					'menu.name',
+					'menu.path',
+					'menu.parentId',
+					'menu.order'
+				])
+				.innerJoin('menu.roles', 'role', 'role.id = :roleId', { roleId })
+				.orderBy('menu.id', 'ASC')
+				.addOrderBy('menu.order', 'ASC')
+				.getMany()
 
-		return menuTree
+			const menuTree = this.buildMenuTree(menus)
+
+			return menuTree
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+		}
 	}
 }

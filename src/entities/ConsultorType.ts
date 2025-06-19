@@ -11,7 +11,7 @@ import { Role } from "./Role";
 import { Expert } from "./Expert";
 
 @Index("consultor_type_role_FK", ["roleId"], {})
-@Entity("consultor_type", { schema: "dbbitacorae" })
+@Entity("consultor_type")
 export class ConsultorType {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

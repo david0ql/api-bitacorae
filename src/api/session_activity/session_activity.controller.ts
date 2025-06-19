@@ -15,6 +15,7 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('session-activity')
 @ApiBearerAuth()
@@ -27,14 +28,14 @@ export class SessionActivityController {
 	@UseInterceptors(FileUploadInterceptor('file', 'session-activity'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreateSessionActivityDto })
-	create(@CurrentUser() user: JwtUser, @Body() createSessionActivityDto: CreateSessionActivityDto, @UploadedFile() file?: Express.Multer.File) {
-		return this.sessionActivityService.create(user, createSessionActivityDto, file)
+	create(@CurrentUser() user: JwtUser, @Body() createSessionActivityDto: CreateSessionActivityDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+		return this.sessionActivityService.create(user, createSessionActivityDto, businessName, file)
 	}
 
 	@Get('/bySession/:id')
 	@HttpCode(200)
-	findAll(@Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<SessionActivity>> {
-		return this.sessionActivityService.findAll(+id, pageOptionsDto)
+	findAll(@Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<SessionActivity>> {
+		return this.sessionActivityService.findAll(+id, pageOptionsDto, businessName)
 	}
 
 	@Patch(':id/respond')
@@ -42,13 +43,13 @@ export class SessionActivityController {
 	@UseInterceptors(FileUploadInterceptor('file', 'session-activity'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: RespondSessionActivityDto })
-	respond(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() respondDto: RespondSessionActivityDto, @UploadedFile() file?: Express.Multer.File) {
-		return this.sessionActivityService.respond(user, +id, respondDto, file)
+	respond(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() respondDto: RespondSessionActivityDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+		return this.sessionActivityService.respond(user, +id, respondDto, businessName, file)
 	}
 
 	@Patch(':id/rate')
 	@HttpCode(200)
-	rate(@Param('id') id: string, @Body() rateDto: RateSessionActivityDto) {
-		return this.sessionActivityService.rate(+id, rateDto)
+	rate(@Param('id') id: string, @Body() rateDto: RateSessionActivityDto, @BusinessName() businessName: string) {
+		return this.sessionActivityService.rate(+id, rateDto, businessName)
 	}
 }

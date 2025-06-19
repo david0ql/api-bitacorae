@@ -5,6 +5,7 @@ import { DashboardService } from './dashboard.service'
 import { ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('dashboard')
 @ApiBearerAuth()
@@ -14,7 +15,7 @@ export class DashboardController {
 
 	@Get()
 	@HttpCode(200)
-	findAll() {
-		return this.dashboardService.findAll()
+	findAll(@BusinessName() businessName: string) {
+		return this.dashboardService.findAll(businessName)
 	}
 }

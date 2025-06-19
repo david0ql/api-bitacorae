@@ -11,6 +11,7 @@ import { UpdateConsultorTypeDto } from './dto/update-consultor-type.dto'
 import { ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('consultor-type')
 @ApiBearerAuth()
@@ -20,25 +21,25 @@ export class ConsultorTypeController {
 
 	@Post()
 	@HttpCode(200)
-	create(@Body() createConsultorTypeDto: CreateConsultorTypeDto) {
-		return this.consultorTypeService.create(createConsultorTypeDto)
+	create(@Body() createConsultorTypeDto: CreateConsultorTypeDto, @BusinessName() businessName: string) {
+		return this.consultorTypeService.create(createConsultorTypeDto, businessName)
 	}
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<ConsultorType>> {
-		return this.consultorTypeService.findAll(pageOptionsDto)
+	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<ConsultorType>> {
+		return this.consultorTypeService.findAll(pageOptionsDto, businessName)
 	}
 
 	@Patch(':id')
 	@HttpCode(200)
-	update(@Param('id') id: string, @Body() updateConsultorTypeDto: UpdateConsultorTypeDto) {
-		return this.consultorTypeService.update(+id, updateConsultorTypeDto)
+	update(@Param('id') id: string, @Body() updateConsultorTypeDto: UpdateConsultorTypeDto, @BusinessName() businessName: string) {
+		return this.consultorTypeService.update(+id, updateConsultorTypeDto, businessName)
 	}
 
 	@Delete(':id')
 	@HttpCode(200)
-	remove(@Param('id') id: string) {
-		return this.consultorTypeService.remove(+id)
+	remove(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.consultorTypeService.remove(+id, businessName)
 	}
 }

@@ -15,6 +15,7 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('session')
 @ApiBearerAuth()
@@ -27,38 +28,38 @@ export class SessionController {
 	@UseInterceptors(FileUploadInterceptor('files', 'session-preparation', true))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreateSessionDto })
-	create(@Body() createSessionDto: CreateSessionDto, @UploadedFiles() files?: Express.Multer.File[]) {
-		return this.sessionService.create(createSessionDto, files)
+	create(@Body() createSessionDto: CreateSessionDto, @BusinessName() businessName: string, @UploadedFiles() files?: Express.Multer.File[]) {
+		return this.sessionService.create(createSessionDto, businessName, files)
 	}
 
 	@Get('/byAccompaniment/:id')
 	@HttpCode(200)
-	findAllByAccompaniment(@Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Session>> {
-		return this.sessionService.findAllByAccompaniment(+id, pageOptionsDto)
+	findAllByAccompaniment(@Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<Session>> {
+		return this.sessionService.findAllByAccompaniment(+id, pageOptionsDto, businessName)
 	}
 
 	@Get('/byBusinessForExpert/:bussinesId')
 	@HttpCode(200)
-	findAllByBusinessForExpert(@Param('bussinesId') bussinesId: string, @CurrentUser() user: JwtUser, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Session>> {
-		return this.sessionService.findAllByBusinessForExpert(+bussinesId, user, pageOptionsDto)
+	findAllByBusinessForExpert(@Param('bussinesId') bussinesId: string, @CurrentUser() user: JwtUser, @Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<Session>> {
+		return this.sessionService.findAllByBusinessForExpert(+bussinesId, user, pageOptionsDto, businessName)
 	}
 
 	@Get('/forBusiness')
 	@HttpCode(200)
-	findAllByBusiness(@CurrentUser() user: JwtUser, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Session>> {
-		return this.sessionService.findAllForBusiness(user, pageOptionsDto)
+	findAllByBusiness(@CurrentUser() user: JwtUser, @Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<Session>> {
+		return this.sessionService.findAllForBusiness(user, pageOptionsDto, businessName)
 	}
 
 	@Get(':id')
 	@HttpCode(200)
-	findOne(@CurrentUser() user: JwtUser, @Param('id') id: string) {
-		return this.sessionService.findOne(user, +id)
+	findOne(@CurrentUser() user: JwtUser, @Param('id') id: string, @BusinessName() businessName: string) {
+		return this.sessionService.findOne(user, +id, businessName)
 	}
 
 	@Get('/byFilter/:filter')
 	@HttpCode(200)
-	findAllByFilter(@Param('filter') filter: string) {
-		return this.sessionService.findAllByFilter(filter)
+	findAllByFilter(@Param('filter') filter: string, @BusinessName() businessName: string) {
+		return this.sessionService.findAllByFilter(filter, businessName)
 	}
 
 	@Patch(':id')
@@ -66,25 +67,25 @@ export class SessionController {
 	@UseInterceptors(FileUploadInterceptor('files', 'session-preparation', true))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: UpdateSessionDto })
-	update(@Param('id') id: string, @Body() updateSessionDto: UpdateSessionDto, @UploadedFiles() files?: Express.Multer.File[]) {
-		return this.sessionService.update(+id, updateSessionDto, files)
+	update(@Param('id') id: string, @Body() updateSessionDto: UpdateSessionDto, @BusinessName() businessName: string, @UploadedFiles() files?: Express.Multer.File[]) {
+		return this.sessionService.update(+id, updateSessionDto, businessName, files)
 	}
 
 	@Patch('/public/:id')
 	@HttpCode(200)
-	public(@Param('id') id: string) {
-		return this.sessionService.public(+id)
+	public(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.sessionService.public(+id, businessName)
 	}
 
 	@Patch('/approved/:id')
 	@HttpCode(200)
-	approved(@Param('id') id: string, @Body() approvedSessiontDto: ApprovedSessionDto) {
-		return this.sessionService.approved(+id, approvedSessiontDto)
+	approved(@Param('id') id: string, @Body() approvedSessiontDto: ApprovedSessionDto, @BusinessName() businessName: string) {
+		return this.sessionService.approved(+id, approvedSessiontDto, businessName)
 	}
 
 	@Delete(':id')
 	@HttpCode(200)
-	remove(@Param('id') id: string) {
-		return this.sessionService.remove(+id)
+	remove(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.sessionService.remove(+id, businessName)
 	}
 }

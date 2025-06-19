@@ -11,7 +11,7 @@ import { User } from "./User";
 
 @Index("activity_id", ["sessionActivityId"], {})
 @Index("responded_by_user_id", ["respondedByUserId"], {})
-@Entity("session_activity_response", { schema: "dbbitacorae" })
+@Entity("session_activity_response")
 export class SessionActivityResponse {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

@@ -1,7 +1,7 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Session } from "./Session";
 
-@Entity("session_status", { schema: "dbbitacorae" })
+@Entity("session_status")
 export class SessionStatus {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

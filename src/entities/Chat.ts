@@ -11,7 +11,7 @@ import { ChatMessage } from "./ChatMessage";
 import { Session } from "./Session";
 
 @Index("unique_session_chat", ["sessionId"], { unique: true })
-@Entity("chat", { schema: "dbbitacorae" })
+@Entity("chat")
 export class Chat {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

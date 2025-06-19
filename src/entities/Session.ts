@@ -16,9 +16,10 @@ import { Report } from "./Report";
 import { SessionPreparationFile } from "./SessionPreparationFile";
 import { Chat } from "./Chat";
 
-@Index("accompaniment_id", ["accompanimentId"], {})
-@Index("session_session_status_FK", ["statusId"], {})
-@Entity("session", { schema: "dbbitacorae" })
+@Index("business_id", ["businessId"], {})
+@Index("expert_id", ["expertId"], {})
+@Index("session_status_id", ["sessionStatusId"], {})
+@Entity("session")
 export class Session {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

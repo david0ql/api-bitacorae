@@ -14,6 +14,7 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('expert')
 @ApiBearerAuth()
@@ -26,38 +27,38 @@ export class ExpertController {
 	@UseInterceptors(FileUploadInterceptor('file', 'user'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreateExpertDto })
-	create(@Body() createExpertDto: CreateExpertDto, @UploadedFile() file?: Express.Multer.File) {
-		return this.expertService.create(createExpertDto, file)
+	create(@Body() createExpertDto: CreateExpertDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+		return this.expertService.create(createExpertDto, businessName, file)
 	}
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Expert>> {
-		return this.expertService.findAll(pageOptionsDto)
+	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<Expert>> {
+		return this.expertService.findAll(pageOptionsDto, businessName)
 	}
 
 	@Get('/forBusiness')
 	@HttpCode(200)
-	findAllForBusiness(@CurrentUser() user: JwtUser) {
-		return this.expertService.findAllForBusiness(user)
+	findAllForBusiness(@CurrentUser() user: JwtUser, @BusinessName() businessName: string) {
+		return this.expertService.findAllForBusiness(user, businessName)
 	}
 
 	@Get('/byFilter/:filter')
 	@HttpCode(200)
-	findAllByFilter(@Param('filter') filter: string) {
-		return this.expertService.findAllByFilter(filter)
+	findAllByFilter(@Param('filter') filter: string, @BusinessName() businessName: string) {
+		return this.expertService.findAllByFilter(filter, businessName)
 	}
 
 	@Get('/byAccompaniment/:id')
 	@HttpCode(200)
-	findAllByAccompaniment(@Param('id') id: string) {
-		return this.expertService.findAllByAccompaniment(+id)
+	findAllByAccompaniment(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.expertService.findAllByAccompaniment(+id, businessName)
 	}
 
 	@Get(':id')
 	@HttpCode(200)
-	findOne(@Param('id') id: string) {
-		return this.expertService.findOne(+id)
+	findOne(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.expertService.findOne(+id, businessName)
 	}
 
 	@Patch(':id')
@@ -65,13 +66,13 @@ export class ExpertController {
 	@UseInterceptors(FileUploadInterceptor('file', 'user'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: UpdateExpertDto })
-	update(@Param('id') id: string, @Body() updateExpertDto: UpdateExpertDto, @UploadedFile() file?: Express.Multer.File) {
-		return this.expertService.update(+id, updateExpertDto, file)
+	update(@Param('id') id: string, @Body() updateExpertDto: UpdateExpertDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+		return this.expertService.update(+id, updateExpertDto, businessName, file)
 	}
 
 	@Delete(':id')
 	@HttpCode(200)
-	remove(@Param('id') id: string) {
-		return this.expertService.remove(+id)
+	remove(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.expertService.remove(+id, businessName)
 	}
 }

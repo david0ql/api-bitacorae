@@ -11,6 +11,7 @@ import { UpdateStrengtheningAreaDto } from './dto/update-strengthening-area.dto'
 import { ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('strengthening-area')
 @ApiBearerAuth()
@@ -20,25 +21,25 @@ export class StrengtheningAreaController {
 
 	@Post()
 	@HttpCode(200)
-	create(@Body() createStrengtheningAreaDto: CreateStrengtheningAreaDto) {
-		return this.strengtheningAreaService.create(createStrengtheningAreaDto)
+	create(@Body() createStrengtheningAreaDto: CreateStrengtheningAreaDto, @BusinessName() businessName: string) {
+		return this.strengtheningAreaService.create(createStrengtheningAreaDto, businessName)
 	}
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<StrengtheningArea>> {
-		return this.strengtheningAreaService.findAll(pageOptionsDto)
+	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<StrengtheningArea>> {
+		return this.strengtheningAreaService.findAll(pageOptionsDto, businessName)
 	}
 
 	@Patch(':id')
 	@HttpCode(200)
-	update(@Param('id') id: string, @Body() updateStrengtheningAreaDto: UpdateStrengtheningAreaDto) {
-		return this.strengtheningAreaService.update(+id, updateStrengtheningAreaDto)
+	update(@Param('id') id: string, @Body() updateStrengtheningAreaDto: UpdateStrengtheningAreaDto, @BusinessName() businessName: string) {
+		return this.strengtheningAreaService.update(+id, updateStrengtheningAreaDto, businessName)
 	}
 
 	@Delete(':id')
 	@HttpCode(200)
-	remove(@Param('id') id: string) {
-		return this.strengtheningAreaService.remove(+id)
+	remove(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.strengtheningAreaService.remove(+id, businessName)
 	}
 }

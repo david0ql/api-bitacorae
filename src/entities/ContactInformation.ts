@@ -18,7 +18,7 @@ import { EducationLevel } from "./EducationLevel";
 @Index("gender_id", ["genderId"], {})
 @Index("education_level_id", ["educationLevelId"], {})
 @Index("contact_information_ibfk_1", ["businessId"], {})
-@Entity("contact_information", { schema: "dbbitacorae" })
+@Entity("contact_information")
 export class ContactInformation {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;
@@ -123,7 +123,6 @@ export class ContactInformation {
     inverseJoinColumns: [
       { name: "strengthening_area_id", referencedColumnName: "id" },
     ],
-    schema: "dbbitacorae",
   })
   strengtheningAreas: StrengtheningArea[];
 

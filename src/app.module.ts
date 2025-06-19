@@ -1,10 +1,12 @@
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { Module } from '@nestjs/common'
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common'
 import { ServeStaticModule } from '@nestjs/serve-static'
 import { join } from 'path'
 
 import { MailModule } from './services/mail/mail.module'
 import { RedisModule } from './services/redis/redis.module'
+import { DynamicDatabaseModule } from './services/dynamic-database/dynamic-database.module'
+import { BusinessHeaderMiddleware } from './middleware/business-header.middleware'
 import { AuthModule } from './api/auth/auth.module'
 import { BusinessModule } from './api/business/business.module'
 import { BusinessSizeModule } from './api/business-size/business-size.module'
@@ -39,43 +41,6 @@ import { DashboardModule } from './api/dashboard/dashboard.module'
 import { SessionStatusModule } from './api/session_status/session_status.module'
 import { ImageUploadModule } from './api/image-upload/image-upload.module'
 
-import { Business } from 'src/entities/Business'
-import { BusinessSize } from './entities/BusinessSize'
-import { Cohort } from './entities/Cohort'
-import { ConsultorType } from './entities/ConsultorType'
-import { ContactInformation } from 'src/entities/ContactInformation'
-import { DocumentType } from 'src/entities/DocumentType'
-import { EconomicActivity } from 'src/entities/EconomicActivity'
-import { EducationLevel } from 'src/entities/EducationLevel'
-import { Expert } from 'src/entities/Expert'
-import { Gender } from 'src/entities/Gender'
-import { MarketScope } from './entities/MarketScope'
-import { Position } from './entities/Position'
-import { ProductStatus } from './entities/ProductStatus'
-import { Role } from 'src/entities/Role'
-import { RolePermission } from './entities/RolePermission'
-import { Permission } from './entities/Permission'
-import { Service } from './entities/Service'
-import { StrengtheningArea } from 'src/entities/StrengtheningArea'
-import { StrengtheningLevel } from './entities/StrengtheningLevel'
-import { User } from 'src/entities/User'
-import { Post } from './entities/Post'
-import { PostCategory } from './entities/PostCategory'
-import { Accompaniment } from './entities/Accompaniment'
-import { Session } from './entities/Session'
-import { SessionStatus } from './entities/SessionStatus'
-import { SessionPreparationFile } from './entities/SessionPreparationFile'
-import { Menu } from './entities/Menu'
-import { Chat } from './entities/Chat'
-import { ChatMessage } from './entities/ChatMessage'
-import { SessionActivity } from './entities/SessionActivity'
-import { SessionActivityResponse } from './entities/SessionActivityResponse'
-import { SessionAttachment } from './entities/SessionAttachment'
-import { Admin } from './entities/Admin'
-import { Auditor } from './entities/Auditor'
-import { ReportType } from './entities/ReportType'
-import { Report } from './entities/Report'
-
 import envVars from './config/env'
 
 @Module({
@@ -94,55 +59,19 @@ import envVars from './config/env'
 		}),
 		TypeOrmModule.forRoot({
 			type: 'mysql',
-			host: envVars.DB_HOST,
-			port: envVars.DB_PORT,
-			username: envVars.DB_USER,
-			password: envVars.DB_PASSWORD,
-			database: envVars.DB_NAME,
+			name: envVars.DB_ALIAS_ADMIN,
+			host: envVars.DB_HOST_ADMIN,
+			port: envVars.DB_PORT_ADMIN,
+			username: envVars.DB_USER_ADMIN,
+			password: envVars.DB_PASSWORD_ADMIN,
+			database: envVars.DB_NAME_ADMIN,
 			synchronize: false,
 			autoLoadEntities: true,
 			timezone: 'local'
 		}),
-		TypeOrmModule.forFeature([
-			Business,
-			BusinessSize,
-			Cohort,
-			ConsultorType,
-			ContactInformation,
-			DocumentType,
-			EconomicActivity,
-			EducationLevel,
-			Expert,
-			Gender,
-			MarketScope,
-			Position,
-			ProductStatus,
-			Role,
-			RolePermission,
-			Permission,
-			Service,
-			StrengtheningArea,
-			StrengtheningLevel,
-			User,
-			Post,
-			PostCategory,
-			Accompaniment,
-			Session,
-			SessionStatus,
-			SessionPreparationFile,
-			Menu,
-			Chat,
-			ChatMessage,
-			SessionActivity,
-			SessionActivityResponse,
-			SessionAttachment,
-			Admin,
-			Auditor,
-			ReportType,
-			Report
-		]),
 		MailModule,
 		RedisModule,
+		DynamicDatabaseModule,
 		AuthModule,
 		BusinessModule,
 		BusinessSizeModule,
@@ -181,4 +110,10 @@ import envVars from './config/env'
 	providers: []
 })
 
-export class AppModule { }
+export class AppModule implements NestModule {
+	configure(consumer: MiddlewareConsumer) {
+		consumer
+			.apply(BusinessHeaderMiddleware)
+			.forRoutes('*')
+	}
+}

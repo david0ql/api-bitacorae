@@ -11,9 +11,8 @@ import { GenerateSessionPdfData } from './interfaces/generate-session-pdf.interf
 import { GenerateReportBySessionPdfData } from './interfaces/generate-report-by-session-pdf.interface'
 import { GenerateReportByBusinessPdfData } from './interfaces/generate-report-by-business-pdf.interface'
 import { FileInfo } from './interfaces/file-info.interface'
-import { InjectRepository } from '@nestjs/typeorm'
 import { Platform } from 'src/entities/Platform'
-import { Repository } from 'typeorm'
+import { DynamicDatabaseService } from 'src/services/dynamic-database/dynamic-database.service'
 
 import envVars from 'src/config/env'
 import { GenerateReportByExpertPdfData } from './interfaces/generate-report-by-expert-pdf.interface'
@@ -71,8 +70,7 @@ export class PdfService implements OnModuleDestroy {
 	private browser: puppeteer.Browser | null = null
 
 	constructor(
-		@InjectRepository(Platform)
-		private readonly platformRepository: Repository<Platform>
+		private readonly dynamicDbService: DynamicDatabaseService
 	) { this.initBrowser() }
 
 	private async initBrowser() {
@@ -87,11 +85,23 @@ export class PdfService implements OnModuleDestroy {
 		}
 	}
 
-	private async createPdfFromTemplate(templatePath: string, data: any): Promise<Buffer> {
+	private async createPdfFromTemplate(templatePath: string, data: any, businessName: string): Promise<Buffer> {
 		const htmlTemplate = fs.readFileSync(templatePath, 'utf8')
 		const template = Handlebars.compile(htmlTemplate)
 
-		const platform = await this.platformRepository.findOne({ where: {} })
+		let platform: Platform | null = null
+		if (businessName) {
+			const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+			
+			if (businessDataSource) {
+				try {
+					const platformRepository = businessDataSource.getRepository(Platform)
+					platform = await platformRepository.findOne({ where: {} })
+				} finally {
+					await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+				}
+			}
+		}
 
 		const reportHeaderImageUrl = platform?.reportHeaderImagePath ? `${envVars.APP_URL}/${platform.reportHeaderImagePath}` : ''
 		const programImageUrl = platform?.logoPath ? `${envVars.APP_URL}/${platform.logoPath}` : ''
@@ -199,7 +209,7 @@ export class PdfService implements OnModuleDestroy {
 		return existingPaths
 	}
 
-	async generateSessionPdf(data: GenerateSessionPdfData): Promise<FileInfo> {
+	async generateSessionPdf(data: GenerateSessionPdfData, businessName: string): Promise<FileInfo> {
 		const internalPath = path.join('generated', 'session', data.sign ? 'approved' : 'unApproved')
 		const outputDir = path.join(process.cwd(), internalPath)
 		const templatePath = path.join(process.cwd(), 'src', 'services', 'pdf', 'templates', 'session-summary.hbs')
@@ -207,7 +217,7 @@ export class PdfService implements OnModuleDestroy {
 		const fileName = `${uuidv4()}.pdf`
 		const filePath = path.join(internalPath, fileName)
 
-		const pdfBuffer = await this.createPdfFromTemplate(templatePath, data)
+		const pdfBuffer = await this.createPdfFromTemplate(templatePath, data, businessName)
 		if (!fs.existsSync(outputDir)) {
 			fs.mkdirSync(outputDir, { recursive: true })
 		}
@@ -217,7 +227,7 @@ export class PdfService implements OnModuleDestroy {
 		return { fileName, filePath }
 	}
 
-	async generateReportBySessionPdf(data: GenerateReportBySessionPdfData): Promise<FileInfo> {
+	async generateReportBySessionPdf(data: GenerateReportBySessionPdfData, businessName: string): Promise<FileInfo> {
 		const internalPath = path.join('generated', 'report', 'session')
 		const outputDir = path.join(process.cwd(), internalPath)
 		const templatePath = path.join(process.cwd(), 'src', 'services', 'pdf', 'templates', 'report-by-session.hbs')
@@ -225,7 +235,7 @@ export class PdfService implements OnModuleDestroy {
 		const fileName = `${uuidv4()}.pdf`
 		const filePath = path.join(internalPath, fileName)
 
-		const pdfBuffer = await this.createPdfFromTemplate(templatePath, data)
+		const pdfBuffer = await this.createPdfFromTemplate(templatePath, data, businessName)
 		if (!fs.existsSync(outputDir)) {
 			fs.mkdirSync(outputDir, { recursive: true })
 		}
@@ -235,7 +245,7 @@ export class PdfService implements OnModuleDestroy {
 		return { fileName, filePath }
 	}
 
-	async generateReportByBusinessPdf(data: GenerateReportByBusinessPdfData, attachmentPaths: string[], route: string = 'business'): Promise<FileInfo> {
+	async generateReportByBusinessPdf(data: GenerateReportByBusinessPdfData, attachmentPaths: string[], route: string = 'business', businessName: string): Promise<FileInfo> {
 		const internalPath = path.join('generated', 'report', route)
 		const outputDir = path.join(process.cwd(), internalPath)
 		const templatePath = path.join(process.cwd(), 'src', 'services', 'pdf', 'templates', 'report-by-business.hbs')
@@ -243,7 +253,7 @@ export class PdfService implements OnModuleDestroy {
 		const fileName = `${uuidv4()}.pdf`
 		const filePath = path.join(internalPath, fileName)
 
-		const mainPdfBuffer = await this.createPdfFromTemplate(templatePath, data)
+		const mainPdfBuffer = await this.createPdfFromTemplate(templatePath, data, businessName)
 		const annexPdfBuffer = await this.createAnnexPage()
 
 		const finalPdfBuffer = await this.combinePdfs(mainPdfBuffer, annexPdfBuffer, attachmentPaths)
@@ -257,7 +267,7 @@ export class PdfService implements OnModuleDestroy {
 		return { fileName, filePath }
 	}
 
-	async generateReportByExpertPdf(data: GenerateReportByExpertPdfData, attachmentPaths: string[]): Promise<FileInfo> {
+	async generateReportByExpertPdf(data: GenerateReportByExpertPdfData, attachmentPaths: string[], businessName: string): Promise<FileInfo> {
 		const internalPath = path.join('generated', 'report', 'expert')
 		const outputDir = path.join(process.cwd(), internalPath)
 		const templatePath = path.join(process.cwd(), 'src', 'services', 'pdf', 'templates', 'report-by-expert.hbs')
@@ -265,7 +275,7 @@ export class PdfService implements OnModuleDestroy {
 		const fileName = `${uuidv4()}.pdf`
 		const filePath = path.join(internalPath, fileName)
 
-		const mainPdfBuffer = await this.createPdfFromTemplate(templatePath, data)
+		const mainPdfBuffer = await this.createPdfFromTemplate(templatePath, data, businessName)
 		const annexPdfBuffer = await this.createAnnexPage()
 
 		const finalPdfBuffer = await this.combinePdfs(mainPdfBuffer, annexPdfBuffer, attachmentPaths)

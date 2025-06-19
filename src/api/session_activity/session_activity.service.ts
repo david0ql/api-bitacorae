@@ -1,10 +1,10 @@
-import { DataSource, Repository } from 'typeorm'
-import { InjectRepository } from '@nestjs/typeorm'
+import { DataSource } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
 
 import { Session } from 'src/entities/Session'
 import { SessionActivity } from 'src/entities/SessionActivity'
 import { SessionActivityResponse } from 'src/entities/SessionActivityResponse'
+import { DynamicDatabaseService } from 'src/services/dynamic-database/dynamic-database.service'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -22,51 +22,50 @@ import envVars from 'src/config/env'
 @Injectable()
 export class SessionActivityService {
 	constructor(
-		@InjectRepository(SessionActivity)
-		private readonly sessionActivityRepository: Repository<SessionActivity>,
-
-		@InjectRepository(SessionActivityResponse)
-		private readonly sessionActivityResponseRepository: Repository<SessionActivityResponse>,
-
-		@InjectRepository(Session)
-		private readonly sessionRepository: Repository<Session>,
-
-		private readonly dataSource: DataSource,
+		private readonly dynamicDbService: DynamicDatabaseService,
 		private readonly fileUploadService: FileUploadService,
 		private readonly mailService: MailService,
 		private readonly dateService: DateService
 	) {}
 
-	async create(user: JwtUser, createSessionActivityDto: CreateSessionActivityDto, file?: Express.Multer.File) {
+	async create(user: JwtUser, createSessionActivityDto: CreateSessionActivityDto, businessName: string, file?: Express.Multer.File) {
+		if (!businessName) throw new BadRequestException('businessName es requerido')
+		
 		const { title, description, dueDatetime, requiresDeliverable, sessionId } = createSessionActivityDto
 		const { id } = user
 		const now = this.dateService.getNow()
 
 		const fullPath = file ? this.fileUploadService.getFullPath('session-activity', file.filename) : undefined
 
-		const session = await this.sessionRepository.findOne({
-			where: { id: sessionId },
-			relations: ['accompaniment', 'accompaniment.business.user', 'accompaniment.expert.user']
-		})
-		if (!session) {
-			if (fullPath) {
-				this.fileUploadService.deleteFile(fullPath)
-			}
-			throw new BadRequestException(`Sesión con id ${sessionId} no encontrada`)
-		}
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
-		if(dueDatetime) {
-			const date = this.dateService.parseToDate(dueDatetime)
-			if (date < now) {
+		try {
+			const sessionRepository = businessDataSource.getRepository(Session)
+			const sessionActivityRepository = businessDataSource.getRepository(SessionActivity)
+
+			const session = await sessionRepository.findOne({
+				where: { id: sessionId },
+				relations: ['accompaniment', 'accompaniment.business.user', 'accompaniment.expert.user']
+			})
+			if (!session) {
 				if (fullPath) {
 					this.fileUploadService.deleteFile(fullPath)
 				}
-				throw new BadRequestException('La fecha de entrega no puede ser anterior a la fecha actual')
+				throw new BadRequestException(`Sesión con id ${sessionId} no encontrada`)
 			}
-		}
 
-		try {
-			const sessionActivity = this.sessionActivityRepository.create({
+			if(dueDatetime) {
+				const date = this.dateService.parseToDate(dueDatetime)
+				if (date < now) {
+					if (fullPath) {
+						this.fileUploadService.deleteFile(fullPath)
+					}
+					throw new BadRequestException('La fecha de entrega no puede ser anterior a la fecha actual')
+				}
+			}
+
+			const sessionActivity = sessionActivityRepository.create({
 				sessionId,
 				createdByUserId: id,
 				title,
@@ -76,7 +75,7 @@ export class SessionActivityService {
 				attachmentPath: fullPath
 			})
 
-			const savedSessionActivity = await this.sessionActivityRepository.save(sessionActivity)
+			const savedSessionActivity = await sessionActivityRepository.save(sessionActivity)
 
 			try {
 				const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
@@ -91,7 +90,7 @@ export class SessionActivityService {
 					expertName,
 					expertEmail,
 					sessionDateTime
-				}, file)
+				}, businessName, file)
 			} catch (e) {
 				console.error('Error sending new session activity email:', e)
 			}
@@ -102,62 +101,73 @@ export class SessionActivityService {
 				this.fileUploadService.deleteFile(fullPath)
 			}
 			throw e
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 		}
 	}
 
-	async findAll(sessionId: number, pageOptionsDto: PageOptionsDto): Promise<PageDto<SessionActivity>> {
+	async findAll(sessionId: number, pageOptionsDto: PageOptionsDto, businessName: string): Promise<PageDto<SessionActivity>> {
 		const { take, skip, order } = pageOptionsDto
 
-		const sql = `
-			SELECT
-				a.id AS id,
-				a.session_id AS sessionId,
-				a.created_by_user_id AS createdByUserId,
-				a.title AS title,
-				a.description AS description,
-				a.requires_deliverable AS requiresDeliverable,
-				DATE_FORMAT(a.due_datetime, '%Y-%m-%d %H:%i:%s') AS dueDatetime,
-				CONCAT(?, '/', a.attachment_path) AS fileUrl,
-				DATE_FORMAT(a.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
-				CONCAT('[', GROUP_CONCAT(JSON_OBJECT(
-					'id', r.id,
-					'sessionActivityId', r.session_activity_id,
-					'respondedByUserId', r.responded_by_user_id,
-					'deliverableDescription', r.deliverable_description,
-					'deliverableFilePath', CONCAT(?, '/', r.deliverable_file_path),
-					'respondedDatetime', DATE_FORMAT(r.responded_datetime, '%Y-%m-%d %H:%i:%s'),
-					'grade', r.grade,
-					'gradedDatetime', DATE_FORMAT(r.graded_datetime, '%Y-%m-%d %H:%i:%s')
-				)),
-				']') AS responses
-			FROM
-				session_activity a
-				LEFT JOIN session_activity_response r ON a.id = r.session_activity_id
-			WHERE a.session_id = ?
-			GROUP BY a.id
-			ORDER BY a.created_at ${order}
-			LIMIT ${take} OFFSET ${skip}
-		`
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
-		const countSql = `SELECT COUNT(DISTINCT a.id) AS total FROM session_activity a WHERE a.session_id = ?`
+		try {
+			const sql = `
+				SELECT
+					a.id AS id,
+					a.session_id AS sessionId,
+					a.created_by_user_id AS createdByUserId,
+					a.title AS title,
+					a.description AS description,
+					a.requires_deliverable AS requiresDeliverable,
+					DATE_FORMAT(a.due_datetime, '%Y-%m-%d %H:%i:%s') AS dueDatetime,
+					CONCAT(?, '/', a.attachment_path) AS fileUrl,
+					DATE_FORMAT(a.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
+					CONCAT('[', GROUP_CONCAT(JSON_OBJECT(
+						'id', r.id,
+						'sessionActivityId', r.session_activity_id,
+						'respondedByUserId', r.responded_by_user_id,
+						'deliverableDescription', r.deliverable_description,
+						'deliverableFilePath', CONCAT(?, '/', r.deliverable_file_path),
+						'respondedDatetime', DATE_FORMAT(r.responded_datetime, '%Y-%m-%d %H:%i:%s'),
+						'grade', r.grade,
+						'gradedDatetime', DATE_FORMAT(r.graded_datetime, '%Y-%m-%d %H:%i:%s')
+					)),
+					']') AS responses
+				FROM
+					session_activity a
+					LEFT JOIN session_activity_response r ON a.id = r.session_activity_id
+				WHERE a.session_id = ?
+				GROUP BY a.id
+				ORDER BY a.created_at ${order}
+				LIMIT ${take} OFFSET ${skip}
+			`
 
-		const [rawItems, countResult] = await Promise.all([
-			this.dataSource.query(sql, [envVars.APP_URL, envVars.APP_URL, sessionId]),
-			this.dataSource.query(countSql, [sessionId])
-		])
+			const countSql = `SELECT COUNT(DISTINCT a.id) AS total FROM session_activity a WHERE a.session_id = ?`
 
-		const items = rawItems.map(item => {
-			const responses = item.responses ? JSON.parse(item.responses) : []
-			return { ...item, responses }
-		})
+			const [rawItems, countResult] = await Promise.all([
+				businessDataSource.query(sql, [envVars.APP_URL, envVars.APP_URL, sessionId]),
+				businessDataSource.query(countSql, [sessionId])
+			])
 
-		const totalCount = Number(countResult[0]?.total) ?? 0
-		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
+			const items = rawItems.map(item => {
+				const responses = item.responses ? JSON.parse(item.responses) : []
+				return { ...item, responses }
+			})
 
-		return new PageDto(items, pageMetaDto)
+			const totalCount = Number(countResult[0]?.total) ?? 0
+			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
+
+			return new PageDto(items, pageMetaDto)
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+		}
 	}
 
-	async respond(user: JwtUser, id: number, respondSessionActivityDto: RespondSessionActivityDto, file?: Express.Multer.File) {
+	async respond(user: JwtUser, id: number, respondSessionActivityDto: RespondSessionActivityDto, businessName: string, file?: Express.Multer.File) {
+		if (!businessName) throw new BadRequestException('businessName es requerido')
+		
 		const fullPath = file ? this.fileUploadService.getFullPath('session-activity', file.filename) : undefined
 		if(!id) {
 			if (fullPath) {
@@ -169,59 +179,63 @@ export class SessionActivityService {
 		const { deliverableDescription } = respondSessionActivityDto
 		const { id: userId } = user
 
-		const sessionActivity = await this.sessionActivityRepository.findOne({ where: { id } })
-		if (!sessionActivity) {
-			if (fullPath) {
-				this.fileUploadService.deleteFile(fullPath)
-			}
-			throw new BadRequestException(`Actividad de sesión con id ${id} no encontrada`)
-		}
-
-		const existingResponse = await this.sessionActivityResponseRepository.findOne({ where: { sessionActivityId: id } })
-		if (existingResponse) {
-			if (fullPath) {
-				this.fileUploadService.deleteFile(fullPath)
-			}
-			throw new BadRequestException(`La actividad de sesión con id ${id} ya fue respondida`)
-		}
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
 		try {
-			const sessionActivityResponse = this.sessionActivityResponseRepository.create({
+			const sessionActivityRepository = businessDataSource.getRepository(SessionActivity)
+			const sessionActivityResponseRepository = businessDataSource.getRepository(SessionActivityResponse)
+			const sessionRepository = businessDataSource.getRepository(Session)
+
+			const sessionActivity = await sessionActivityRepository.findOne({ where: { id } })
+			if (!sessionActivity) {
+				if (fullPath) {
+					this.fileUploadService.deleteFile(fullPath)
+				}
+				throw new BadRequestException(`Actividad de sesión con id ${id} no encontrada`)
+			}
+
+			const existingResponse = await sessionActivityResponseRepository.findOne({ where: { sessionActivityId: id } })
+			if (existingResponse) {
+				if (fullPath) {
+					this.fileUploadService.deleteFile(fullPath)
+				}
+				throw new BadRequestException(`La actividad de sesión con id ${id} ya fue respondida`)
+			}
+
+			const sessionActivityResponse = sessionActivityResponseRepository.create({
 				sessionActivityId: id,
 				respondedByUserId: userId,
 				deliverableDescription,
 				deliverableFilePath: fullPath
 			})
 
-			const savedResponse = await this.sessionActivityResponseRepository.save(sessionActivityResponse)
+			const savedResponse = await sessionActivityResponseRepository.save(sessionActivityResponse)
 
 			try {
-				const session = await this.sessionRepository.findOne({
+				const session = await sessionRepository.findOne({
 					where: { id: sessionActivity.sessionId },
 					relations: ['accompaniment', 'accompaniment.business.user', 'accompaniment.expert.user']
 				})
 
-				if (!session) {
-					throw new BadRequestException(`Sesión con id ${sessionActivity.sessionId} no encontrada`)
+				if (session) {
+					const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
+					const { email: businessEmail, name: businessName } = session.accompaniment?.business?.user || { email: '', name: '' }
+					const { email: expertEmail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
+
+					this.mailService.sendRespondedSessionEmail({
+						businessId: session.accompaniment?.business?.id,
+						accompanimentId: session.accompaniment?.id,
+						sessionId: session.id,
+						to: businessEmail,
+						businessName,
+						expertName,
+						businessEmail,
+						sessionDateTime
+					}, businessName, file)
 				}
-
-				const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
-
-				const { email: businessEmail, name: businessName } = session.accompaniment?.business?.user || { email: '', name: '' }
-				const { email: expertEmail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
-
-				this.mailService.sendRespondedSessionEmail({
-					businessId: session.accompaniment?.business?.id,
-					accompanimentId: session.accompaniment?.id,
-					sessionId: session.id,
-					to: expertEmail,
-					businessName,
-					expertName,
-					businessEmail,
-					sessionDateTime
-				}, file)
 			} catch (e) {
-				console.error('Error sending responded session activity email:', e)
+				console.error('Error sending session activity response email:', e)
 			}
 
 			return savedResponse
@@ -230,31 +244,25 @@ export class SessionActivityService {
 				this.fileUploadService.deleteFile(fullPath)
 			}
 			throw e
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 		}
 	}
 
-	async rate(id: number, rateSessionActivityDto: RateSessionActivityDto) {
-		if(!id) return { affected: 0 }
-
+	async rate(id: number, rateSessionActivityDto: RateSessionActivityDto, businessName: string) {
 		const { grade } = rateSessionActivityDto
 
-		const sessionActivity = await this.sessionActivityRepository.findOne({ where: { id } })
-		if (!sessionActivity) {
-			throw new BadRequestException(`Actividad de sesión con id ${id} no encontrada`)
-		}
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
-		const sessionActivityResponse = await this.sessionActivityResponseRepository.findOne({ where: { sessionActivityId: id } })
-		if (!sessionActivityResponse) {
-			throw new BadRequestException(`La respuesta de la actividad de sesión con id ${id} no fue encontrada`)
+		try {
+			const sessionActivityResponseRepository = businessDataSource.getRepository(SessionActivityResponse)
+			return await sessionActivityResponseRepository.update(id, { 
+				grade, 
+				gradedDatetime: this.dateService.getNow() 
+			})
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 		}
-
-		if (sessionActivityResponse.grade) {
-			throw new BadRequestException(`La actividad de sesión con id ${id} ya fue calificada`)
-		}
-
-		return this.sessionActivityResponseRepository.update(sessionActivityResponse.id, {
-			grade,
-			gradedDatetime: new Date()
-		})
 	}
 }

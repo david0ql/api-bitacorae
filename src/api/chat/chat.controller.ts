@@ -12,6 +12,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('chat')
 @ApiBearerAuth()
@@ -20,13 +21,13 @@ export class ChatController {
 	constructor(private readonly chatService: ChatService) {}
 
 	@Post()
-	create(@CurrentUser() user: JwtUser, @Body() createChatDto: CreateChatDto) {
-		return this.chatService.create(user, createChatDto)
+	create(@CurrentUser() user: JwtUser, @Body() createChatDto: CreateChatDto, @BusinessName() businessName: string) {
+		return this.chatService.create(user, createChatDto, businessName)
 	}
 
 	@Get('/bySession/:id')
 	@HttpCode(200)
-	findAllBySession(@Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<ChatMessage>> {
-		return this.chatService.findAllBySession(+id, pageOptionsDto)
+	findAllBySession(@Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<ChatMessage>> {
+		return this.chatService.findAllBySession(+id, pageOptionsDto, businessName)
 	}
 }

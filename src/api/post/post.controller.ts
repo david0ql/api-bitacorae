@@ -14,6 +14,7 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('post')
 @ApiBearerAuth()
@@ -26,20 +27,20 @@ export class PostController {
 	@UseInterceptors(FileUploadInterceptor('file', 'post'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreatePostDto })
-	create(@Body() createPostDto: CreatePostDto, @UploadedFile() file?: Express.Multer.File) {
-		return this.postService.create(createPostDto, file)
+	create(@Body() createPostDto: CreatePostDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+		return this.postService.create(createPostDto, businessName, file)
 	}
 
 	@Get()
 	@HttpCode(200)
-	findAll(@CurrentUser() user: JwtUser, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<PostEntity>> {
-		return this.postService.findAll(user, pageOptionsDto)
+	findAll(@CurrentUser() user: JwtUser, @Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<PostEntity>> {
+		return this.postService.findAll(user, pageOptionsDto, businessName)
 	}
 
 	@Get('lastPost')
 	@HttpCode(200)
-	findLast() {
-		return this.postService.findLast()
+	findLast(@BusinessName() businessName: string) {
+		return this.postService.findLast(businessName)
 	}
 
 	@Patch(':id')
@@ -47,13 +48,13 @@ export class PostController {
 	@UseInterceptors(FileUploadInterceptor('file', 'post'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: UpdatePostDto })
-	update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto, @UploadedFile() file?: Express.Multer.File) {
-		return this.postService.update(+id, updatePostDto, file)
+	update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+		return this.postService.update(+id, updatePostDto, businessName, file)
 	}
 
 	@Delete(':id')
 	@HttpCode(200)
-	remove(@Param('id') id: string) {
-		return this.postService.remove(+id)
+	remove(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.postService.remove(+id, businessName)
 	}
 }

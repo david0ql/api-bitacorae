@@ -9,6 +9,7 @@ import { ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { SessionStatus } from 'src/entities/SessionStatus'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('session-status')
 @ApiBearerAuth()
@@ -18,7 +19,7 @@ export class SessionStatusController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<SessionStatus>> {
-		return this.sessionStatusService.findAll(pageOptionsDto)
+	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<SessionStatus>> {
+		return this.sessionStatusService.findAll(pageOptionsDto, businessName)
 	}
 }

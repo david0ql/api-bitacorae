@@ -2,11 +2,12 @@ import * as joi from 'joi';
 import 'dotenv/config';
 
 interface EnvVars {
-	DB_HOST: string;
-	DB_PORT: number;
-	DB_USER: string;
-	DB_PASSWORD: string;
-	DB_NAME: string;
+	DB_HOST_ADMIN: string;
+	DB_PORT_ADMIN: number;
+	DB_USER_ADMIN: string;
+	DB_PASSWORD_ADMIN: string;
+	DB_NAME_ADMIN: string;
+	DB_ALIAS_ADMIN: string;
 	JWT_SECRET: string;
 	PORT: number;
 	REDIS_HOST: string;
@@ -24,11 +25,12 @@ interface EnvVars {
 
 const envSchema = joi
   	.object({
-		DB_HOST: joi.string().required(),
-		DB_PORT: joi.number().required(),
-		DB_USER: joi.string().required(),
-		DB_PASSWORD: joi.string().required(),
-		DB_NAME: joi.string().required(),
+		DB_HOST_ADMIN: joi.string().required(),
+		DB_PORT_ADMIN: joi.number().required(),
+		DB_USER_ADMIN: joi.string().required(),
+		DB_PASSWORD_ADMIN: joi.string().required(),
+		DB_NAME_ADMIN: joi.string().required(),
+		DB_ALIAS_ADMIN: joi.string().required(),
 		JWT_SECRET: joi.string().required(),
 		PORT: joi.number().required(),
 		REDIS_HOST: joi.string().required(),

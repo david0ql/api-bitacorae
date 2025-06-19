@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common'
-import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { EconomicActivityService } from './economic-activity.service'
 import { EconomicActivityController } from './economic-activity.controller'
-import { EconomicActivity } from 'src/entities/EconomicActivity'
+import { DynamicDatabaseModule } from 'src/services/dynamic-database/dynamic-database.module'
 
 @Module({
 	controllers: [EconomicActivityController],
 	providers: [EconomicActivityService],
-	imports: [TypeOrmModule.forFeature([EconomicActivity])]
+	imports: [DynamicDatabaseModule]
 })
 
 export class EconomicActivityModule {}

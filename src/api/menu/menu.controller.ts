@@ -8,6 +8,7 @@ import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('menu')
 @ApiBearerAuth()
@@ -17,7 +18,7 @@ export class MenuController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@CurrentUser() user: JwtUser) {
-		return this.menuService.findAll(user.roleId)
+	findAll(@CurrentUser() user: JwtUser, @BusinessName() businessName: string) {
+		return this.menuService.findAll(user.roleId, businessName)
 	}
 }

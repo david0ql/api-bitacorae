@@ -16,7 +16,7 @@ import { Admin } from "./Admin";
 import { Expert } from "./Expert";
 
 @Index("strengthening_area_strengthening_level_FK", ["levelId"], {})
-@Entity("strengthening_area", { schema: "dbbitacorae" })
+@Entity("strengthening_area")
 export class StrengtheningArea {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;

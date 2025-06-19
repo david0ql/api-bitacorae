@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common'
-import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { MenuService } from './menu.service'
 import { MenuController } from './menu.controller'
-import { Menu } from 'src/entities/Menu'
+import { DynamicDatabaseModule } from 'src/services/dynamic-database/dynamic-database.module'
 
 @Module({
 	controllers: [MenuController],
 	providers: [MenuService],
-	imports: [TypeOrmModule.forFeature([Menu])]
+	imports: [DynamicDatabaseModule]
 })
 
 export class MenuModule {}

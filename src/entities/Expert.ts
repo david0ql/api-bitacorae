@@ -23,7 +23,7 @@ import { StrengtheningArea } from "./StrengtheningArea";
 @Index("consultor_type_id", ["consultorTypeId"], {})
 @Index("education_level_id", ["educationLevelId"], {})
 @Index("expert_gender_FK", ["genderId"], {})
-@Entity("expert", { schema: "dbbitacorae" })
+@Entity("expert")
 export class Expert {
   @PrimaryGeneratedColumn({ type: "int", name: "id" })
   id: number;
@@ -142,10 +142,7 @@ export class Expert {
   @JoinTable({
     name: "expert_strengthening_area_rel",
     joinColumns: [{ name: "expert_id", referencedColumnName: "id" }],
-    inverseJoinColumns: [
-      { name: "strengthening_area_id", referencedColumnName: "id" },
-    ],
-    schema: "dbbitacorae",
+    inverseJoinColumns: [{ name: "strengthening_area_id", referencedColumnName: "id" }]
   })
   strengtheningAreas: StrengtheningArea[];
 }
