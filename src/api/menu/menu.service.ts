@@ -29,8 +29,8 @@ export class MenuService {
 				'menu.order'
 			])
 			.innerJoin('menu.roles', 'role', 'role.id = :roleId', { roleId })
-			.orderBy('menu.id', 'ASC')
-			.addOrderBy('menu.order', 'ASC')
+			.orderBy('menu.order', 'ASC')
+			.addOrderBy('menu.id', 'ASC')
 			.getMany()
 
 		const menuTree = this.buildMenuTree(menus)

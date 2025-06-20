@@ -258,8 +258,60 @@ export class UserService {
 			throw new BadRequestException('Las contraseñas no coinciden')
 		}
 
-		if(![3,4].includes(role)) {
+		if(![1,2,3,4].includes(role)) {
 			throw new BadRequestException('No se puede cambiar la contraseña de este rol')
+		}
+
+		if(role === 1) {
+			const existingAdmin = await this.adminRepository.findOne({
+				where: { id },
+				relations: ['user']
+			})
+			if(!existingAdmin) {
+				throw new BadRequestException('Administrador no encontrado')
+			}
+
+			const salt = bcrypt.genSaltSync(10)
+			const hash = bcrypt.hashSync(newPassword, salt)
+
+			try {
+				this.mailService.sendChangePasswordEmail({
+					name: `${existingAdmin.firstName} ${existingAdmin.lastName}`,
+					email: existingAdmin.user.email,
+					password: newPassword
+				})
+
+			} catch (e) {
+				console.error('Error sending change password email:', e)
+			}
+
+			return await this.userRepository.update(existingAdmin.userId, { password: hash })
+		}
+
+		if(role === 2) {
+			const existingAuditor = await this.auditorRepository.findOne({
+				where: { id },
+				relations: ['user']
+			})
+			if(!existingAuditor) {
+				throw new BadRequestException('Auditor no encontrado')
+			}
+
+			const salt = bcrypt.genSaltSync(10)
+			const hash = bcrypt.hashSync(newPassword, salt)
+
+			try {
+				this.mailService.sendChangePasswordEmail({
+					name: `${existingAuditor.firstName} ${existingAuditor.lastName}`,
+					email: existingAuditor.user.email,
+					password: newPassword
+				})
+
+			} catch (e) {
+				console.error('Error sending change password email:', e)
+			}
+
+			return await this.userRepository.update(existingAuditor.userId, { password: hash })
 		}
 
 		if(role === 3) {

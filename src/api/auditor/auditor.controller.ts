@@ -1,0 +1,59 @@
+import { Controller, Get, Post, Body, Patch, Param, UseGuards, HttpCode, UseInterceptors, UploadedFile, Delete, Query } from '@nestjs/common'
+
+import { AuditorService } from './auditor.service'
+
+import { CreateAuditorDto } from './dto/create-auditor.dto'
+import { UpdateAuditorDto } from './dto/update-auditor.dto'
+
+import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { PermissionsGuard } from '../auth/guards/permissions.guard'
+import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
+import { CurrentUser } from '../auth/decorators/current-user.decorator'
+import { JwtUser } from '../auth/interfaces/jwt-user.interface'
+import { PageOptionsDto } from 'src/dto/page-options.dto'
+import { PageDto } from 'src/dto/page.dto'
+import { Auditor } from 'src/entities/Auditor'
+
+@Controller('auditor')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+export class AuditorController {
+	constructor(private readonly auditorService: AuditorService) {}
+
+	@Post()
+	@HttpCode(200)
+	@UseInterceptors(FileUploadInterceptor('file', 'auditor'))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({ type: CreateAuditorDto })
+	create(@Body() createAuditorDto: CreateAuditorDto, @UploadedFile() file?: Express.Multer.File) {
+		return this.auditorService.create(createAuditorDto, file)
+	}
+
+	@Get()
+	@HttpCode(200)
+	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Auditor>> {
+		return this.auditorService.findAll(pageOptionsDto)
+	}
+
+	@Get(':id')
+	@HttpCode(200)
+	findOne(@Param('id') id: string) {
+		return this.auditorService.findOne(+id)
+	}
+
+	@Patch(':id')
+	@HttpCode(200)
+	@UseInterceptors(FileUploadInterceptor('file', 'auditor'))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({ type: UpdateAuditorDto })
+	update(@Param('id') id: string, @Body() updateAuditorDto: UpdateAuditorDto, @UploadedFile() file?: Express.Multer.File) {
+		return this.auditorService.update(+id, updateAuditorDto, file)
+	}
+
+	@Delete(':id')
+	@HttpCode(200)
+	remove(@Param('id') id: string) {
+		return this.auditorService.remove(+id)
+	}
+}
