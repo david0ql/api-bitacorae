@@ -246,18 +246,92 @@ export class UserService {
 			throw new BadRequestException('Las contraseñas no coinciden')
 		}
 
+		if(![1,2,3,4].includes(role)) {
+			throw new BadRequestException('No se puede cambiar la contraseña de este rol')
+		}
+
 		const salt = bcrypt.genSaltSync(10)
 		const hash = bcrypt.hashSync(newPassword, salt)
 
+		if(role === 1) {
+			return this.dynamicEntityService.executeWithRepository(
+				businessName,
+				Admin,
+				async (adminRepository) => {
+					const existingAdmin = await adminRepository.findOne({
+						where: { id },
+						relations: ['user']
+					})
+					if(!existingAdmin) {
+						throw new BadRequestException('Administrador no encontrado')
+					}
+
+					try {
+						this.mailService.sendChangePasswordEmail({
+							name: `${existingAdmin.firstName} ${existingAdmin.lastName}`,
+							email: existingAdmin.user.email,
+							password: newPassword
+						}, businessName)
+
+					} catch (e) {
+						console.error('Error sending change password email:', e)
+					}
+
+					return this.dynamicEntityService.executeWithRepository(
+						businessName,
+						User,
+						async (userRepository) => {
+							return userRepository.update(existingAdmin.userId, { password: hash })
+						}
+					)
+				}
+			)
+		}
+
+		if(role === 2) {
+			return this.dynamicEntityService.executeWithRepository(
+				businessName,
+				Auditor,
+				async (auditorRepository) => {
+					const existingAuditor = await auditorRepository.findOne({
+						where: { id },
+						relations: ['user']
+					})
+					if(!existingAuditor) {
+						throw new BadRequestException('Auditor no encontrado')
+					}
+
+					try {
+						this.mailService.sendChangePasswordEmail({
+							name: `${existingAuditor.firstName} ${existingAuditor.lastName}`,
+							email: existingAuditor.user.email,
+							password: newPassword
+						}, businessName)
+
+					} catch (e) {
+						console.error('Error sending change password email:', e)
+					}
+
+					return this.dynamicEntityService.executeWithRepository(
+						businessName,
+						User,
+						async (userRepository) => {
+							return userRepository.update(existingAuditor.userId, { password: hash })
+						}
+					)
+				}
+			)
+		}
+
 		try {
 			if(role === 3) {
-				return await this.dynamicEntityService.executeWithRepository(
+				return this.dynamicEntityService.executeWithRepository(
 					businessName,
 					Expert,
 					async (expertRepository) => {
 						const existingExpert = await expertRepository.findOne({
 							where: { id },
-							select: { userId: true }
+							relations: ['user']
 						})
 
 						if(!existingExpert) {
@@ -265,26 +339,32 @@ export class UserService {
 						}
 
 						await this.mailService.sendChangePasswordEmail({
-							name: 'Experto',
-							email: 'expert@example.com',
+							name: `${existingExpert.firstName} ${existingExpert.lastName}`,
+							email: existingExpert.user.email,
 							password: newPassword
 						}, businessName).catch(e => {
 							console.error('Error sending change password email:', e)
 						})
 
-						return await expertRepository.update(existingExpert.userId, { password: hash })
+						return this.dynamicEntityService.executeWithRepository(
+							businessName,
+							User,
+							async (userRepository) => {
+								return userRepository.update(existingExpert.userId, { password: hash })
+							}
+						)
 					}
 				)
 			}
 
 			if(role === 4) {
-				return await this.dynamicEntityService.executeWithRepository(
+				return this.dynamicEntityService.executeWithRepository(
 					businessName,
 					Business,
 					async (businessRepository) => {
 						const existingBusiness = await businessRepository.findOne({
 							where: { id },
-							select: { userId: true }
+							relations: ['user']
 						})
 
 						if(!existingBusiness) {
@@ -292,14 +372,20 @@ export class UserService {
 						}
 
 						await this.mailService.sendChangePasswordEmail({
-							name: 'Empresa',
-							email: 'business@example.com',
+							name: `${existingBusiness.socialReason}`,
+							email: existingBusiness.user.email,
 							password: newPassword
 						}, businessName).catch(e => {
 							console.error('Error sending change password email:', e)
 						})
 
-						return await businessRepository.update(existingBusiness.userId, { password: hash })
+						return this.dynamicEntityService.executeWithRepository(
+							businessName,
+							User,
+							async (userRepository) => {
+								return userRepository.update(existingBusiness.userId, { password: hash })
+							}
+						)
 					}
 				)
 			}
