@@ -161,32 +161,44 @@ export class AuthService {
 		const fs = require('fs')
 		const path = require('path')
 		
-		// Lista de tablas que tienen archivos CSV correspondientes
-		const tables = [
-			'permission',
-			'economic_activity',
-			'admin',
-			'gender',
-			'consultor_type',
-			'service',
-			'document_type',
-			'user',
-			'role_permission',
-			'position',
-			'product_status',
-			'business_size',
-			'market_scope',
-			'strengthening_level',
-			'session_status',
-			'strengthening_area',
-			'education_level',
-			'menu',
-			'role_menu',
-			'role',
-			'report_type'
+		// Definir grupos de tablas por dependencias
+		const tableGroups = [
+			// Grupo 1: Tablas sin dependencias (se pueden importar en paralelo)
+			[
+				'permission',
+				'economic_activity',
+				'gender',
+				'document_type',
+				'position',
+				'product_status',
+				'business_size',
+				'market_scope',
+				'strengthening_level',
+				'session_status',
+				'education_level'
+			],
+			// Grupo 2: Tablas que dependen de strengthening_level
+			['strengthening_area'],
+			// Grupo 3: Tablas que dependen de role
+			['role'],
+			// Grupo 4: Tablas que dependen de menu
+			['menu'],
+			// Grupo 5: Tablas que dependen de user
+			['user'],
+			// Grupo 6: Tablas que dependen de role y user
+			['admin', 'consultor_type'],
+			// Grupo 7: Tablas que dependen de strengthening_level
+			['service'],
+			// Grupo 8: Tablas que dependen de role y permission
+			['role_permission'],
+			// Grupo 9: Tablas que dependen de role y menu
+			['role_menu'],
+			// Grupo 10: Tablas sin dependencias adicionales
+			['report_type']
 		]
 
-		const exportsDir = path.join(__dirname, '../../exports')
+		// Cambiar la ruta para apuntar a la raíz del proyecto
+		const exportsDir = path.join(process.cwd(), 'exports')
 		
 		// Verificar si existe la carpeta exports
 		if (!fs.existsSync(exportsDir)) {
@@ -196,68 +208,134 @@ export class AuthService {
 
 		console.log('Iniciando importación de datos CSV...')
 
-		for (const table of tables) {
-			const csvFilePath = path.join(exportsDir, `${table}.csv`)
-			
-			if (!fs.existsSync(csvFilePath)) {
-				console.log(`  - Archivo CSV no encontrado para tabla ${table}`)
-				continue
-			}
+		// Procesar cada grupo de tablas
+		for (let groupIndex = 0; groupIndex < tableGroups.length; groupIndex++) {
+			const group = tableGroups[groupIndex]
+			console.log(`\n--- Procesando grupo ${groupIndex + 1}/${tableGroups.length} (${group.length} tabla${group.length > 1 ? 's' : ''}) ---`)
 
-			try {
-				console.log(`  - Importando datos a tabla: ${table}`)
-				
-				// Leer archivo CSV
-				const csvContent = fs.readFileSync(csvFilePath, 'utf8')
-				const lines = csvContent.split('\n').filter(line => line.trim() !== '')
-				
-				if (lines.length <= 1) {
-					console.log(`    - Tabla ${table} está vacía en CSV`)
-					continue
-				}
-
-				// Parsear headers
-				const headers = lines[0].split(',').map(header => header.trim())
-				const dataLines = lines.slice(1)
-
-				// Procesar cada línea de datos
-				for (const line of dataLines) {
-					const values = this.parseCSVLine(line)
-					
-					if (values.length !== headers.length) {
-						console.log(`    - Saltando línea con formato incorrecto en ${table}`)
-						continue
-					}
-
-					// Crear objeto de datos
-					const rowData: any = {}
-					headers.forEach((header, index) => {
-						const value = values[index]
-						// Convertir valores según el tipo
-						if (value === '' || value === 'NULL' || value === 'null') {
-							rowData[header] = null
-						} else if (!isNaN(Number(value)) && value !== '') {
-							rowData[header] = Number(value)
-						} else {
-							rowData[header] = value
-						}
-					})
-
-					// Insertar datos en la tabla
-					await dataSource.query(
-						`INSERT INTO ${table} (${headers.join(', ')}) VALUES (${headers.map(() => '?').join(', ')})`,
-						Object.values(rowData)
-					)
-				}
-
-				console.log(`    - Importados ${dataLines.length} registros a ${table}`)
-
-			} catch (error) {
-				console.error(`    - Error importando tabla ${table}:`, error.message)
+			if (group.length === 1) {
+				// Importar tabla individual
+				await this.importTable(dataSource, group[0], exportsDir)
+			} else {
+				// Importar múltiples tablas en paralelo
+				const importPromises = group.map(table => this.importTable(dataSource, table, exportsDir))
+				await Promise.all(importPromises)
 			}
 		}
 
-		console.log('Importación de CSV completada')
+		console.log('\nImportación de CSV completada')
+	}
+
+	private async importTable(dataSource: any, table: string, exportsDir: string) {
+		const fs = require('fs')
+		const path = require('path')
+		
+		const csvFilePath = path.join(exportsDir, `${table}.csv`)
+		
+		if (!fs.existsSync(csvFilePath)) {
+			console.log(`  - Archivo CSV no encontrado para tabla ${table}`)
+			return
+		}
+
+		try {
+			console.log(`  - Importando datos a tabla: ${table}`)
+			
+			// Leer archivo CSV
+			const csvContent = fs.readFileSync(csvFilePath, 'utf8')
+			const lines = csvContent.split('\n').filter(line => line.trim() !== '')
+			
+			if (lines.length <= 1) {
+				console.log(`    - Tabla ${table} está vacía en CSV`)
+				return
+			}
+
+			// Parsear headers
+			const headers = lines[0].split(',').map(header => header.trim())
+			const dataLines = lines.slice(1)
+
+			// Procesar cada línea de datos
+			for (const line of dataLines) {
+				const values = this.parseCSVLine(line)
+				
+				if (values.length !== headers.length) {
+					console.log(`    - Saltando línea con formato incorrecto en ${table}`)
+					continue
+				}
+
+				// Crear objeto de datos
+				const rowData: any = {}
+				headers.forEach((header, index) => {
+					const value = values[index]
+					// Convertir valores según el tipo
+					if (value === '' || value === 'NULL' || value === 'null') {
+						rowData[header] = null
+					} else if (!isNaN(Number(value)) && value !== '') {
+						rowData[header] = Number(value)
+					} else if (header === 'created_at' || header === 'updated_at') {
+						// Convertir fechas de JavaScript a formato MySQL
+						rowData[header] = this.convertJavaScriptDateToMySQL(value)
+					} else {
+						rowData[header] = value
+					}
+				})
+
+				// Insertar datos en la tabla (manejar palabras reservadas)
+				const tableName = this.escapeTableName(table)
+				const escapedHeaders = headers.map(header => this.escapeColumnName(header))
+				await dataSource.query(
+					`INSERT INTO ${tableName} (${escapedHeaders.join(', ')}) VALUES (${headers.map(() => '?').join(', ')})`,
+					Object.values(rowData)
+				)
+			}
+
+			console.log(`    - Importados ${dataLines.length} registros a ${table}`)
+
+		} catch (error) {
+			console.error(`    - Error importando tabla ${table}:`, error.message)
+		}
+	}
+
+	private convertJavaScriptDateToMySQL(dateString: string): string | null {
+		try {
+			// Parsear la fecha de JavaScript
+			const date = new Date(dateString)
+			
+			// Verificar si la fecha es válida
+			if (isNaN(date.getTime())) {
+				return null
+			}
+			
+			// Convertir a formato MySQL (YYYY-MM-DD HH:MM:SS)
+			const year = date.getFullYear()
+			const month = String(date.getMonth() + 1).padStart(2, '0')
+			const day = String(date.getDate()).padStart(2, '0')
+			const hours = String(date.getHours()).padStart(2, '0')
+			const minutes = String(date.getMinutes()).padStart(2, '0')
+			const seconds = String(date.getSeconds()).padStart(2, '0')
+			
+			return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+		} catch (error) {
+			console.log(`    - Error convirtiendo fecha: ${dateString}`)
+			return null
+		}
+	}
+
+	private escapeTableName(tableName: string): string {
+		// Escapar palabras reservadas de SQL
+		const reservedWords = ['position', 'menu', 'order', 'group', 'user']
+		if (reservedWords.includes(tableName.toLowerCase())) {
+			return `\`${tableName}\``
+		}
+		return tableName
+	}
+
+	private escapeColumnName(columnName: string): string {
+		// Escapar palabras reservadas de SQL para nombres de columnas
+		const reservedWords = ['order', 'group', 'user', 'key', 'index', 'table', 'database']
+		if (reservedWords.includes(columnName.toLowerCase())) {
+			return `\`${columnName}\``
+		}
+		return columnName
 	}
 
 	private parseCSVLine(line: string): string[] {
