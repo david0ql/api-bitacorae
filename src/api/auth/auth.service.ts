@@ -136,12 +136,15 @@ export class AuthService {
 			// Inicializar la conexión (esto creará todas las tablas)
 			await businessDataSource.initialize()
 			
+			// Importar datos de CSV después de crear las tablas
+			await this.importCSVData(businessDataSource)
+			
 			// Cerrar la conexión
 			await businessDataSource.destroy()
 
 			return {
 				success: true,
-				message: `Base de datos ${dbName} sincronizada exitosamente`,
+				message: `Base de datos ${dbName} sincronizada e importados datos CSV exitosamente`,
 				business: {
 					host: business.host,
 					port: business.port,
@@ -152,6 +155,141 @@ export class AuthService {
 			console.error('Error syncing database:', error)
 			throw new Error(`Error al sincronizar la base de datos ${dbName}: ${error.message}`)
 		}
+	}
+
+	private async importCSVData(dataSource: any) {
+		const fs = require('fs')
+		const path = require('path')
+		
+		// Lista de tablas que tienen archivos CSV correspondientes
+		const tables = [
+			'permission',
+			'economic_activity',
+			'admin',
+			'gender',
+			'consultor_type',
+			'service',
+			'document_type',
+			'user',
+			'role_permission',
+			'position',
+			'product_status',
+			'business_size',
+			'market_scope',
+			'strengthening_level',
+			'session_status',
+			'strengthening_area',
+			'education_level',
+			'menu',
+			'role_menu',
+			'role',
+			'report_type'
+		]
+
+		const exportsDir = path.join(__dirname, '../../exports')
+		
+		// Verificar si existe la carpeta exports
+		if (!fs.existsSync(exportsDir)) {
+			console.log('Carpeta exports no encontrada, saltando importación de CSV')
+			return
+		}
+
+		console.log('Iniciando importación de datos CSV...')
+
+		for (const table of tables) {
+			const csvFilePath = path.join(exportsDir, `${table}.csv`)
+			
+			if (!fs.existsSync(csvFilePath)) {
+				console.log(`  - Archivo CSV no encontrado para tabla ${table}`)
+				continue
+			}
+
+			try {
+				console.log(`  - Importando datos a tabla: ${table}`)
+				
+				// Leer archivo CSV
+				const csvContent = fs.readFileSync(csvFilePath, 'utf8')
+				const lines = csvContent.split('\n').filter(line => line.trim() !== '')
+				
+				if (lines.length <= 1) {
+					console.log(`    - Tabla ${table} está vacía en CSV`)
+					continue
+				}
+
+				// Parsear headers
+				const headers = lines[0].split(',').map(header => header.trim())
+				const dataLines = lines.slice(1)
+
+				// Procesar cada línea de datos
+				for (const line of dataLines) {
+					const values = this.parseCSVLine(line)
+					
+					if (values.length !== headers.length) {
+						console.log(`    - Saltando línea con formato incorrecto en ${table}`)
+						continue
+					}
+
+					// Crear objeto de datos
+					const rowData: any = {}
+					headers.forEach((header, index) => {
+						const value = values[index]
+						// Convertir valores según el tipo
+						if (value === '' || value === 'NULL' || value === 'null') {
+							rowData[header] = null
+						} else if (!isNaN(Number(value)) && value !== '') {
+							rowData[header] = Number(value)
+						} else {
+							rowData[header] = value
+						}
+					})
+
+					// Insertar datos en la tabla
+					await dataSource.query(
+						`INSERT INTO ${table} (${headers.join(', ')}) VALUES (${headers.map(() => '?').join(', ')})`,
+						Object.values(rowData)
+					)
+				}
+
+				console.log(`    - Importados ${dataLines.length} registros a ${table}`)
+
+			} catch (error) {
+				console.error(`    - Error importando tabla ${table}:`, error.message)
+			}
+		}
+
+		console.log('Importación de CSV completada')
+	}
+
+	private parseCSVLine(line: string): string[] {
+		const values: string[] = []
+		let current = ''
+		let inQuotes = false
+		
+		for (let i = 0; i < line.length; i++) {
+			const char = line[i]
+			
+			if (char === '"') {
+				if (inQuotes && line[i + 1] === '"') {
+					// Comilla escapada
+					current += '"'
+					i++ // Saltar la siguiente comilla
+				} else {
+					// Cambiar estado de comillas
+					inQuotes = !inQuotes
+				}
+			} else if (char === ',' && !inQuotes) {
+				// Fin del campo
+				values.push(current.trim())
+				current = ''
+			} else {
+				current += char
+			}
+		}
+		
+		// Agregar el último campo
+		values.push(current.trim())
+		
+		return values
 	}
 
 	private generateToken(payload: JwtPayload) {

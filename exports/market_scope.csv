@@ -1,0 +1,6 @@
+id,name,created_at,updated_at
+1,Local (Ciudad o municipio),Tue Feb 04 2025 20:54:46 GMT-0500 (Colombia Standard Time),Tue Feb 04 2025 20:54:46 GMT-0500 (Colombia Standard Time)
+2,Regional (máximo 3 departamentos),Tue Feb 04 2025 20:54:47 GMT-0500 (Colombia Standard Time),Tue Feb 04 2025 20:54:47 GMT-0500 (Colombia Standard Time)
+3,Nacional (más de 3 departamentos),Tue Feb 04 2025 20:54:47 GMT-0500 (Colombia Standard Time),Tue Feb 04 2025 20:54:47 GMT-0500 (Colombia Standard Time)
+4,Internacional,Tue Feb 04 2025 20:54:47 GMT-0500 (Colombia Standard Time),Tue Feb 04 2025 20:54:47 GMT-0500 (Colombia Standard Time)
+5,Nacional e internacional,Tue Feb 04 2025 20:54:47 GMT-0500 (Colombia Standard Time),Tue Feb 04 2025 20:54:47 GMT-0500 (Colombia Standard Time)
