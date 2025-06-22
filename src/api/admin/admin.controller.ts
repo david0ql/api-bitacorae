@@ -14,6 +14,7 @@ import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { PageDto } from 'src/dto/page.dto'
 import { Admin } from 'src/entities/Admin'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('admin')
 @ApiBearerAuth()
@@ -26,20 +27,20 @@ export class AdminController {
 	@UseInterceptors(FileUploadInterceptor('file', 'admin'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreateAdminDto })
-	create(@Body() createAdminDto: CreateAdminDto, @UploadedFile() file?: Express.Multer.File) {
-		return this.adminService.create(createAdminDto, file)
+	create(@Body() createAdminDto: CreateAdminDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+		return this.adminService.create(createAdminDto, businessName, file)
 	}
 
 	@Get()
 	@HttpCode(200)
-	findAll(@CurrentUser() user: JwtUser, @Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Admin>> {
-		return this.adminService.findAll(user, pageOptionsDto)
+	findAll(@CurrentUser() user: JwtUser, @Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<Admin>> {
+		return this.adminService.findAll(user, pageOptionsDto, businessName)
 	}
 
 	@Get(':id')
 	@HttpCode(200)
-	findOne(@Param('id') id: string) {
-		return this.adminService.findOne(+id)
+	findOne(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.adminService.findOne(+id, businessName)
 	}
 
 	@Patch(':id')
@@ -47,13 +48,13 @@ export class AdminController {
 	@UseInterceptors(FileUploadInterceptor('file', 'admin'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: UpdateAdminDto })
-	update(@Param('id') id: string, @Body() updateAdminDto: UpdateAdminDto, @UploadedFile() file?: Express.Multer.File) {
-		return this.adminService.update(+id, updateAdminDto, file)
+	update(@Param('id') id: string, @Body() updateAdminDto: UpdateAdminDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+		return this.adminService.update(+id, updateAdminDto, businessName, file)
 	}
 
 	@Delete(':id')
 	@HttpCode(200)
-	remove(@Param('id') id: string) {
-		return this.adminService.remove(+id)
+	remove(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.adminService.remove(+id, businessName)
 	}
 }

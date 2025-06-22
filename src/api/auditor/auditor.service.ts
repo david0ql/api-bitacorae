@@ -1,11 +1,11 @@
 import { In, Repository } from 'typeorm'
 import { BadRequestException, Injectable } from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
 import * as bcrypt from 'bcrypt'
 
 import { User } from 'src/entities/User'
 import { Auditor } from 'src/entities/Auditor'
 import { StrengtheningArea } from 'src/entities/StrengtheningArea'
+import { DynamicDatabaseService } from 'src/services/dynamic-database/dynamic-database.service'
 
 import { UpdateAuditorDto } from './dto/update-auditor.dto'
 
@@ -21,20 +21,12 @@ import { PageMetaDto } from 'src/dto/page-meta.dto'
 @Injectable()
 export class AuditorService {
 	constructor(
-		@InjectRepository(User)
-		private readonly userRepository: Repository<User>,
-
-		@InjectRepository(Auditor)
-		private readonly auditorRepository: Repository<Auditor>,
-
-		@InjectRepository(StrengtheningArea)
-		private readonly strengtheningAreaRepository: Repository<StrengtheningArea>,
-
+		private readonly dynamicDbService: DynamicDatabaseService,
 		private readonly fileUploadService: FileUploadService,
 		private readonly mailService: MailService
 	) {}
 
-	async create(createAuditorDto: CreateAuditorDto, file?: Express.Multer.File) {
+	async create(createAuditorDto: CreateAuditorDto, businessName: string, file?: Express.Multer.File) {
 		const {
 			firstName,
 			lastName,
@@ -57,32 +49,39 @@ export class AuditorService {
 
 		const fullPath = file ? this.fileUploadService.getFullPath('auditor', file.filename) : undefined
 
-		const existingUser = await this.userRepository.findOne({ where: { email } })
-		if(existingUser) {
-			if(fullPath) {
-				this.fileUploadService.deleteFile(fullPath)
-			}
-			throw new BadRequestException(`El correo electrónico ${email} ya existe`)
-		}
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
 		try {
+			const userRepository = businessDataSource.getRepository(User)
+			const auditorRepository = businessDataSource.getRepository(Auditor)
+			const strengtheningAreaRepository = businessDataSource.getRepository(StrengtheningArea)
+
+			const existingUser = await userRepository.findOne({ where: { email } })
+			if(existingUser) {
+				if(fullPath) {
+					this.fileUploadService.deleteFile(fullPath)
+				}
+				throw new BadRequestException(`El correo electrónico ${email} ya existe`)
+			}
+
 			const salt = bcrypt.genSaltSync(10)
 			const hash = bcrypt.hashSync(password, salt)
 
-			const user = this.userRepository.create({
+			const user = userRepository.create({
 				roleId: 1,
 				name: `${firstName} ${lastName}`,
 				email,
 				password: hash
 			})
 
-			const newUser = await this.userRepository.save(user)
+			const newUser = await userRepository.save(user)
 
-			const strengtheningAreaEntities = await this.strengtheningAreaRepository.findBy({
+			const strengtheningAreaEntities = await strengtheningAreaRepository.findBy({
 				id: In(strengtheningAreas || [])
 			})
 
-			const auditor = this.auditorRepository.create({
+			const auditor = auditorRepository.create({
 				userId: newUser.id,
 				firstName,
 				lastName,
@@ -102,14 +101,14 @@ export class AuditorService {
 				profile
 			})
 
-			const savedAuditor = await this.auditorRepository.save(auditor)
+			const savedAuditor = await auditorRepository.save(auditor)
 
 			try {
 				this.mailService.sendWelcomeEmail({
 					name: `${firstName} ${lastName}`,
 					email,
 					password
-				})
+				}, businessName)
 			} catch (e) {
 				console.error('Error sending welcome email:', e)
 			}
@@ -120,80 +119,100 @@ export class AuditorService {
 				this.fileUploadService.deleteFile(fullPath)
 			}
 			throw e
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 		}
 	}
 
-	async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<Auditor>> {
-		const queryBuilder = this.auditorRepository.createQueryBuilder('a')
-			.select([
-				'a.id AS id',
-				`CONCAT(a.firstName, ' ', a.lastName) AS name`,
-				'a.documentNumber AS document',
-				'a.phone AS phone',
-				'u.email AS email',
+	async findAll(pageOptionsDto: PageOptionsDto, businessName: string): Promise<PageDto<Auditor>> {
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+
+		try {
+			const auditorRepository = businessDataSource.getRepository(Auditor)
+
+			const queryBuilder = auditorRepository.createQueryBuilder('a')
+				.select([
+					'a.id AS id',
+					`CONCAT(a.firstName, ' ', a.lastName) AS name`,
+					'a.documentNumber AS document',
+					'a.phone AS phone',
+					'u.email AS email',
+				])
+				.innerJoin('a.user', 'u')
+				.orderBy('a.firstName', 'ASC')
+				.addOrderBy('a.lastName', 'ASC')
+
+			const [items, totalCount] = await Promise.all([
+				queryBuilder.getRawMany(),
+				queryBuilder.getCount()
 			])
-			.innerJoin('a.user', 'u')
-			.orderBy('a.firstName', 'ASC')
-			.addOrderBy('a.lastName', 'ASC')
 
-		const [items, totalCount] = await Promise.all([
-			queryBuilder.getRawMany(),
-			queryBuilder.getCount()
-		])
-
-		const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
-		return new PageDto(items, pageMetaDto)
+			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
+			return new PageDto(items, pageMetaDto)
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+		}
 	}
 
-	async findOne(id: number) {
+	async findOne(id: number, businessName: string) {
 		if (!id) return {}
 
-		const [auditor] = await this.auditorRepository.query(`
-			SELECT
-				u.id AS userId,
-				u.email AS email,
-				a.first_name AS firstName,
-				a.last_name AS lastName,
-				a.document_type_id AS documentTypeId,
-				a.document_number AS documentNumber,
-				a.phone AS phone,
-				CONCAT(?, '/', a.photo) AS photo,
-				a.gender_id AS genderId,
-				a.education_level_id AS educationLevelId,
-				a.experience_years AS experienceYears,
-				a.facebook AS facebook,
-				a.instagram AS instagram,
-				a.twitter AS twitter,
-				a.website AS website,
-				a.linkedin AS linkedin,
-				a.profile AS profile,
-				IF(COUNT(sa.id) > 0,
-					CONCAT('[',
-						GROUP_CONCAT(DISTINCT JSON_OBJECT(
-							'value', sa.id,
-							'label', sa.name
-						)),
-					']'),
-					NULL
-				) AS strengtheningAreas
-			FROM
-				user u
-				INNER JOIN auditor a ON a.user_id = u.id
-				LEFT JOIN auditor_strengthening_area_rel asa ON asa.auditor_id = a.id
-				LEFT JOIN strengthening_area sa ON sa.id = asa.strengthening_area_id
-			WHERE a.id = ?
-			GROUP BY u.id
-		`, [envVars.APP_URL, id])
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
-		if (!auditor) return {}
+		try {
+			const auditorRepository = businessDataSource.getRepository(Auditor)
 
-		return {
-			...auditor,
-			strengtheningAreas: auditor.strengtheningAreas ? JSON.parse(auditor.strengtheningAreas) : []
+			const [auditor] = await auditorRepository.query(`
+				SELECT
+					u.id AS userId,
+					u.email AS email,
+					a.first_name AS firstName,
+					a.last_name AS lastName,
+					a.document_type_id AS documentTypeId,
+					a.document_number AS documentNumber,
+					a.phone AS phone,
+					CONCAT(?, '/', a.photo) AS photo,
+					a.gender_id AS genderId,
+					a.education_level_id AS educationLevelId,
+					a.experience_years AS experienceYears,
+					a.facebook AS facebook,
+					a.instagram AS instagram,
+					a.twitter AS twitter,
+					a.website AS website,
+					a.linkedin AS linkedin,
+					a.profile AS profile,
+					IF(COUNT(sa.id) > 0,
+						CONCAT('[',
+							GROUP_CONCAT(DISTINCT JSON_OBJECT(
+								'value', sa.id,
+								'label', sa.name
+							)),
+						']'),
+						NULL
+					) AS strengtheningAreas
+				FROM
+					user u
+					INNER JOIN auditor a ON a.user_id = u.id
+					LEFT JOIN auditor_strengthening_area_rel asa ON asa.auditor_id = a.id
+					LEFT JOIN strengthening_area sa ON sa.id = asa.strengthening_area_id
+				WHERE a.id = ?
+				GROUP BY u.id
+			`, [envVars.APP_URL, id])
+
+			if (!auditor) return {}
+
+			return {
+				...auditor,
+				strengtheningAreas: auditor.strengtheningAreas ? JSON.parse(auditor.strengtheningAreas) : []
+			}
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 		}
 	}
 
-	async update(id: number, updateAuditorDto: UpdateAuditorDto, file?: Express.Multer.File) {
+	async update(id: number, updateAuditorDto: UpdateAuditorDto, businessName: string, file?: Express.Multer.File) {
 		const fullPath = file ? this.fileUploadService.getFullPath('auditor', file.filename) : undefined
 		if(!id) {
 			if(fullPath) {
@@ -221,21 +240,27 @@ export class AuditorService {
 			profile
 		} = updateAuditorDto
 
-
-		const existingUser = await this.userRepository.findOne({
-			where: { email },
-			relations: ['auditor']
-		})
-
-		if(existingUser && existingUser.auditor?.id !== id) {
-			if(fullPath) {
-				this.fileUploadService.deleteFile(fullPath)
-			}
-			throw new BadRequestException(`El correo electrónico ${email} ya existe`)
-		}
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
 		try {
-			const existingAuditor = await this.auditorRepository.findOne({
+			const userRepository = businessDataSource.getRepository(User)
+			const auditorRepository = businessDataSource.getRepository(Auditor)
+			const strengtheningAreaRepository = businessDataSource.getRepository(StrengtheningArea)
+
+			const existingUser = await userRepository.findOne({
+				where: { email },
+				relations: ['auditor']
+			})
+
+			if(existingUser && existingUser.auditor?.id !== id) {
+				if(fullPath) {
+					this.fileUploadService.deleteFile(fullPath)
+				}
+				throw new BadRequestException(`El correo electrónico ${email} ya existe`)
+			}
+
+			const existingAuditor = await auditorRepository.findOne({
 				where: { id },
 				relations: ['strengtheningAreas']
 			})
@@ -245,7 +270,7 @@ export class AuditorService {
 				return { affected: 0 }
 			}
 
-			const strengtheningAreaEntities = await this.strengtheningAreaRepository.findBy({
+			const strengtheningAreaEntities = await strengtheningAreaRepository.findBy({
 				id: In(strengtheningAreas || []),
 			})
 
@@ -266,9 +291,9 @@ export class AuditorService {
 			existingAuditor.profile = profile ?? existingAuditor.profile
 			existingAuditor.strengtheningAreas = strengtheningAreaEntities
 
-			await this.auditorRepository.save(existingAuditor)
+			await auditorRepository.save(existingAuditor)
 
-			await this.userRepository.update(existingAuditor.userId, {
+			await userRepository.update(existingAuditor.userId, {
 				name: `${firstName} ${lastName}`,
 				email
 			})
@@ -279,28 +304,40 @@ export class AuditorService {
 				this.fileUploadService.deleteFile(fullPath)
 			}
 			throw e
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 		}
 	}
 
-	async remove(id: number) {
-		const existingAuditor = await this.auditorRepository.findOne({ where: { id } })
-		if (!existingAuditor) return { affected: 0 }
+	async remove(id: number, businessName: string) {
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
-		const auditorData = await this.auditorRepository.findOne({
-			select: { userId: true },
-			where: { id }
-		})
+		try {
+			const userRepository = businessDataSource.getRepository(User)
+			const auditorRepository = businessDataSource.getRepository(Auditor)
 
-		const result = await this.auditorRepository.delete(id)
+			const existingAuditor = await auditorRepository.findOne({ where: { id } })
+			if (!existingAuditor) return { affected: 0 }
 
-		if(auditorData) {
-			await this.userRepository.delete(auditorData.userId)
+			const auditorData = await auditorRepository.findOne({
+				select: { userId: true },
+				where: { id }
+			})
+
+			const result = await auditorRepository.delete(id)
+
+			if(auditorData) {
+				await userRepository.delete(auditorData.userId)
+			}
+
+			if (existingAuditor.photo) {
+				this.fileUploadService.deleteFile(existingAuditor.photo)
+			}
+
+			return result
+		} finally {
+			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 		}
-
-		if (existingAuditor.photo) {
-			this.fileUploadService.deleteFile(existingAuditor.photo)
-		}
-
-		return result
 	}
 }

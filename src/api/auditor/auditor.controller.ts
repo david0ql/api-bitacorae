@@ -14,32 +14,33 @@ import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { PageDto } from 'src/dto/page.dto'
 import { Auditor } from 'src/entities/Auditor'
+import { BusinessName } from 'src/decorators/business-name.decorator'
 
 @Controller('auditor')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class AuditorController {
-	constructor(private readonly auditorService: AuditorService) {}
+	constructor(private readonly auditorService: AuditorService) { }
 
 	@Post()
 	@HttpCode(200)
 	@UseInterceptors(FileUploadInterceptor('file', 'auditor'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreateAuditorDto })
-	create(@Body() createAuditorDto: CreateAuditorDto, @UploadedFile() file?: Express.Multer.File) {
-		return this.auditorService.create(createAuditorDto, file)
+	create(@Body() createAuditorDto: CreateAuditorDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+		return this.auditorService.create(createAuditorDto, businessName, file)
 	}
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<PageDto<Auditor>> {
-		return this.auditorService.findAll(pageOptionsDto)
+	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<Auditor>> {
+		return this.auditorService.findAll(pageOptionsDto, businessName)
 	}
 
 	@Get(':id')
 	@HttpCode(200)
-	findOne(@Param('id') id: string) {
-		return this.auditorService.findOne(+id)
+	findOne(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.auditorService.findOne(+id, businessName)
 	}
 
 	@Patch(':id')
@@ -47,13 +48,13 @@ export class AuditorController {
 	@UseInterceptors(FileUploadInterceptor('file', 'auditor'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: UpdateAuditorDto })
-	update(@Param('id') id: string, @Body() updateAuditorDto: UpdateAuditorDto, @UploadedFile() file?: Express.Multer.File) {
-		return this.auditorService.update(+id, updateAuditorDto, file)
+	update(@Param('id') id: string, @Body() updateAuditorDto: UpdateAuditorDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+		return this.auditorService.update(+id, updateAuditorDto, businessName, file)
 	}
 
 	@Delete(':id')
 	@HttpCode(200)
-	remove(@Param('id') id: string) {
-		return this.auditorService.remove(+id)
+	remove(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.auditorService.remove(+id, businessName)
 	}
 }
