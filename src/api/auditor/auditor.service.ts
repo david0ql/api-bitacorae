@@ -70,7 +70,7 @@ export class AuditorService {
 			const hash = bcrypt.hashSync(password, salt)
 
 			const user = this.userRepository.create({
-				roleId: 1,
+				roleId: 2,
 				name: `${firstName} ${lastName}`,
 				email,
 				password: hash
