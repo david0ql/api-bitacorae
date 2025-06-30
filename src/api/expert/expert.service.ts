@@ -211,11 +211,25 @@ export class ExpertService {
 
 		try {
 			const expertRepository = businessDataSource.getRepository(Expert)
-			return await expertRepository
+			
+			// If filter is empty or undefined, return all experts
+			if (!filter || filter.trim() === '') {
+				const result = await expertRepository
+					.createQueryBuilder('e')
+					.select(['e.id', 'e.firstName', 'e.lastName'])
+					.getMany()
+				return result
+			}
+			
+			// Otherwise, filter by name
+			const result = await expertRepository
 				.createQueryBuilder('e')
 				.select(['e.id', 'e.firstName', 'e.lastName'])
 				.where('e.firstName LIKE :filter OR e.lastName LIKE :filter', { filter: `%${filter}%` })
 				.getMany()
+			return result
+		} catch (error) {
+			throw error
 		} finally {
 			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 		}

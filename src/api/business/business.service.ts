@@ -234,10 +234,12 @@ export class BusinessService {
 
 		try {
 			const businessRepository = businessDataSource.getRepository(Business)
-			return await businessRepository.findOne({
+			const business = await businessRepository.findOne({
 				where: { id },
-				relations: ['economicActivities', 'strengtheningAreas']
+				relations: ['economicActivities', 'strengtheningAreas', 'marketScope', 'productStatus']
 			})
+
+			return business
 		} finally {
 			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 		}
@@ -287,17 +289,33 @@ export class BusinessService {
 
 			const fullPath = file ? this.fileUploadService.getFullPath('business', file.filename) : undefined
 
+			// Debug logs for update
+			console.log('=== BACKEND DEBUG BUSINESS UPDATE ===')
+			console.log('Update DTO:', updateBusinessDto)
+			console.log('Economic Activities IDs:', updateBusinessDto.economicActivities)
+			console.log('Strengthening Areas IDs:', updateBusinessDto.strengtheningAreas)
+			console.log('Existing Economic Activities before update:', existingBusiness.economicActivities)
+			console.log('Existing Strengthening Areas before update:', existingBusiness.strengtheningAreas)
+
+			// First, assign the basic properties
+			Object.assign(existingBusiness, updateBusinessDto)
+
+			// Then handle the relations
 			if (updateBusinessDto.economicActivities) {
+				console.log('Processing Economic Activities IDs:', updateBusinessDto.economicActivities)
 				const economicActivityEntities = await economicActivityRepository.findBy({
 					id: In(updateBusinessDto.economicActivities)
 				})
+				console.log('Found Economic Activity Entities:', economicActivityEntities)
 				existingBusiness.economicActivities = economicActivityEntities
 			}
 
 			if (updateBusinessDto.strengtheningAreas) {
+				console.log('Processing Strengthening Areas IDs:', updateBusinessDto.strengtheningAreas)
 				const strengtheningAreaEntities = await strengtheningAreaRepository.findBy({
 					id: In(updateBusinessDto.strengtheningAreas)
 				})
+				console.log('Found Strengthening Area Entities:', strengtheningAreaEntities)
 				existingBusiness.strengtheningAreas = strengtheningAreaEntities
 			}
 
@@ -305,10 +323,47 @@ export class BusinessService {
 				existingBusiness.evidence = fullPath
 			}
 
-			Object.assign(existingBusiness, updateBusinessDto)
+			console.log('Final Economic Activities before save:', existingBusiness.economicActivities)
+			console.log('Final Strengthening Areas before save:', existingBusiness.strengtheningAreas)
+			console.log('=== END BACKEND DEBUG ===')
 
-			return await businessRepository.save(existingBusiness)
+			const savedBusiness = await businessRepository.save(existingBusiness)
+			
+			// Verify what was actually saved
+			console.log('=== VERIFICATION AFTER SAVE ===')
+			console.log('Saved Business Economic Activities:', savedBusiness.economicActivities)
+			console.log('Saved Business Strengthening Areas:', savedBusiness.strengtheningAreas)
+			
+			// Check the relation tables directly after save
+			try {
+				const economicActivitiesQuery = `
+					SELECT ea.id, ea.name 
+					FROM business_economic_activity_rel bea
+					JOIN economic_activity ea ON ea.id = bea.economic_activity_id
+					WHERE bea.business_id = ${id}
+				`
+				const strengtheningAreasQuery = `
+					SELECT sa.id, sa.name 
+					FROM business_strengthening_area_rel bsa
+					JOIN strengthening_area sa ON sa.id = bsa.strengthening_area_id
+					WHERE bsa.business_id = ${id}
+				`
+
+				const [economicActivitiesResult, strengtheningAreasResult] = await Promise.all([
+					businessDataSource.query(economicActivitiesQuery),
+					businessDataSource.query(strengtheningAreasQuery)
+				])
+
+				console.log('Direct SQL Economic Activities after save:', economicActivitiesResult)
+				console.log('Direct SQL Strengthening Areas after save:', strengtheningAreasResult)
+			} catch (sqlError) {
+				console.log('SQL Query Error after save:', sqlError)
+			}
+			console.log('=== END VERIFICATION ===')
+
+			return savedBusiness
 		} catch (e) {
+			console.log('Error in update method:', e)
 			if (file) {
 				const fullPath = this.fileUploadService.getFullPath('business', file.filename)
 				this.fileUploadService.deleteFile(fullPath)

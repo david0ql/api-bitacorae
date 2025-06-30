@@ -43,9 +43,20 @@ export class ExpertController {
 		return this.expertService.findAllForBusiness(user, businessName)
 	}
 
+	@Get('/byFilter')
+	@HttpCode(200)
+	findAllByFilterEmpty(@BusinessName() businessName: string) {
+		return this.expertService.findAllByFilter('', businessName)
+	}
+
 	@Get('/byFilter/:filter')
 	@HttpCode(200)
 	findAllByFilter(@Param('filter') filter: string, @BusinessName() businessName: string) {
+		// Handle empty filter parameter
+		if (!filter || filter.trim() === '') {
+			return []
+		}
+		
 		return this.expertService.findAllByFilter(filter, businessName)
 	}
 
@@ -58,7 +69,12 @@ export class ExpertController {
 	@Get(':id')
 	@HttpCode(200)
 	findOne(@Param('id') id: string, @BusinessName() businessName: string) {
-		return this.expertService.findOne(+id, businessName)
+		const numericId = +id
+		if (isNaN(numericId)) {
+			throw new Error('Invalid expert ID')
+		}
+		
+		return this.expertService.findOne(numericId, businessName)
 	}
 
 	@Patch(':id')
