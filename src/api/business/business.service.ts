@@ -253,7 +253,11 @@ export class BusinessService {
 				select: { id: true, socialReason: true },
 				where: { id }
 			})
-			return business ? business.socialReason : null
+			return {
+				statusCode: 200,
+				message: 'Success',
+				data: business ? business.socialReason : null
+			}
 		} finally {
 			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 		}
