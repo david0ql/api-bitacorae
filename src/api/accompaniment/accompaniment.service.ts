@@ -23,9 +23,19 @@ export class AccompanimentService {
 	) {}
 
 	async create(createAccompanimentDto: CreateAccompanimentDto, businessName: string) {
+		console.log('🏁 AccompanimentService.create called with businessName:', businessName)
+		console.log('📋 CreateAccompanimentDto:', createAccompanimentDto)
+		
 		const { businessId, expertId, totalHours, maxHoursPerSession, strengtheningAreas } = createAccompanimentDto
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
-		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+		
+		if (!businessDataSource) {
+			console.error('❌ Failed to get business connection for:', businessName)
+			throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+		}
+		
+		console.log('✅ Business connection established successfully')
+		
 		try {
 			const businessRepository = businessDataSource.getRepository(Business)
 			const expertRepository = businessDataSource.getRepository(Expert)
@@ -64,7 +74,10 @@ export class AccompanimentService {
 				strengtheningAreas: strengtheningAreaEntities
 			})
 
-			return accompanimentRepository.save(accompaniment)
+			console.log('💾 Saving accompaniment...')
+			const result = await accompanimentRepository.save(accompaniment)
+			console.log('✅ Accompaniment saved successfully:', result.id)
+			return result
 		} finally {
 			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 		}
