@@ -14,16 +14,12 @@ export class DynamicDatabaseService {
 
 	async getBusinessConnection(businessName: string): Promise<DataSource | null> {
 		try {
-			console.log('🔍 Getting business connection for:', businessName)
-			
 			// Get business configuration from admin database
 			const businessRepository = this.adminDataSource.getRepository(Business)
 			const business = await businessRepository.findOne({
 				where: { dbName: businessName },
 				select: ['host', 'port', 'dbName']
 			})
-
-			console.log('📋 Business config found:', business)
 
 			if (!business) {
 				console.log('❌ No business found with dbName:', businessName)
@@ -43,17 +39,8 @@ export class DynamicDatabaseService {
 				entities: [join(__dirname, '../../entities/**/*.{js,ts}')]
 			})
 
-			console.log('🔧 DataSource config:', {
-				host: business.host,
-				port: business.port,
-				database: business.dbName,
-				username: envVars.DB_USER_ADMIN
-			})
-
 			// Initialize the connection
-			console.log('🚀 Initializing business database connection...')
 			await businessDataSource.initialize()
-			console.log('✅ Business database connection initialized successfully')
 			
 			return businessDataSource
 		} catch (error) {

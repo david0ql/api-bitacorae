@@ -239,6 +239,8 @@ export class BusinessService {
 				relations: ['economicActivities', 'strengtheningAreas', 'marketScope', 'productStatus']
 			})
 
+
+
 			return business
 		} finally {
 			await this.dynamicDbService.closeBusinessConnection(businessDataSource)

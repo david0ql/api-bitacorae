@@ -141,6 +141,8 @@ export class ContactInformationService {
 				GROUP BY ci.id
 			`, [envVars.APP_URL, id])
 
+
+
 			if (!contactInformation) return {}
 
 			return {
