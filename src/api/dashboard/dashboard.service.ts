@@ -140,25 +140,30 @@ export class DashboardService {
 				}
 			}, {})
 	//*********** */
+			// Obtener fechas mínimas y máximas para el rango
+			const dateRange = await businessDataSource.query(`
+				SELECT 
+					LEAST(
+						COALESCE(MIN(DATE(s.start_datetime)), '2024-01-01'),
+						COALESCE(MIN(DATE(b.created_at)), '2024-01-01')
+					) AS min_date,
+					GREATEST(
+						COALESCE(MAX(DATE(s.start_datetime)), '2024-12-31'),
+						COALESCE(MAX(DATE(b.created_at)), '2024-12-31')
+					) AS max_date
+				FROM session s, business b
+			`)
+			
+			const minDate = dateRange[0]?.min_date || '2024-01-01'
+			const maxDate = dateRange[0]?.max_date || '2024-12-31'
+			
 			const globalDataRaw = await businessDataSource.query(`
 				WITH RECURSIVE month_series AS (
-					SELECT DATE_FORMAT(
-						(SELECT LEAST(
-							MIN(DATE(s.start_datetime)),
-							MIN(DATE(b.created_at))
-						) FROM session s, business b),
-						'%Y-%m-01'
-					) AS month
+					SELECT DATE_FORMAT(?, '%Y-%m-01') AS month
 					UNION ALL
 					SELECT DATE_FORMAT(DATE_ADD(month, INTERVAL 1 MONTH), '%Y-%m-01')
 					FROM month_series
-					WHERE month < DATE_FORMAT(
-						(SELECT GREATEST(
-							MAX(DATE(s.start_datetime)),
-							MAX(DATE(b.created_at))
-						) FROM session s, business b),
-						'%Y-%m-01'
-					)
+					WHERE month < DATE_FORMAT(?, '%Y-%m-01')
 				),
 				sesiones_por_mes AS (
 					SELECT
@@ -166,6 +171,7 @@ export class DashboardService {
 						COUNT(DISTINCT id) AS total_sesiones,
 						SUM(TIMESTAMPDIFF(MINUTE, start_datetime, end_datetime)) / 60 AS total_horas
 					FROM session
+					WHERE start_datetime IS NOT NULL
 					GROUP BY DATE_FORMAT(start_datetime, '%Y-%m-01')
 				),
 				empresas_por_mes AS (
@@ -173,6 +179,7 @@ export class DashboardService {
 						DATE_FORMAT(created_at, '%Y-%m-01') AS month,
 						COUNT(DISTINCT id) AS total_empresas
 					FROM business
+					WHERE created_at IS NOT NULL
 					GROUP BY DATE_FORMAT(created_at, '%Y-%m-01')
 				)
 
@@ -185,7 +192,7 @@ export class DashboardService {
 				LEFT JOIN sesiones_por_mes s ON s.month = m.month
 				LEFT JOIN empresas_por_mes b ON b.month = m.month
 				ORDER BY m.month
-			`)
+			`, [minDate, maxDate])
 			const categories4 = globalDataRaw.map((d: any) => d.month)
 			const hours4 = categories4.map(month => {
 				const entry = globalDataRaw.find((d: any) => d.month === month)
@@ -213,11 +220,201 @@ export class DashboardService {
 				totalBusinesses: totalBusinesses4
 			}
 
+			//*********** */
+			// Sectores económicos
+			const economicSectors = (await businessDataSource.query(`
+				SELECT
+					ea.name AS name,
+					COUNT(DISTINCT b.id) AS value 
+				FROM
+					business b
+					INNER JOIN business_economic_activity_rel bea ON bea.business_id = b.id
+					INNER JOIN economic_activity ea ON ea.id = bea.economic_activity_id
+				GROUP BY ea.id, ea.name
+				ORDER BY value DESC
+			`)).map((item) => {
+				return {
+					name: item.name,
+					value: parseInt(item.value)
+				}
+			})
+
+			//*********** */
+			// Áreas de experticia
+			const strengtheningAreas = (await businessDataSource.query(`
+				SELECT
+					sa.name AS name,
+					COUNT(DISTINCT b.id) AS value 
+				FROM
+					business b
+					INNER JOIN business_strengthening_area_rel bsa ON bsa.business_id = b.id
+					INNER JOIN strengthening_area sa ON sa.id = bsa.strengthening_area_id
+				GROUP BY sa.id, sa.name
+				ORDER BY value DESC
+			`)).map((item) => {
+				return {
+					name: item.name,
+					value: parseInt(item.value)
+				}
+			})
+
+			//*********** */
+			// Estados de producto
+			const productStatuses = (await businessDataSource.query(`
+				SELECT
+					ps.name AS name,
+					COUNT(DISTINCT b.id) AS value 
+				FROM
+					business b
+					INNER JOIN product_status ps ON ps.id = b.product_status_id
+				GROUP BY ps.id, ps.name
+				ORDER BY value DESC
+			`)).map((item) => {
+				return {
+					name: item.name,
+					value: parseInt(item.value)
+				}
+			})
+
+			//*********** */
+			// Alcance de mercado
+			const marketScopes = (await businessDataSource.query(`
+				SELECT
+					ms.name AS name,
+					COUNT(DISTINCT b.id) AS value 
+				FROM
+					business b
+					INNER JOIN market_scope ms ON ms.id = b.market_scope_id
+				GROUP BY ms.id, ms.name
+				ORDER BY value DESC
+			`)).map((item) => {
+				return {
+					name: item.name,
+					value: parseInt(item.value)
+				}
+			})
+
+			//*********** */
+			// Posiciones/cargos
+			const positions = (await businessDataSource.query(`
+				SELECT
+					p.name AS name,
+					COUNT(DISTINCT b.id) AS value 
+				FROM
+					business b
+					INNER JOIN position p ON p.id = b.position_id
+				GROUP BY p.id, p.name
+				ORDER BY value DESC
+			`)).map((item) => {
+				return {
+					name: item.name,
+					value: parseInt(item.value)
+				}
+			})
+
+			//*********** */
+			// Niveles de educación
+			const educationLevels = (await businessDataSource.query(`
+				SELECT
+					el.name AS name,
+					COUNT(DISTINCT ci.id) AS value 
+				FROM
+					contact_information ci
+					INNER JOIN education_level el ON el.id = ci.education_level_id
+				GROUP BY el.id, el.name
+				ORDER BY value DESC
+			`)).map((item) => {
+				return {
+					name: item.name,
+					value: parseInt(item.value)
+				}
+			})
+
+			//*********** */
+			// Géneros
+			const genders = (await businessDataSource.query(`
+				SELECT
+					g.name AS name,
+					COUNT(DISTINCT ci.id) AS value 
+				FROM
+					contact_information ci
+					INNER JOIN gender g ON g.id = ci.gender_id
+				GROUP BY g.id, g.name
+				ORDER BY value DESC
+			`)).map((item) => {
+				return {
+					name: item.name,
+					value: parseInt(item.value)
+				}
+			})
+
+			//*********** */
+			// Experiencia por rangos
+			const experienceRanges = (await businessDataSource.query(`
+				SELECT
+					CASE 
+						WHEN ci.experience_years < 2 THEN '0-2 años'
+						WHEN ci.experience_years BETWEEN 2 AND 5 THEN '2-5 años'
+						WHEN ci.experience_years BETWEEN 5 AND 10 THEN '5-10 años'
+						WHEN ci.experience_years > 10 THEN 'Más de 10 años'
+						ELSE 'No especificado'
+					END AS name,
+					COUNT(DISTINCT ci.id) AS value 
+				FROM
+					contact_information ci
+				GROUP BY 
+					CASE 
+						WHEN ci.experience_years < 2 THEN '0-2 años'
+						WHEN ci.experience_years BETWEEN 2 AND 5 THEN '2-5 años'
+						WHEN ci.experience_years BETWEEN 5 AND 10 THEN '5-10 años'
+						WHEN ci.experience_years > 10 THEN 'Más de 10 años'
+						ELSE 'No especificado'
+					END
+				ORDER BY value DESC
+			`)).map((item) => {
+				return {
+					name: item.name,
+					value: parseInt(item.value)
+				}
+			})
+
 			return {
 				chartData1,
 				chartData2,
 				chartData3: result3,
-				chartData4
+				chartData4,
+				economicSectors: {
+					data: economicSectors,
+					total: economicSectors.reduce((acc, curr) => acc + curr.value, 0)
+				},
+				strengtheningAreas: {
+					data: strengtheningAreas,
+					total: strengtheningAreas.reduce((acc, curr) => acc + curr.value, 0)
+				},
+				productStatuses: {
+					data: productStatuses,
+					total: productStatuses.reduce((acc, curr) => acc + curr.value, 0)
+				},
+				marketScopes: {
+					data: marketScopes,
+					total: marketScopes.reduce((acc, curr) => acc + curr.value, 0)
+				},
+				positions: {
+					data: positions,
+					total: positions.reduce((acc, curr) => acc + curr.value, 0)
+				},
+				educationLevels: {
+					data: educationLevels,
+					total: educationLevels.reduce((acc, curr) => acc + curr.value, 0)
+				},
+				genders: {
+					data: genders,
+					total: genders.reduce((acc, curr) => acc + curr.value, 0)
+				},
+				experienceRanges: {
+					data: experienceRanges,
+					total: experienceRanges.reduce((acc, curr) => acc + curr.value, 0)
+				}
 			}
 		} finally {
 			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
