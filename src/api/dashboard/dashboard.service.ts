@@ -139,6 +139,16 @@ export class DashboardService {
 					[id]: curr[id]
 				}
 			}, {})
+
+			console.log('chartData3 debug:', {
+				cohorts: cohorts,
+				data: result3
+			})
+
+			const chartData3 = {
+				cohorts: cohorts,
+				data: result3
+			}
 	//*********** */
 			// Obtener fechas mínimas y máximas para el rango
 			const dateRange = await businessDataSource.query(`
@@ -209,6 +219,16 @@ export class DashboardService {
 			const totalHours4 = hours4.reduce((acc, cur) => acc + Number(cur), 0)
 			const totalSessions4 = sessions4.reduce((acc, cur) => acc + Number(cur), 0)
 			const totalBusinesses4 = businesses4.reduce((acc, cur) => acc + Number(cur), 0)
+
+			console.log('chartData4 debug:', {
+				categories: categories4,
+				hours: hours4,
+				sessions: sessions4,
+				businesses: businesses4,
+				totalHours: totalHours4,
+				totalSessions: totalSessions4,
+				totalBusinesses: totalBusinesses4
+			})
 
 			const chartData4 = {
 				categories: categories4,
@@ -381,7 +401,7 @@ export class DashboardService {
 			return {
 				chartData1,
 				chartData2,
-				chartData3: result3,
+				chartData3,
 				chartData4,
 				economicSectors: {
 					data: economicSectors,
