@@ -154,18 +154,19 @@ export class DashboardService {
 			const dateRange = await businessDataSource.query(`
 				SELECT 
 					LEAST(
-						COALESCE(MIN(DATE(s.start_datetime)), '2024-01-01'),
-						COALESCE(MIN(DATE(b.created_at)), '2024-01-01')
+						COALESCE((SELECT MIN(DATE(start_datetime)) FROM session WHERE start_datetime IS NOT NULL), '2024-01-01'),
+						COALESCE((SELECT MIN(DATE(created_at)) FROM business WHERE created_at IS NOT NULL), '2024-01-01')
 					) AS min_date,
 					GREATEST(
-						COALESCE(MAX(DATE(s.start_datetime)), '2024-12-31'),
-						COALESCE(MAX(DATE(b.created_at)), '2024-12-31')
+						COALESCE((SELECT MAX(DATE(start_datetime)) FROM session WHERE start_datetime IS NOT NULL), '2024-12-31'),
+						COALESCE((SELECT MAX(DATE(created_at)) FROM business WHERE created_at IS NOT NULL), '2024-12-31')
 					) AS max_date
-				FROM session s, business b
 			`)
 			
 			const minDate = dateRange[0]?.min_date || '2024-01-01'
 			const maxDate = dateRange[0]?.max_date || '2024-12-31'
+			
+			console.log('Date range debug:', { minDate, maxDate })
 			
 			const globalDataRaw = await businessDataSource.query(`
 				WITH RECURSIVE month_series AS (
@@ -203,6 +204,9 @@ export class DashboardService {
 				LEFT JOIN empresas_por_mes b ON b.month = m.month
 				ORDER BY m.month
 			`, [minDate, maxDate])
+			
+			console.log('globalDataRaw debug:', globalDataRaw)
+			
 			const categories4 = globalDataRaw.map((d: any) => d.month)
 			const hours4 = categories4.map(month => {
 				const entry = globalDataRaw.find((d: any) => d.month === month)
