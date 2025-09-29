@@ -44,7 +44,7 @@ export class UserService {
 					a.document_type_id AS documentTypeId,
 					a.document_number AS documentNumber,
 					a.phone AS phone,
-					CONCAT(?, '/', a.photo) AS photo,
+					CONCAT(?, '/', ?, '/user/', a.photo) AS photo,
 					a.gender_id AS genderId,
 					a.education_level_id AS educationLevelId,
 					a.experience_years AS experienceYears,
@@ -83,7 +83,7 @@ export class UserService {
 					a.document_type_id AS documentTypeId,
 					a.document_number AS documentNumber,
 					a.phone AS phone,
-					CONCAT(?, '/', a.photo) AS photo,
+					CONCAT(?, '/', ?, '/user/', a.photo) AS photo,
 					a.gender_id AS genderId,
 					a.education_level_id AS educationLevelId,
 					a.experience_years AS experienceYears,
@@ -122,7 +122,7 @@ export class UserService {
 					e.document_type_id AS documentTypeId,
 					e.document_number AS documentNumber,
 					e.phone AS phone,
-					CONCAT(?, '/', e.photo) AS photo,
+					CONCAT(?, '/', ?, '/user/', e.photo) AS photo,
 					e.gender_id AS genderId,
 					e.education_level_id AS educationLevelId,
 					e.experience_years AS experienceYears,
@@ -161,7 +161,7 @@ export class UserService {
 					ci.document_type_id AS documentTypeId,
 					ci.document_number AS documentNumber,
 					ci.phone AS phone,
-					CONCAT(?, '/', ci.photo) AS photo,
+					CONCAT(?, '/', ?, '/user/', ci.photo) AS photo,
 					ci.gender_id AS genderId,
 					ci.education_level_id AS educationLevelId,
 					ci.experience_years AS experienceYears,
@@ -195,7 +195,7 @@ export class UserService {
 		return await this.dynamicEntityService.executeWithBusinessConnection(
 			businessName,
 			async (dataSource) => {
-				const result = await dataSource.query(sql, [envVars.UPLOADS_DIR, userId])
+				const result = await dataSource.query(sql, [envVars.APP_URL, envVars.UPLOADS_DIR, userId])
 				return result[0]
 			}
 		)

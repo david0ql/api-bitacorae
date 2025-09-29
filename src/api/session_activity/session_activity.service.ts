@@ -121,14 +121,22 @@ export class SessionActivityService {
 					a.description AS description,
 					a.requires_deliverable AS requiresDeliverable,
 					DATE_FORMAT(a.due_datetime, '%Y-%m-%d %H:%i:%s') AS dueDatetime,
-					CONCAT(?, '/', a.attachment_path) AS fileUrl,
+					CASE 
+						WHEN a.attachment_path IS NULL OR a.attachment_path = '' THEN NULL
+						WHEN a.attachment_path LIKE 'http%' THEN a.attachment_path
+						ELSE CONCAT(?, '/', a.attachment_path)
+					END AS fileUrl,
 					DATE_FORMAT(a.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
 					CONCAT('[', GROUP_CONCAT(JSON_OBJECT(
 						'id', r.id,
 						'sessionActivityId', r.session_activity_id,
 						'respondedByUserId', r.responded_by_user_id,
 						'deliverableDescription', r.deliverable_description,
-						'deliverableFilePath', CONCAT(?, '/', r.deliverable_file_path),
+						'deliverableFilePath', CASE 
+							WHEN r.deliverable_file_path IS NULL OR r.deliverable_file_path = '' THEN NULL
+							WHEN r.deliverable_file_path LIKE 'http%' THEN r.deliverable_file_path
+							ELSE CONCAT(?, '/', r.deliverable_file_path)
+						END,
 						'respondedDatetime', DATE_FORMAT(r.responded_datetime, '%Y-%m-%d %H:%i:%s'),
 						'grade', r.grade,
 						'gradedDatetime', DATE_FORMAT(r.graded_datetime, '%Y-%m-%d %H:%i:%s')
@@ -146,7 +154,7 @@ export class SessionActivityService {
 			const countSql = `SELECT COUNT(DISTINCT a.id) AS total FROM session_activity a WHERE a.session_id = ?`
 
 			const [rawItems, countResult] = await Promise.all([
-				businessDataSource.query(sql, [envVars.APP_URL, envVars.APP_URL, sessionId]),
+				businessDataSource.query(sql, [envVars.APP_URL, envVars.APP_URL, envVars.APP_URL, sessionId]),
 				businessDataSource.query(countSql, [sessionId])
 			])
 

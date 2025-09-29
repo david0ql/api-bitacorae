@@ -115,12 +115,12 @@ export class ReportService {
 			const preparationFilesData = await sessionPreparationFileRepository.find({ where: { sessionId } })
 			const preparationFiles = preparationFilesData.map((file, index) => ({
 				name: 'Archivo ' + (index + 1),
-				filePath: envVars.APP_URL + '/' + file.filePath
+				filePath: file.filePath.startsWith('http') ? file.filePath : `${envVars.APP_URL}/${file.filePath}`
 			}))
 			const attachmentsData = await sessionAttachmentRepository.find({ where: { sessionId } })
 			const attachments = attachmentsData.map(file => ({
 				name: file.name,
-				filePath: file.externalPath ? file.externalPath : envVars.APP_URL + '/' + file.filePath
+				filePath: file.externalPath ? file.externalPath : (file.filePath ? `${envVars.APP_URL}/${file.filePath}` : '')
 			}))
 			const activitiesData = await sessionActivityRepository.find({
 				where: { sessionId },
