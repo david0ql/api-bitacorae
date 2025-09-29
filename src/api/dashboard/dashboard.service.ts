@@ -32,12 +32,19 @@ export class DashboardService {
 				FROM
 					session s
 			`)
+			// Calculate percentage safely
+			const assignedHours = dataBusiness[0].totalHours || 0
+			const completedHours = sessionHours[0].completedHours || 0
+			const percentage = assignedHours > 0 
+				? Math.round((completedHours / assignedHours) * 100)
+				: 0
+
 			const chartData1 = {
 				business_count: dataBusiness[0].business_count,
 				business_active_count: activeBusiness[0].business_active_count,
-				assigned_hours: dataBusiness[0].totalHours,
-				session_hours_completed: sessionHours[0].completedHours,
-				percentage: Math.round(sessionHours[0].completedHours / dataBusiness[0].totalHours * 100) || 0
+				assigned_hours: assignedHours,
+				session_hours_completed: completedHours,
+				percentage: percentage
 			}
 	//*********** */
 			const businessSize = (await businessDataSource.query(`
