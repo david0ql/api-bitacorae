@@ -284,6 +284,7 @@ export class SessionActivityService {
 						to: businessEmail,
 						businessName: businessDisplayName,
 						expertName,
+						expertEmail,
 						businessEmail,
 						sessionDateTime
 					}, businessName, file)

@@ -5,6 +5,7 @@ export interface RespondedSessionEmailContext {
 	to: string
 	businessName: string
 	expertName: string
+	expertEmail: string
 	businessEmail: string
 	sessionDateTime: string
 }

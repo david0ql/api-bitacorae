@@ -368,6 +368,7 @@ export class MailService {
 			to,
 			businessName: contextBusinessName,
 			expertName,
+			expertEmail,
 			businessEmail,
 			sessionDateTime
 		} = context
@@ -378,7 +379,7 @@ export class MailService {
 
 		const recipients = {
 			to: to,
-			cc: [notificationEmail, businessEmail].filter(Boolean)
+			cc: [notificationEmail, businessEmail, expertEmail].filter(Boolean)
 		}
 
 		console.log('📧 [MAIL SERVICE] Destinatarios del correo:')
@@ -386,6 +387,7 @@ export class MailService {
 		console.log('📧 [MAIL SERVICE]   - CC:', recipients.cc)
 		console.log('📧 [MAIL SERVICE]   - notificationEmail:', notificationEmail)
 		console.log('📧 [MAIL SERVICE]   - businessEmail:', businessEmail)
+		console.log('📧 [MAIL SERVICE]   - expertEmail:', expertEmail)
 		console.log('📧 [MAIL SERVICE]   - expertName:', expertName)
 
 		const mailResult = await this.mailerService.sendMail({
