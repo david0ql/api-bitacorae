@@ -91,6 +91,10 @@ export class SessionController {
 	@Delete(':id')
 	@HttpCode(200)
 	remove(@Param('id') id: string, @BusinessName() businessName: string) {
+		console.log('🎯 [SESSION CONTROLLER] DELETE /session/:id recibido')
+		console.log('🎯 [SESSION CONTROLLER] ID:', id)
+		console.log('🎯 [SESSION CONTROLLER] Business name:', businessName)
+		
 		return this.sessionService.remove(+id, businessName)
 	}
 }

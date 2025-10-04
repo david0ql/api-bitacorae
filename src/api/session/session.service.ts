@@ -732,33 +732,64 @@ export class SessionService {
 	}
 
 	async remove(id: number, businessName: string) {
+		console.log('🗑️ [SESSION REMOVE] Iniciando eliminación de sesión')
+		console.log('🗑️ [SESSION REMOVE] ID:', id)
+		console.log('🗑️ [SESSION REMOVE] Business name:', businessName)
+
+		console.log('🔍 [SESSION REMOVE] Obteniendo conexión a BD...')
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
-		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+		if (!businessDataSource) {
+			console.error('❌ [SESSION REMOVE] No se pudo conectar a la BD')
+			throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+		}
+		console.log('✅ [SESSION REMOVE] Conexión a BD establecida')
 
 		try {
 			const sessionRepository = businessDataSource.getRepository(Session)
 			const sessionPreparationFileRepository = businessDataSource.getRepository(SessionPreparationFile)
 
+			console.log('🔍 [SESSION REMOVE] Buscando sesión con ID:', id)
 			const session = await sessionRepository.findOne({ where: { id } })
-			if (!session) return { affected: 0 }
+			if (!session) {
+				console.log('⚠️ [SESSION REMOVE] Sesión no encontrada')
+				return { affected: 0 }
+			}
+			console.log('✅ [SESSION REMOVE] Sesión encontrada:', {
+				id: session.id,
+				title: session.title,
+				statusId: session.statusId
+			})
 
 			if(session.statusId !== 1) {
+				console.log('❌ [SESSION REMOVE] Sesión no está en estado creada (statusId:', session.statusId, ')')
 				throw new BadRequestException('No se puede eliminar una sesión que no está en estado creada')
 			}
 
+			console.log('🔍 [SESSION REMOVE] Buscando archivos de preparación...')
 			const sessionPreparationFiles = await sessionPreparationFileRepository.find({ where: { sessionId: id } })
-			if (sessionPreparationFiles) {
+			if (sessionPreparationFiles && sessionPreparationFiles.length > 0) {
+				console.log('📎 [SESSION REMOVE] Eliminando', sessionPreparationFiles.length, 'archivos de preparación...')
 				sessionPreparationFiles.forEach(file => {
+					console.log('🗑️ [SESSION REMOVE] Eliminando archivo:', file.filePath)
 					this.fileUploadService.deleteFile(file.filePath)
 				})
 				await sessionPreparationFileRepository.delete({ sessionId: id })
+				console.log('✅ [SESSION REMOVE] Archivos de preparación eliminados')
+			} else {
+				console.log('📎 [SESSION REMOVE] No hay archivos de preparación para eliminar')
 			}
 
-			return sessionRepository.delete(id)
+			console.log('🗑️ [SESSION REMOVE] Eliminando sesión de la BD...')
+			const result = await sessionRepository.delete(id)
+			console.log('✅ [SESSION REMOVE] Sesión eliminada exitosamente:', result)
+			return result
 		} catch (e) {
-			throw new Error(`No se pudo eliminar la sesión`)
+			console.error('❌ [SESSION REMOVE] Error eliminando sesión:', e)
+			console.error('❌ [SESSION REMOVE] Stack trace:', e.stack)
+			throw new Error(`No se pudo eliminar la sesión: ${e.message}`)
 		} finally {
 			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			console.log('🔒 [SESSION REMOVE] Conexión a BD cerrada')
 		}
 	}
 }
