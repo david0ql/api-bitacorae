@@ -82,6 +82,7 @@ export class SessionActivityService {
 
 			try {
 				const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
+				const dueDateTime = dueDatetime ? this.dateService.formatDate(new Date(dueDatetime)) : 'No especificada'
 
 				const { email: businessEmail, name: businessDisplayName } = session.accompaniment?.business?.user || { email: '', name: '' }
 				const { email: expertEmail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
@@ -92,7 +93,8 @@ export class SessionActivityService {
 					businessName: businessDisplayName,
 					expertName,
 					expertEmail,
-					sessionDateTime
+					sessionDateTime,
+					dueDateTime
 				}, businessName, file)
 			} catch (e) {
 				console.error('Error sending new session activity email:', e)

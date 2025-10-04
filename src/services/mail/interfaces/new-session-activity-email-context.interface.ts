@@ -5,4 +5,5 @@ export interface NewSessionActivityEmailContext {
 	expertName: string
 	expertEmail: string
 	sessionDateTime: string
+	dueDateTime: string
 }

@@ -324,7 +324,8 @@ export class MailService {
 			businessName: contextBusinessName,
 			expertName,
 			expertEmail,
-			sessionDateTime
+			sessionDateTime,
+			dueDateTime
 		} = context
 		const { webUrl, notificationEmail } = this.varCommons
 
@@ -342,6 +343,7 @@ export class MailService {
 				businessName: contextBusinessName,
 				expertName,
 				sessionDateTime,
+				dueDateTime,
 				url
 			},
 			attachments: file ? [{
