@@ -86,7 +86,14 @@ export class CreateExpertDto {
 	})
 	@Transform(({ value }) => {
 		try {
-			if (typeof value === 'string') return value.split(',').map(Number);
+			// Si es un string, puede ser "1,2,3" o "1"
+			if (typeof value === 'string') {
+				return value.split(',').map(Number);
+			}
+			// Si es un array, puede ser ["1", "2"] o [1, 2]
+			if (Array.isArray(value)) {
+				return value.map(v => typeof v === 'string' ? Number(v) : v);
+			}
 			return value;
 		} catch {
 			return [];

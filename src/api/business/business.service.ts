@@ -289,92 +289,88 @@ export class BusinessService {
 				throw new BadRequestException(`No se encontró un negocio con el ID ${id}`)
 			}
 
-			const fullPath = file ? this.fileUploadService.getFullPath('business', file.filename) : undefined
+		const fullPath = file ? this.fileUploadService.getFullPath('business', file.filename) : undefined
 
-			// Debug logs for update
-			console.log('=== BACKEND DEBUG BUSINESS UPDATE ===')
-			console.log('Update DTO:', updateBusinessDto)
-			console.log('Economic Activities IDs:', updateBusinessDto.economicActivities)
-			console.log('Strengthening Areas IDs:', updateBusinessDto.strengtheningAreas)
-			console.log('Existing Economic Activities before update:', existingBusiness.economicActivities)
-			console.log('Existing Strengthening Areas before update:', existingBusiness.strengtheningAreas)
-
-			// First, assign the basic properties
-			Object.assign(existingBusiness, updateBusinessDto)
-
-			// Then handle the relations
-			if (updateBusinessDto.economicActivities) {
-				console.log('Processing Economic Activities IDs:', updateBusinessDto.economicActivities)
-				const economicActivityEntities = await economicActivityRepository.findBy({
-					id: In(updateBusinessDto.economicActivities)
-				})
-				console.log('Found Economic Activity Entities:', economicActivityEntities)
-				existingBusiness.economicActivities = economicActivityEntities
-			}
-
-			if (updateBusinessDto.strengtheningAreas) {
-				console.log('Processing Strengthening Areas IDs:', updateBusinessDto.strengtheningAreas)
-				const strengtheningAreaEntities = await strengtheningAreaRepository.findBy({
-					id: In(updateBusinessDto.strengtheningAreas)
-				})
-				console.log('Found Strengthening Area Entities:', strengtheningAreaEntities)
-				existingBusiness.strengtheningAreas = strengtheningAreaEntities
-			}
-
-			if (fullPath) {
-				existingBusiness.evidence = fullPath
-			}
-
-			console.log('Final Economic Activities before save:', existingBusiness.economicActivities)
-			console.log('Final Strengthening Areas before save:', existingBusiness.strengtheningAreas)
-			console.log('=== END BACKEND DEBUG ===')
-
-			const savedBusiness = await businessRepository.save(existingBusiness)
-			
-			// Verify what was actually saved
-			console.log('=== VERIFICATION AFTER SAVE ===')
-			console.log('Saved Business Economic Activities:', savedBusiness.economicActivities)
-			console.log('Saved Business Strengthening Areas:', savedBusiness.strengtheningAreas)
-			
-			// Check the relation tables directly after save
-			try {
-				const economicActivitiesQuery = `
-					SELECT ea.id, ea.name 
-					FROM business_economic_activity_rel bea
-					JOIN economic_activity ea ON ea.id = bea.economic_activity_id
-					WHERE bea.business_id = ${id}
-				`
-				const strengtheningAreasQuery = `
-					SELECT sa.id, sa.name 
-					FROM business_strengthening_area_rel bsa
-					JOIN strengthening_area sa ON sa.id = bsa.strengthening_area_id
-					WHERE bsa.business_id = ${id}
-				`
-
-				const [economicActivitiesResult, strengtheningAreasResult] = await Promise.all([
-					businessDataSource.query(economicActivitiesQuery),
-					businessDataSource.query(strengtheningAreasQuery)
-				])
-
-				console.log('Direct SQL Economic Activities after save:', economicActivitiesResult)
-				console.log('Direct SQL Strengthening Areas after save:', strengtheningAreasResult)
-			} catch (sqlError) {
-				console.log('SQL Query Error after save:', sqlError)
-			}
-			console.log('=== END VERIFICATION ===')
-
-			return savedBusiness
-		} catch (e) {
-			console.log('Error in update method:', e)
-			if (file) {
-				const fullPath = this.fileUploadService.getFullPath('business', file.filename)
-				this.fileUploadService.deleteFile(fullPath)
-			}
-			throw e
-		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+		// Handle the relations FIRST
+		if (updateBusinessDto.economicActivities) {
+			const economicActivityEntities = await economicActivityRepository.findBy({
+				id: In(updateBusinessDto.economicActivities)
+			})
+			existingBusiness.economicActivities = economicActivityEntities
 		}
+
+		if (updateBusinessDto.strengtheningAreas) {
+			const strengtheningAreaEntities = await strengtheningAreaRepository.findBy({
+				id: In(updateBusinessDto.strengtheningAreas)
+			})
+			existingBusiness.strengtheningAreas = strengtheningAreaEntities
+		}
+
+		if (fullPath) {
+			existingBusiness.evidence = fullPath
+		}
+
+		// Then assign the basic properties, excluding the relations
+		const { economicActivities, strengtheningAreas, ...updateData } = updateBusinessDto
+		Object.assign(existingBusiness, updateData)
+
+		await businessRepository.save(existingBusiness)
+
+		// Return with relations
+		return await businessRepository.findOne({
+			where: { id },
+			relations: ['economicActivities', 'strengtheningAreas'],
+			select: {
+				id: true,
+				userId: true,
+				socialReason: true,
+				documentTypeId: true,
+				documentNumber: true,
+				address: true,
+				phone: true,
+				email: true,
+				businessSizeId: true,
+				numberOfEmployees: true,
+				lastYearSales: true,
+				twoYearsAgoSales: true,
+				threeYearsAgoSales: true,
+				facebook: true,
+				instagram: true,
+				twitter: true,
+				website: true,
+				linkedin: true,
+				positionId: true,
+				hasFoundedBefore: true,
+				observation: true,
+				numberOfPeopleLeading: true,
+				productStatusId: true,
+				marketScopeId: true,
+				businessPlan: true,
+				businessSegmentation: true,
+				assignedHours: true,
+				cohortId: true,
+				diagnostic: true,
+				evidence: true,
+				economicActivities: {
+					id: true,
+					name: true
+				},
+				strengtheningAreas: {
+					id: true,
+					name: true
+				}
+			}
+		})
+	} catch (e) {
+		if (file) {
+			const fullPath = this.fileUploadService.getFullPath('business', file.filename)
+			this.fileUploadService.deleteFile(fullPath)
+		}
+		throw e
+	} finally {
+		await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 	}
+}
 
 	async remove(id: number, businessName: string) {
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
@@ -382,6 +378,10 @@ export class BusinessService {
 
 		try {
 			const businessRepository = businessDataSource.getRepository(Business)
+
+			// This is a soft delete operation - should be actually soft deleting
+			// Not hard deleting. We should add "deletedAt" field to schema
+			
 			return await businessRepository.delete(id)
 		} finally {
 			await this.dynamicDbService.closeBusinessConnection(businessDataSource)

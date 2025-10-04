@@ -343,20 +343,54 @@ export class ExpertService {
 
 			const fullPath = file ? this.fileUploadService.getFullPath('user', file.filename) : undefined
 
-			if (updateExpertDto.strengtheningAreas) {
-				const strengtheningAreaEntities = await strengtheningAreaRepository.findBy({
-					id: In(updateExpertDto.strengtheningAreas)
-				})
-				existingExpert.strengtheningAreas = strengtheningAreaEntities
+		if (updateExpertDto.strengtheningAreas) {
+			const strengtheningAreaEntities = await strengtheningAreaRepository.findBy({
+				id: In(updateExpertDto.strengtheningAreas)
+			})
+			existingExpert.strengtheningAreas = strengtheningAreaEntities
+		}
+
+		if (fullPath) {
+			existingExpert.photo = fullPath
+		}
+
+		// Remover strengtheningAreas del DTO antes de hacer Object.assign
+		// porque ya las asignamos manualmente como entidades
+		const { strengtheningAreas, ...updateData } = updateExpertDto
+		Object.assign(existingExpert, updateData)
+
+		await expertRepository.save(existingExpert)
+
+		// Volver a consultar para obtener las relaciones
+		return await expertRepository.findOne({
+			where: { id },
+			relations: ['strengtheningAreas'],
+			select: {
+				id: true,
+				userId: true,
+				firstName: true,
+				lastName: true,
+				email: true,
+				phone: true,
+				documentTypeId: true,
+				documentNumber: true,
+				photo: true,
+				consultorTypeId: true,
+				genderId: true,
+				experienceYears: true,
+				educationLevelId: true,
+				facebook: true,
+				instagram: true,
+				twitter: true,
+				website: true,
+				linkedin: true,
+				profile: true,
+				strengtheningAreas: {
+					id: true,
+					name: true
+				}
 			}
-
-			if (fullPath) {
-				existingExpert.photo = fullPath
-			}
-
-			Object.assign(existingExpert, updateExpertDto)
-
-			return await expertRepository.save(existingExpert)
+		})
 		} catch (e) {
 			if (file) {
 				const fullPath = this.fileUploadService.getFullPath('user', file.filename)
