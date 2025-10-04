@@ -200,10 +200,11 @@ export class MailService {
 	async sendNewSessionEmail(context: NewSessionEmailContext, businessName: string, files?: Express.Multer.File[]) {
 		console.log('📧 [MAIL SERVICE] Iniciando sendNewSessionEmail')
 		console.log('📧 [MAIL SERVICE] Context recibido:', JSON.stringify(context, null, 2))
-		console.log('📧 [MAIL SERVICE] Business name:', businessName)
+		console.log('📧 [MAIL SERVICE] Business name (dbName):', businessName)
 		console.log('📧 [MAIL SERVICE] Files:', files?.length || 0, 'archivos')
 
 		console.log('📧 [MAIL SERVICE] Obteniendo variables de plataforma...')
+		console.log('📧 [MAIL SERVICE] Llamando getPlatformVars con dbName:', businessName)
 		await this.getPlatformVars(businessName)
 		console.log('📧 [MAIL SERVICE] Variables de plataforma obtenidas')
 
