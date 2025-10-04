@@ -236,6 +236,7 @@ export class SessionService {
 
 				console.log('📧 [SESSION CREATE] Contexto del correo:', JSON.stringify(emailContext, null, 2))
 				console.log('📧 [SESSION CREATE] Llamando a mailService.sendNewSessionEmail...')
+				console.log('📧 [SESSION CREATE] Usando dbName para conexión:', businessName)
 
 				const emailResult = await this.mailService.sendNewSessionEmail(emailContext, businessName, files)
 				console.log('✅ [SESSION CREATE] Correo enviado exitosamente:', emailResult)
