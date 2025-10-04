@@ -138,7 +138,7 @@ export class SessionService {
 	async create(createSessionDto: CreateSessionDto, businessName: string, files?: Express.Multer.File[]) {
 		console.log('🚀 [SESSION CREATE] Iniciando creación de sesión')
 		console.log('📝 [SESSION CREATE] DTO recibido:', JSON.stringify(createSessionDto, null, 2))
-		console.log('🏢 [SESSION CREATE] Business name:', businessName)
+		console.log('🏢 [SESSION CREATE] Business name (dbName):', businessName)
 		console.log('📎 [SESSION CREATE] Files:', files?.length || 0, 'archivos')
 
 		if (!businessName) throw new BadRequestException('businessName es requerido')
