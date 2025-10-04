@@ -13,18 +13,23 @@ export class DynamicDatabaseService {
 	) {}
 
 	async getBusinessConnection(businessName: string): Promise<DataSource | null> {
+		console.log('🔍 [DYNAMIC DB] Getting business connection for:', businessName)
 		try {
 			// Get business configuration from admin database
 			const businessRepository = this.adminDataSource.getRepository(Business)
+			console.log('🔍 [DYNAMIC DB] Looking for business with dbName:', businessName)
+			
 			const business = await businessRepository.findOne({
 				where: { dbName: businessName },
 				select: ['host', 'port', 'dbName']
 			})
 
 			if (!business) {
-				console.log('❌ No business found with dbName:', businessName)
+				console.log('❌ [DYNAMIC DB] No business found with dbName:', businessName)
 				return null
 			}
+
+			console.log('🔍 [DYNAMIC DB] Business found:', business)
 
 			// Create a new data source for this business using env credentials
 			const businessDataSource = new DataSource({
@@ -39,13 +44,15 @@ export class DynamicDatabaseService {
 				entities: [join(__dirname, '../../entities/**/*.{js,ts}')]
 			})
 
+			console.log('🔍 [DYNAMIC DB] DataSource created, initializing connection...')
 			// Initialize the connection
 			await businessDataSource.initialize()
+			console.log('🔍 [DYNAMIC DB] Connection initialized successfully')
 			
 			return businessDataSource
 		} catch (error) {
-			console.error('❌ Error creating business connection:', error)
-			console.error('❌ Error details:', {
+			console.error('❌ [DYNAMIC DB] Error creating business connection:', error)
+			console.error('❌ [DYNAMIC DB] Error details:', {
 				message: error.message,
 				code: error.code,
 				errno: error.errno,

@@ -73,6 +73,7 @@ export class SessionController {
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: UpdateSessionDto })
 	update(@Param('id') id: string, @Body() updateSessionDto: UpdateSessionDto, @BusinessName() businessName: string, @UploadedFiles() files?: Express.Multer.File[]) {
+		console.log('🔍 [SESSION CONTROLLER] PATCH request received:', { id, updateSessionDto, businessName, filesCount: files?.length || 0 })
 		return this.sessionService.update(+id, updateSessionDto, businessName, files)
 	}
 

@@ -523,6 +523,8 @@ export class SessionService {
 	}
 
 	async update(id: number, updateSessionDto: UpdateSessionDto, businessName: string, files?: Express.Multer.File[]) {
+		console.log('🔍 [SESSION UPDATE] Starting update with:', { id, businessName, updateSessionDto })
+		
 		if (!businessName) throw new BadRequestException('businessName es requerido')
 		
 		const preparationFiles = files?.length ? files.map(file => {
@@ -534,8 +536,11 @@ export class SessionService {
 			return { affected: 0 }
 		}
 
+		console.log('🔍 [SESSION UPDATE] Getting business connection for:', businessName)
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
 		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+		
+		console.log('🔍 [SESSION UPDATE] Business connection established successfully')
 
 		try {
 			const sessionRepository = businessDataSource.getRepository(Session)
@@ -612,7 +617,7 @@ export class SessionService {
 
 			await sessionPreparationFileRepository.save(sessionPreparationFiles)
 
-			return sessionRepository.update(id, {
+			console.log('🔍 [SESSION UPDATE] About to update session with data:', {
 				title,
 				startDatetime,
 				endDatetime,
@@ -621,6 +626,19 @@ export class SessionService {
 				sessionNotes,
 				conclusionsCommitments
 			})
+
+			const updateResult = await sessionRepository.update(id, {
+				title,
+				startDatetime,
+				endDatetime,
+				conferenceLink,
+				preparationNotes,
+				sessionNotes,
+				conclusionsCommitments
+			})
+
+			console.log('🔍 [SESSION UPDATE] Update result:', updateResult)
+			return updateResult
 		} catch (e) {
 			this.removeFiles(preparationFiles)
 			throw e
