@@ -112,13 +112,19 @@ export class SessionActivityService {
 	}
 
 	async findAll(sessionId: number, pageOptionsDto: PageOptionsDto, businessName: string): Promise<PageDto<SessionActivity>> {
+		console.log('🚀 [SESSION ACTIVITY FINDALL] Iniciando búsqueda de actividades')
+		console.log('📝 [SESSION ACTIVITY FINDALL] Session ID:', sessionId)
+		console.log('📝 [SESSION ACTIVITY FINDALL] Page options:', JSON.stringify(pageOptionsDto, null, 2))
+		console.log('🏢 [SESSION ACTIVITY FINDALL] Business name (dbName):', businessName)
+		
 		const { take, skip, order } = pageOptionsDto
 
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
 		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
 		try {
-			const sql = `
+			// Primero, consulta simple para verificar que existen las actividades
+			const simpleSql = `
 				SELECT
 					a.id AS id,
 					a.session_id AS sessionId,
@@ -132,8 +138,19 @@ export class SessionActivityService {
 						WHEN a.attachment_path LIKE 'http%' THEN a.attachment_path
 						ELSE CONCAT(?, '/', a.attachment_path)
 					END AS fileUrl,
-					DATE_FORMAT(a.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
-					CONCAT('[', GROUP_CONCAT(JSON_OBJECT(
+					DATE_FORMAT(a.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt
+				FROM
+					session_activity a
+				WHERE a.session_id = ?
+				ORDER BY a.created_at ${order}
+				LIMIT ${take} OFFSET ${skip}
+			`
+
+			// Consulta separada para las respuestas
+			const responsesSql = `
+				SELECT
+					r.session_activity_id AS sessionActivityId,
+					JSON_OBJECT(
 						'id', r.id,
 						'sessionActivityId', r.session_activity_id,
 						'respondedByUserId', r.responded_by_user_id,
@@ -146,31 +163,55 @@ export class SessionActivityService {
 						'respondedDatetime', DATE_FORMAT(r.responded_datetime, '%Y-%m-%d %H:%i:%s'),
 						'grade', r.grade,
 						'gradedDatetime', DATE_FORMAT(r.graded_datetime, '%Y-%m-%d %H:%i:%s')
-					)),
-					']') AS responses
+					) AS response
 				FROM
-					session_activity a
-					LEFT JOIN session_activity_response r ON a.id = r.session_activity_id
-				WHERE a.session_id = ?
-				GROUP BY a.id
-				ORDER BY a.created_at ${order}
-				LIMIT ${take} OFFSET ${skip}
+					session_activity_response r
+				WHERE r.session_activity_id IN (
+					SELECT id FROM session_activity WHERE session_id = ?
+				)
 			`
 
 			const countSql = `SELECT COUNT(DISTINCT a.id) AS total FROM session_activity a WHERE a.session_id = ?`
 
-			const [rawItems, countResult] = await Promise.all([
-				businessDataSource.query(sql, [envVars.APP_URL, envVars.APP_URL, envVars.APP_URL, sessionId]),
+			console.log('🔍 [SESSION ACTIVITY FINDALL] Ejecutando consultas SQL...')
+			console.log('🔍 [SESSION ACTIVITY FINDALL] SQL principal:', simpleSql)
+			console.log('🔍 [SESSION ACTIVITY FINDALL] Parámetros SQL:', [envVars.APP_URL, sessionId])
+			console.log('🔍 [SESSION ACTIVITY FINDALL] SQL responses:', responsesSql)
+			console.log('🔍 [SESSION ACTIVITY FINDALL] Parámetros responses:', [envVars.APP_URL, sessionId])
+			console.log('🔍 [SESSION ACTIVITY FINDALL] SQL count:', countSql)
+			console.log('🔍 [SESSION ACTIVITY FINDALL] Parámetros count:', [sessionId])
+
+			const [rawItems, rawResponses, countResult] = await Promise.all([
+				businessDataSource.query(simpleSql, [envVars.APP_URL, sessionId]),
+				businessDataSource.query(responsesSql, [envVars.APP_URL, sessionId]),
 				businessDataSource.query(countSql, [sessionId])
 			])
 
-			const items = rawItems.map(item => {
-				const responses = item.responses ? JSON.parse(item.responses) : []
-				return { ...item, responses }
+			console.log('📊 [SESSION ACTIVITY FINDALL] Raw items encontrados:', rawItems.length)
+			console.log('📊 [SESSION ACTIVITY FINDALL] Raw responses encontrados:', rawResponses.length)
+			console.log('📊 [SESSION ACTIVITY FINDALL] Count result:', countResult)
+
+			// Agrupar respuestas por sessionActivityId
+			const responsesByActivity = {}
+			rawResponses.forEach(response => {
+				const activityId = response.sessionActivityId
+				if (!responsesByActivity[activityId]) {
+					responsesByActivity[activityId] = []
+				}
+				responsesByActivity[activityId].push(JSON.parse(response.response))
 			})
+
+			const items = rawItems.map(item => ({
+				...item,
+				responses: responsesByActivity[item.id] || []
+			}))
 
 			const totalCount = Number(countResult[0]?.total) ?? 0
 			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
+
+			console.log('✅ [SESSION ACTIVITY FINDALL] Items procesados:', items.length)
+			console.log('✅ [SESSION ACTIVITY FINDALL] Total count:', totalCount)
+			console.log('✅ [SESSION ACTIVITY FINDALL] Page meta:', JSON.stringify(pageMetaDto, null, 2))
 
 			return new PageDto(items, pageMetaDto)
 		} finally {

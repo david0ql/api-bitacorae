@@ -40,6 +40,11 @@ export class SessionActivityController {
 	@Get('/bySession/:id')
 	@HttpCode(200)
 	findAll(@Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<SessionActivity>> {
+		console.log('🎯 [SESSION ACTIVITY CONTROLLER] GET /session-activity/bySession/:id recibido')
+		console.log('🎯 [SESSION ACTIVITY CONTROLLER] Session ID:', id)
+		console.log('🎯 [SESSION ACTIVITY CONTROLLER] Page options:', JSON.stringify(pageOptionsDto, null, 2))
+		console.log('🎯 [SESSION ACTIVITY CONTROLLER] Business name (dbName):', businessName)
+		
 		return this.sessionActivityService.findAll(+id, pageOptionsDto, businessName)
 	}
 
