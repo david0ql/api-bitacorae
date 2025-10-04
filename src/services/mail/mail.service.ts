@@ -354,6 +354,11 @@ export class MailService {
 	}
 
 	async sendRespondedSessionEmail(context: RespondedSessionEmailContext, businessName: string, file?: Express.Multer.File) {
+		console.log('📧 [MAIL SERVICE] Iniciando sendRespondedSessionEmail')
+		console.log('📧 [MAIL SERVICE] Context recibido:', JSON.stringify(context, null, 2))
+		console.log('📧 [MAIL SERVICE] Business name (dbName):', businessName)
+		console.log('📧 [MAIL SERVICE] File:', file?.filename || 'ninguno')
+
 		await this.getPlatformVars(businessName)
 
 		const {
@@ -371,9 +376,21 @@ export class MailService {
 		const subject = 'Actividad de sesión respondida'
 		const url = `${webUrl}/#/home/accompaniment/detail/${businessId}/${accompanimentId}/updateSession/${sessionId}`
 
-		await this.mailerService.sendMail({
-			to,
-			cc: [notificationEmail, businessEmail].filter(Boolean),
+		const recipients = {
+			to: to,
+			cc: [notificationEmail, businessEmail].filter(Boolean)
+		}
+
+		console.log('📧 [MAIL SERVICE] Destinatarios del correo:')
+		console.log('📧 [MAIL SERVICE]   - TO:', recipients.to)
+		console.log('📧 [MAIL SERVICE]   - CC:', recipients.cc)
+		console.log('📧 [MAIL SERVICE]   - notificationEmail:', notificationEmail)
+		console.log('📧 [MAIL SERVICE]   - businessEmail:', businessEmail)
+		console.log('📧 [MAIL SERVICE]   - expertName:', expertName)
+
+		const mailResult = await this.mailerService.sendMail({
+			to: recipients.to,
+			cc: recipients.cc,
 			subject,
 			template: 'respond-session-activity',
 			context: {
@@ -389,6 +406,8 @@ export class MailService {
 				path: file.path
 			}] : []
 		})
+
+		console.log('✅ [MAIL SERVICE] Correo de respuesta enviado exitosamente:', mailResult)
 	}
 
 	async sendEndedSessionEmail(context: EndedSessionEmailContext, businessName: string) {
