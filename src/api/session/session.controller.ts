@@ -29,6 +29,11 @@ export class SessionController {
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreateSessionDto })
 	create(@Body() createSessionDto: CreateSessionDto, @BusinessName() businessName: string, @UploadedFiles() files?: Express.Multer.File[]) {
+		console.log('🎯 [SESSION CONTROLLER] POST /session recibido')
+		console.log('🎯 [SESSION CONTROLLER] Body recibido:', JSON.stringify(createSessionDto, null, 2))
+		console.log('🎯 [SESSION CONTROLLER] Business name:', businessName)
+		console.log('🎯 [SESSION CONTROLLER] Files:', files?.length || 0, 'archivos')
+		
 		return this.sessionService.create(createSessionDto, businessName, files)
 	}
 

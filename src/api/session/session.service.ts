@@ -136,12 +136,19 @@ export class SessionService {
 	}
 
 	async create(createSessionDto: CreateSessionDto, businessName: string, files?: Express.Multer.File[]) {
+		console.log('🚀 [SESSION CREATE] Iniciando creación de sesión')
+		console.log('📝 [SESSION CREATE] DTO recibido:', JSON.stringify(createSessionDto, null, 2))
+		console.log('🏢 [SESSION CREATE] Business name:', businessName)
+		console.log('📎 [SESSION CREATE] Files:', files?.length || 0, 'archivos')
+
 		if (!businessName) throw new BadRequestException('businessName es requerido')
 		
 		const { accompanimentId, title, startDatetime, endDatetime, conferenceLink, preparationNotes } = createSessionDto
 
+		console.log('🔍 [SESSION CREATE] Buscando conexión a BD para business:', businessName)
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
 		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+		console.log('✅ [SESSION CREATE] Conexión a BD establecida')
 
 		const preparationFiles: string[] = []
 
@@ -150,12 +157,29 @@ export class SessionService {
 			const sessionRepository = businessDataSource.getRepository(Session)
 			const sessionPreparationFileRepository = businessDataSource.getRepository(SessionPreparationFile)
 
+			console.log('🔍 [SESSION CREATE] Buscando acompañamiento con ID:', accompanimentId)
 			const accompaniment = await accompanimentRepository.findOne({
 				where: { id: accompanimentId },
 				relations: ['business', 'business.user', 'expert', 'expert.user']
 			})
 
-			if (!accompaniment) throw new NotFoundException('Acompañamiento no encontrado')
+			if (!accompaniment) {
+				console.log('❌ [SESSION CREATE] Acompañamiento no encontrado con ID:', accompanimentId)
+				throw new NotFoundException('Acompañamiento no encontrado')
+			}
+			console.log('✅ [SESSION CREATE] Acompañamiento encontrado:', {
+				id: accompaniment.id,
+				businessId: accompaniment.business?.id,
+				expertId: accompaniment.expert?.id,
+				businessUser: accompaniment.business?.user ? {
+					email: accompaniment.business.user.email,
+					name: accompaniment.business.user.name
+				} : null,
+				expertUser: accompaniment.expert?.user ? {
+					email: accompaniment.expert.user.email,
+					name: accompaniment.expert.user.name
+				} : null
+			})
 
 			const session = sessionRepository.create({
 				accompanimentId,
@@ -166,9 +190,12 @@ export class SessionService {
 				preparationNotes
 			})
 
+			console.log('💾 [SESSION CREATE] Guardando sesión en BD...')
 			const savedSession = await sessionRepository.save(session)
+			console.log('✅ [SESSION CREATE] Sesión guardada con ID:', savedSession.id)
 
 			if (files && files.length > 0) {
+				console.log('📎 [SESSION CREATE] Procesando', files.length, 'archivos...')
 				for (const file of files) {
 					const filePath = this.fileUploadService.getFullPath('session-preparation', file.filename)
 					preparationFiles.push(filePath)
@@ -178,15 +205,24 @@ export class SessionService {
 						filePath
 					})
 				}
+				console.log('✅ [SESSION CREATE] Archivos procesados')
 			}
 
+			console.log('📧 [SESSION CREATE] Iniciando envío de correo...')
 			try {
 				const sessionDateFormat = this.dateService.formatDate(new Date(session.startDatetime))
+				console.log('📅 [SESSION CREATE] Fecha formateada:', sessionDateFormat)
 
 				const { email: businessEmail, name: businessUserName } = accompaniment.business?.user || { email: '', name: '' }
 				const { email: expertMail, name: expertName } = accompaniment.expert?.user || { email: '', name: '' }
 
-				this.mailService.sendNewSessionEmail({
+				console.log('👥 [SESSION CREATE] Datos de usuarios:')
+				console.log('  - Business email:', businessEmail)
+				console.log('  - Business name:', businessUserName)
+				console.log('  - Expert email:', expertMail)
+				console.log('  - Expert name:', expertName)
+
+				const emailContext = {
 					to: businessEmail,
 					businessName: businessUserName,
 					expertName,
@@ -196,17 +232,27 @@ export class SessionService {
 					sessionDateFormat,
 					conferenceLink,
 					preparationNotes
-				}, businessName, files)
+				}
+
+				console.log('📧 [SESSION CREATE] Contexto del correo:', JSON.stringify(emailContext, null, 2))
+				console.log('📧 [SESSION CREATE] Llamando a mailService.sendNewSessionEmail...')
+
+				const emailResult = await this.mailService.sendNewSessionEmail(emailContext, businessName, files)
+				console.log('✅ [SESSION CREATE] Correo enviado exitosamente:', emailResult)
 			} catch (e) {
-				console.error('Error sending new session email:', e)
+				console.error('❌ [SESSION CREATE] Error sending new session email:', e)
+				console.error('❌ [SESSION CREATE] Stack trace:', e.stack)
 			}
 
+			console.log('🎉 [SESSION CREATE] Sesión creada exitosamente, retornando:', savedSession.id)
 			return savedSession
 		} catch (e) {
+			console.error('❌ [SESSION CREATE] Error general en create:', e)
 			this.removeFiles(preparationFiles)
 			throw e
 		} finally {
 			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			console.log('🔒 [SESSION CREATE] Conexión a BD cerrada')
 		}
 	}
 

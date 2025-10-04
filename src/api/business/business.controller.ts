@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
 import { BusinessName } from 'src/decorators/business-name.decorator'
+import { BusinessPlainName } from 'src/decorators/business-plain-name.decorator'
 
 @Controller('business')
 @ApiBearerAuth()
@@ -31,7 +32,7 @@ export class BusinessController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<Business>> {
+	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string, @BusinessPlainName() businessPlainName: string): Promise<PageDto<Business>> {
 		return this.businessService.findAll(pageOptionsDto, businessName)
 	}
 

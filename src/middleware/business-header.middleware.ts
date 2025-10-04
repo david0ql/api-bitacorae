@@ -5,10 +5,16 @@ import { Request, Response, NextFunction } from 'express'
 export class BusinessHeaderMiddleware implements NestMiddleware {
 	use(req: Request, res: Response, next: NextFunction) {
 		const businessName = req.headers['x-business-name'] as string
+		const businessPlainName = req.headers['x-business-plain-name'] as string
 		
 		if (businessName) {
 			// Store the business name in the request object for later use
 			req['businessName'] = businessName
+		}
+		
+		if (businessPlainName) {
+			// Store the business plain name in the request object for later use
+			req['businessPlainName'] = businessPlainName
 		}
 		
 		next()
