@@ -28,6 +28,10 @@ export class SessionActivityService {
 	) {}
 
 	async create(user: JwtUser, createSessionActivityDto: CreateSessionActivityDto, businessName: string, file?: Express.Multer.File) {
+		console.log('🚀 [SESSION ACTIVITY CREATE] Iniciando creación de actividad de sesión')
+		console.log('📝 [SESSION ACTIVITY CREATE] DTO recibido:', JSON.stringify(createSessionActivityDto, null, 2))
+		console.log('🏢 [SESSION ACTIVITY CREATE] Business name (dbName):', businessName)
+		console.log('📎 [SESSION ACTIVITY CREATE] File:', file?.filename || 'ninguno')
 		if (!businessName) throw new BadRequestException('businessName es requerido')
 		
 		const { title, description, dueDatetime, requiresDeliverable, sessionId } = createSessionActivityDto
@@ -79,13 +83,13 @@ export class SessionActivityService {
 			try {
 				const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
 
-				const { email: businessEmail, name: businessName } = session.accompaniment?.business?.user || { email: '', name: '' }
+				const { email: businessEmail, name: businessDisplayName } = session.accompaniment?.business?.user || { email: '', name: '' }
 				const { email: expertEmail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
 
 				this.mailService.sendNewSessionActivityEmail({
 					sessionId: session.id,
 					to: businessEmail,
-					businessName,
+					businessName: businessDisplayName,
 					expertName,
 					expertEmail,
 					sessionDateTime
@@ -227,7 +231,7 @@ export class SessionActivityService {
 
 				if (session) {
 					const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
-					const { email: businessEmail, name: businessName } = session.accompaniment?.business?.user || { email: '', name: '' }
+					const { email: businessEmail, name: businessDisplayName } = session.accompaniment?.business?.user || { email: '', name: '' }
 					const { email: expertEmail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
 
 					this.mailService.sendRespondedSessionEmail({
@@ -235,7 +239,7 @@ export class SessionActivityService {
 						accompanimentId: session.accompaniment?.id,
 						sessionId: session.id,
 						to: businessEmail,
-						businessName,
+						businessName: businessDisplayName,
 						expertName,
 						businessEmail,
 						sessionDateTime

@@ -29,6 +29,11 @@ export class SessionActivityController {
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreateSessionActivityDto })
 	create(@CurrentUser() user: JwtUser, @Body() createSessionActivityDto: CreateSessionActivityDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+		console.log('🎯 [SESSION ACTIVITY CONTROLLER] POST /session-activity recibido')
+		console.log('🎯 [SESSION ACTIVITY CONTROLLER] Body recibido:', JSON.stringify(createSessionActivityDto, null, 2))
+		console.log('🎯 [SESSION ACTIVITY CONTROLLER] Business name (dbName):', businessName)
+		console.log('🎯 [SESSION ACTIVITY CONTROLLER] File:', file?.filename || 'ninguno')
+		
 		return this.sessionActivityService.create(user, createSessionActivityDto, businessName, file)
 	}
 
