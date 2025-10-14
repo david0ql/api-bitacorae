@@ -750,15 +750,22 @@ export class SessionService {
 
 			try {
 				const { email: businessEmail, name: businessUserName } = session.accompaniment?.business?.user || { email: '', name: '' }
-				const { email: expertMail } = session.accompaniment?.expert?.user || { email: '', name: '' }
+				const { email: expertMail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
+				
+				const sessionDate = this.dateService.formatDate(session.startDatetime)
 
 				this.mailService.sendApprovedSessionEmailContext({
 					to: businessEmail,
 					businessName: businessUserName,
-					expertMail
+					expertName: expertName,
+					expertMail,
+					sessionDateTime: sessionDate,
+					isApproved: status,
+					signature,
+					rejectedDate: !status ? signedDate : undefined
 				}, file, businessName)
 			} catch (e) {
-				console.error('Error sending approved session email:', e)
+				console.error('Error sending approved/rejected session email:', e)
 			}
 
 			return updatedSession

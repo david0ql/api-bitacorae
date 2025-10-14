@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet" />
+		<title>{{title}}</title>
+	</head>
+	<body style="margin: 0; padding: 0; font-family: Montserrat, sans-serif; background-color: #f4f4f4;">
+		<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f4f4">
+			<tr>
+				<td align="center">
+					<table width="600" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="margin: 20px 0; border-radius: 8px; overflow: hidden;">
+						{{> header}}
+
+						<tr>
+							<td align="center" style="padding: 30px 40px 20px;">
+								<h2 style="color: #DC2626;">Sesión Rechazada</h2>
+								<h3 style="color: #333;">{{businessName}}</h3>
+								<p style="color: #555; font-size: 16px; line-height: 1.5;">
+									Te informamos que la sesión de trabajo del día <br>
+									<strong>{{sessionDateTime}}</strong> realizada por el experto <strong>{{expertName}}</strong><br>
+									ha sido <strong style="color: #DC2626;">rechazada</strong>.
+								</p>
+								
+								<div style="background-color: #FEE2E2; border-left: 4px solid #DC2626; padding: 15px; margin: 20px 0; text-align: left;">
+									<p style="color: #991B1B; margin: 0; font-size: 14px; line-height: 1.6;">
+										<strong>Estado:</strong> Rechazada<br>
+										<strong>Fecha de rechazo:</strong> {{rejectedDate}}<br>
+										<strong>Firmado por:</strong> {{signature}}
+									</p>
+								</div>
+
+								<p style="color: #555; font-size: 16px; line-height: 1.5;">
+									El acta de la sesión firmada se encuentra adjunta a este correo.
+								</p>
+							</td>
+						</tr>
+						
+						<tr>
+							<td style="padding: 20px 40px;">
+								<p style="color: #555; font-size: 16px; line-height: 1.5;">
+									Si tienes alguna pregunta o necesitas más información, ponte en contacto con el experto o el líder del programa.
+								</p>
+							</td>
+						</tr>
+
+						{{> footer}}
+					</table>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>
+
