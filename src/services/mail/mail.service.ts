@@ -447,14 +447,20 @@ export class MailService {
 	async sendApprovedSessionEmailContext(context: ApprovedSessionEmailContext, file: FileInfo, businessName: string) {
 		await this.getPlatformVars(businessName)
 
-		const { to, businessName: contextBusinessName } = context
+		const { to, businessName: contextBusinessName, expertMail } = context
 		const { notificationEmail } = this.varCommons
 
 		const subject = 'Sesión aprobada'
 
+		// Build CC list with notification email and expert email
+		const ccList = [
+			...(notificationEmail ? [notificationEmail] : []),
+			...(expertMail ? [expertMail] : [])
+		].filter(Boolean)
+
 		await this.mailerService.sendMail({
 			to,
-			...(notificationEmail ? { cc: notificationEmail } : {}),
+			...(ccList.length > 0 ? { cc: ccList.join(',') } : {}),
 			subject,
 			template: 'approved-session',
 			context: {
