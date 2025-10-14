@@ -56,7 +56,9 @@ export class SessionService {
 					'accompaniment.expert.user',
 					'accompaniment.expert.strengtheningAreas',
 					'accompaniment.expert.educationLevel',
-					'accompaniment.expert.consultorType'
+					'accompaniment.expert.consultorType',
+					'sessionActivities',
+					'sessionActivities.sessionActivityResponses'
 				]
 			})
 		} finally {
@@ -101,6 +103,20 @@ export class SessionService {
 		const businessEconomicActivities = session.accompaniment?.business?.economicActivities || []
 		const accompanimentStrengtheningAreas = session.accompaniment?.strengtheningAreas || []
 
+		// Mapear las actividades de la sesión
+		const sessionActivities = session.sessionActivities?.map(activity => ({
+			title: activity.title,
+			description: activity.description,
+			requiresDeliverable: activity.requiresDeliverable ? 'Sí' : 'No',
+			dueDatetime: this.dateService.formatDate(activity.dueDatetime),
+			attachmentPath: activity.attachmentPath,
+			responses: activity.sessionActivityResponses?.map(response => ({
+				message: response.deliverableDescription || 'Sin descripción',
+				attachmentPath: response.deliverableFilePath,
+				createdAt: this.dateService.formatDate(response.respondedDatetime)
+			})) || []
+		})) || []
+
 		return this.pdfService.generateSessionPdf({
 			bSocialReason: session.accompaniment?.business?.socialReason || 'No registra.',
 			bPhone: session.accompaniment?.business?.phone || 'No registra.',
@@ -127,6 +143,7 @@ export class SessionService {
 			sSessionNotes: session.sessionNotes || 'No registra.',
 			sConclusionsCommitments: session.conclusionsCommitments || 'No registra.',
 			sAttachments: attachments,
+			sSessionActivities: sessionActivities,
 			state: options.state,
 			generationDate: options.generationDate || this.dateService.formatDate(new Date()),
 			sign: options.sign,

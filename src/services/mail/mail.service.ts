@@ -425,7 +425,7 @@ export class MailService {
 		} = context
 		const { webUrl, notificationEmail } = this.varCommons
 
-		const subject = 'Sesión finalizada'
+		const subject = 'Sesión publicada'
 		const url = `${webUrl}/#/home/accompaniment/updateSession/${sessionId}`
 
 		await this.mailerService.sendMail({
