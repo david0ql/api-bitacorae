@@ -240,7 +240,6 @@ export class BusinessService {
 			})
 
 
-
 			return business
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached

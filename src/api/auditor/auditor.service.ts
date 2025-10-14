@@ -69,7 +69,7 @@ export class AuditorService {
 			const hash = bcrypt.hashSync(password, salt)
 
 			const user = userRepository.create({
-				roleId: 1,
+				roleId: 2, // Auditor role
 				name: `${firstName} ${lastName}`,
 				email,
 				password: hash
@@ -140,6 +140,7 @@ export class AuditorService {
 					'u.email AS email',
 				])
 				.innerJoin('a.user', 'u')
+				.where('u.roleId = :roleId', { roleId: 2 }) // Solo usuarios con role Auditor
 				.orderBy('a.firstName', 'ASC')
 				.addOrderBy('a.lastName', 'ASC')
 

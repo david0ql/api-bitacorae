@@ -192,6 +192,8 @@ export class UserService {
 			`
 		}
 
+		console.log('🔍 [USER SERVICE] findOne - roleId:', roleId, 'userId:', userId, 'sql length:', sql.length)
+
 		return await this.dynamicEntityService.executeWithBusinessConnection(
 			businessName,
 			async (dataSource) => {
