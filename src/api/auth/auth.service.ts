@@ -47,7 +47,7 @@ export class AuthService {
 				user: { id: user.id, email: user.email, roleId: user.roleId }
 			}
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 

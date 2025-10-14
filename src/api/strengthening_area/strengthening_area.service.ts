@@ -26,7 +26,7 @@ export class StrengtheningAreaService {
 			const area = strengtheningAreaRepository.create({ name, levelId: level })
 			return await strengtheningAreaRepository.save(area)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -51,7 +51,7 @@ export class StrengtheningAreaService {
 			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 			return new PageDto(items, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -64,7 +64,7 @@ export class StrengtheningAreaService {
 			const strengtheningAreaRepository = businessDataSource.getRepository(StrengtheningArea)
 			return await strengtheningAreaRepository.update(id, { name, levelId: level })
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -76,7 +76,7 @@ export class StrengtheningAreaService {
 			const strengtheningAreaRepository = businessDataSource.getRepository(StrengtheningArea)
 			return await strengtheningAreaRepository.delete(id)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 }

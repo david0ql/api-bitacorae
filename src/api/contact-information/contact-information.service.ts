@@ -93,7 +93,7 @@ export class ContactInformationService {
 			}
 			throw e
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -150,7 +150,7 @@ export class ContactInformationService {
 				strengtheningAreas: contactInformation.strengtheningAreas ? JSON.parse(contactInformation.strengtheningAreas) : []
 			}
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -236,7 +236,7 @@ export class ContactInformationService {
 			}
 			throw e
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -250,7 +250,7 @@ export class ContactInformationService {
 			const contactInformationRepository = businessDataSource.getRepository(ContactInformation)
 			return await contactInformationRepository.delete(id)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 }

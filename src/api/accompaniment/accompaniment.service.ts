@@ -79,7 +79,7 @@ export class AccompanimentService {
 			console.log('✅ Accompaniment saved successfully:', result.id)
 			return result
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -219,7 +219,7 @@ export class AccompanimentService {
 			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 			return new PageDto(items, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -285,7 +285,7 @@ export class AccompanimentService {
 			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 			return new PageDto(items, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -340,7 +340,7 @@ export class AccompanimentService {
 			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 			return new PageDto(items, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -374,7 +374,7 @@ export class AccompanimentService {
 
 			return accompaniment
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -414,7 +414,7 @@ export class AccompanimentService {
 
 			return accompaniment
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -495,7 +495,7 @@ export class AccompanimentService {
 			await accompanimentRepository.save(existingAccompaniment)
 			return { affected: 1 }
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -510,7 +510,7 @@ export class AccompanimentService {
 		} catch (e) {
 			throw new Error(`No se pudo eliminar el acompañamiento`)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 }

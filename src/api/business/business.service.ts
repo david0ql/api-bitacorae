@@ -158,7 +158,7 @@ export class BusinessService {
 			}
 			throw e
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -209,7 +209,7 @@ export class BusinessService {
 
 			return new PageDto(items, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -224,7 +224,7 @@ export class BusinessService {
 				where: { socialReason: filter }
 			})
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -243,7 +243,7 @@ export class BusinessService {
 
 			return business
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -263,7 +263,7 @@ export class BusinessService {
 				data: business ? business.socialReason : null
 			}
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -368,7 +368,7 @@ export class BusinessService {
 		}
 		throw e
 	} finally {
-		await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+		// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 	}
 }
 
@@ -384,7 +384,7 @@ export class BusinessService {
 			
 			return await businessRepository.delete(id)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 }

@@ -107,7 +107,7 @@ export class SessionActivityService {
 			}
 			throw e
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -215,7 +215,7 @@ export class SessionActivityService {
 
 			return new PageDto(items, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -300,7 +300,7 @@ export class SessionActivityService {
 			}
 			throw e
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -317,7 +317,7 @@ export class SessionActivityService {
 				gradedDatetime: this.dateService.getNow() 
 			})
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 }

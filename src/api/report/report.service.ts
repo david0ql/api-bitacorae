@@ -46,7 +46,7 @@ export class ReportService {
 				]
 			})
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -74,7 +74,7 @@ export class ReportService {
 			}
 			return await query.getOne()
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -101,7 +101,7 @@ export class ReportService {
 				]
 			})
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -148,7 +148,7 @@ export class ReportService {
 			})
 			return { preparationFiles, attachments, activities }
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -367,7 +367,7 @@ export class ReportService {
 			const report = reportRepository.create(data)
 			return await reportRepository.save(report)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -400,7 +400,7 @@ export class ReportService {
 			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 			return new PageDto(items, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -416,7 +416,7 @@ export class ReportService {
 			}
 			return reportRepository.delete(id)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -442,7 +442,7 @@ export class ReportService {
 				.getRawMany()
 			return sessions.map(session => session.filePath)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 }

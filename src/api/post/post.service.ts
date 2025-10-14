@@ -57,7 +57,7 @@ export class PostService {
 			if (fullPath) this.fileUploadService.deleteFile(fullPath)
 			throw e
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -128,7 +128,7 @@ export class PostService {
 
 			return new PageDto(items, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -179,7 +179,7 @@ export class PostService {
 
 			return items[0]
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -234,7 +234,7 @@ export class PostService {
 			if (fullPath) this.fileUploadService.deleteFile(fullPath)
 			throw e
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -248,7 +248,7 @@ export class PostService {
 			const postRepository = businessDataSource.getRepository(Post)
 			return await postRepository.delete(id)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 }

@@ -84,7 +84,7 @@ export class PlatformService {
 			if (reportHeaderImagePath) this.fileUploadService.deleteFile(reportHeaderImagePath)
 			throw e
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -108,7 +108,7 @@ export class PlatformService {
 				programStartDate: platform.programStartDate
 			}
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 }

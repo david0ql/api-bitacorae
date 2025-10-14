@@ -98,7 +98,7 @@ export class PdfService implements OnModuleDestroy {
 					const platformRepository = businessDataSource.getRepository(Platform)
 					platform = await platformRepository.findOne({ where: {} })
 				} finally {
-					await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+					// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 				}
 			}
 		}

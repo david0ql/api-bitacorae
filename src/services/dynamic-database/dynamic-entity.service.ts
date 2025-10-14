@@ -31,7 +31,7 @@ export class DynamicEntityService {
 		try {
 			return await operation(businessDataSource)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -50,7 +50,7 @@ export class DynamicEntityService {
 			const repository = businessDataSource.getRepository(entity) as Repository<T>
 			return await operation(repository)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 } 

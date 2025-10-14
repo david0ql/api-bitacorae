@@ -26,7 +26,7 @@ export class EconomicActivityService {
 			const economicActivity = economicRepository.create({ name })
 			return await economicRepository.save(economicActivity)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -52,7 +52,7 @@ export class EconomicActivityService {
 
 			return new PageDto(items, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -67,7 +67,7 @@ export class EconomicActivityService {
 			const { name } = updateEconomicActivityDto
 			return await economicRepository.update(id, { name })
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -83,7 +83,7 @@ export class EconomicActivityService {
 		} catch (e) {
 			throw new Error(`No se pudo eliminar la actividad económica con id ${id}`)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 }

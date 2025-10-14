@@ -34,7 +34,7 @@ export class ConsultorTypeService {
 			const consultor = consultorRepository.create({ name, roleId: role })
 			return await consultorRepository.save(consultor)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -68,7 +68,7 @@ export class ConsultorTypeService {
 			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 			return new PageDto(items, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -91,7 +91,7 @@ export class ConsultorTypeService {
 			const consultorRepository = businessDataSource.getRepository(ConsultorType)
 			return await consultorRepository.update(id, { name, roleId: role })
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -110,7 +110,7 @@ export class ConsultorTypeService {
 		} catch (e) {
 			throw new Error(`No se pudo eliminar el tipo de usuario con id ${id}`)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 }

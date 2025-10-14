@@ -133,8 +133,8 @@ export class MailService {
 				notificationEmail: this.varCommons.notificationEmail
 			})
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
-			console.log('🔒 [MAIL SERVICE] Conexión a BD cerrada')
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
+			// console.log('🔒 [MAIL SERVICE] Conexión a BD cerrada')
 		}
 	}
 

@@ -62,7 +62,7 @@ export class SessionService {
 				]
 			})
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -88,7 +88,7 @@ export class SessionService {
 
 			return { preparationFiles, attachments }
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -269,8 +269,8 @@ export class SessionService {
 			this.removeFiles(preparationFiles)
 			throw e
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
-			console.log('🔒 [SESSION CREATE] Conexión a BD cerrada')
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
+			// console.log('🔒 [SESSION CREATE] Conexión a BD cerrada')
 		}
 	}
 
@@ -326,7 +326,7 @@ export class SessionService {
 
 			return new PageDto(items, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -383,7 +383,7 @@ export class SessionService {
 
 			return new PageDto(items, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -448,7 +448,7 @@ export class SessionService {
 			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 			return new PageDto(rawItems, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -473,7 +473,7 @@ export class SessionService {
 
 			return session || []
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -536,7 +536,7 @@ export class SessionService {
 				attachments: rawSession.attachments ? rawSession.attachments.split('||') : []
 			}
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -661,7 +661,7 @@ export class SessionService {
 			this.removeFiles(preparationFiles)
 			throw e
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -713,7 +713,7 @@ export class SessionService {
 
 			return updatedSession
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -763,7 +763,7 @@ export class SessionService {
 
 			return updatedSession
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -824,8 +824,8 @@ export class SessionService {
 			console.error('❌ [SESSION REMOVE] Stack trace:', e.stack)
 			throw new Error(`No se pudo eliminar la sesión: ${e.message}`)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
-			console.log('🔒 [SESSION REMOVE] Conexión a BD cerrada')
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
+			// console.log('🔒 [SESSION REMOVE] Conexión a BD cerrada')
 		}
 	}
 }

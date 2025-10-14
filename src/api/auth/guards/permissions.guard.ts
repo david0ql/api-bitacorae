@@ -44,7 +44,7 @@ export class PermissionsGuard implements CanActivate {
 		// 			.select(['p.endpoint AS endpoint', 'p.method AS method'])
 		// 			.getRawMany()
 		// 	} finally {
-		// 		await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+		// 		// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		// 	}
 
 		// 	await this.redisService.set(cacheKey, JSON.stringify(permissions), 3600) //* TTL de 1 hora

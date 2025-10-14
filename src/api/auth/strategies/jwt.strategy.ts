@@ -45,7 +45,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
 			return user
 		} finally {
-			await this.dynamicDatabaseService.closeBusinessConnection(connection)
+			// await this.dynamicDatabaseService.closeBusinessConnection(connection) // Disabled - connections are now cached
 		}
 	}
 }

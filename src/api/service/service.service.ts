@@ -34,7 +34,7 @@ export class ServiceService {
 			const service = serviceRepository.create({ name, levelId: level })
 			return await serviceRepository.save(service)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -65,7 +65,7 @@ export class ServiceService {
 			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 			return new PageDto(items, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -80,7 +80,7 @@ export class ServiceService {
 			const { name, level } = updateServiceDto
 			return await serviceRepository.update(id, { name, levelId: level })
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -96,7 +96,7 @@ export class ServiceService {
 		} catch (e) {
 			throw new BadRequestException(`No se puede eliminar el servicio con id ${id}`)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 }

@@ -26,7 +26,7 @@ export class PostCategoryService {
 			const postCategory = postCategoryRepository.create({ name })
 			return await postCategoryRepository.save(postCategory)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -52,7 +52,7 @@ export class PostCategoryService {
 
 			return new PageDto(items, pageMetaDto)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -67,7 +67,7 @@ export class PostCategoryService {
 			const { name } = updatePostCategoryDto
 			return await postCategoryRepository.update(id, { name })
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 
@@ -83,7 +83,7 @@ export class PostCategoryService {
 		} catch (e) {
 			throw new Error(`No se pudo eliminar la categoría de publicación con id ${id}`)
 		} finally {
-			await this.dynamicDbService.closeBusinessConnection(businessDataSource)
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
 	}
 }
