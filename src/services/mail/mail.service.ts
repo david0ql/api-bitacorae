@@ -428,9 +428,9 @@ export class MailService {
 		const subject = 'Sesión publicada'
 		const url = `${webUrl}/#/home/accompaniment/updateSession/${sessionId}`
 
+		// Send email to business with approval button
 		await this.mailerService.sendMail({
 			to,
-			cc: [notificationEmail, expertMail].filter(Boolean),
 			subject,
 			template: 'ended-session',
 			context: {
@@ -442,6 +442,25 @@ export class MailService {
 				url
 			}
 		})
+
+		// Send notification emails to expert and admin (without approval button)
+		const notificationRecipients = [expertMail, notificationEmail].filter(Boolean)
+		
+		if (notificationRecipients.length > 0) {
+			await this.mailerService.sendMail({
+				to: notificationRecipients.join(','),
+				subject: 'Sesión publicada - Notificación',
+				template: 'ended-session-notification',
+				context: {
+					...this.varCommons,
+					title: subject,
+					recipientName: 'Equipo',
+					businessName: contextBusinessName,
+					expertName,
+					sessionDateTime
+				}
+			})
+		}
 	}
 
 	async sendApprovedSessionEmailContext(context: ApprovedSessionEmailContext, file: FileInfo, businessName: string) {
