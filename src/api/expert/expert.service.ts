@@ -307,13 +307,29 @@ export class ExpertService {
 					website: true,
 					linkedin: true,
 					profile: true,
+					documentType: {
+						id: true,
+						name: true
+					},
+					consultorType: {
+						id: true,
+						name: true
+					},
+					gender: {
+						id: true,
+						name: true
+					},
+					educationLevel: {
+						id: true,
+						name: true
+					},
 					strengtheningAreas: {
 						id: true,
 						name: true
 					}
 				},
 				where: { id },
-				relations: ['strengtheningAreas']
+				relations: ['documentType', 'consultorType', 'gender', 'educationLevel', 'strengtheningAreas']
 			})
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
