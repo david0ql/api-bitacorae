@@ -393,6 +393,7 @@ export class AccompanimentService {
 					id: true,
 					totalHours: true,
 					maxHoursPerSession: true,
+					minimumHours: true,
 					business: {
 						id: true,
 						socialReason: true,
