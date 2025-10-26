@@ -188,6 +188,8 @@ export class SessionService {
 				id: accompaniment.id,
 				businessId: accompaniment.business?.id,
 				expertId: accompaniment.expert?.id,
+				minimumHours: accompaniment.minimumHours,
+				maxHoursPerSession: accompaniment.maxHoursPerSession,
 				businessUser: accompaniment.business?.user ? {
 					email: accompaniment.business.user.email,
 					name: accompaniment.business.user.name
@@ -197,6 +199,34 @@ export class SessionService {
 					name: accompaniment.expert.user.name
 				} : null
 			})
+
+			// Validar duración de la sesión
+			const startDate = new Date(startDatetime)
+			const endDate = new Date(endDatetime)
+			const durationMs = endDate.getTime() - startDate.getTime()
+			const durationHours = durationMs / (1000 * 60 * 60)
+
+			console.log('⏱️ [SESSION CREATE] Validando duración:', {
+				startDatetime,
+				endDatetime,
+				durationHours,
+				minimumHours: accompaniment.minimumHours,
+				maxHoursPerSession: accompaniment.maxHoursPerSession
+			})
+
+			if (durationHours <= 0) {
+				throw new BadRequestException('La fecha de finalización debe ser posterior a la fecha de inicio')
+			}
+
+			if (durationHours < accompaniment.minimumHours) {
+				throw new BadRequestException(`La duración mínima de la sesión debe ser de ${accompaniment.minimumHours} hora(s)`)
+			}
+
+			if (durationHours > accompaniment.maxHoursPerSession) {
+				throw new BadRequestException(`La duración máxima de la sesión debe ser de ${accompaniment.maxHoursPerSession} hora(s)`)
+			}
+
+			console.log('✅ [SESSION CREATE] Validación de duración exitosa')
 
 			const session = sessionRepository.create({
 				accompanimentId,
@@ -597,14 +627,19 @@ export class SessionService {
 
 				const diffInHours = this.dateService.getHoursDiff(startDate, endDate)
 
-				if (diffInHours > accompaniment.maxHoursPerSession) {
-					this.removeFiles(preparationFiles)
-					throw new BadRequestException(`La duración de la sesión no puede ser mayor a ${accompaniment.maxHoursPerSession} horas`)
-				}
-
 				if (diffInHours <= 0) {
 					this.removeFiles(preparationFiles)
 					throw new BadRequestException('La fecha de inicio debe ser menor a la fecha de fin')
+				}
+
+				if (diffInHours < accompaniment.minimumHours) {
+					this.removeFiles(preparationFiles)
+					throw new BadRequestException(`La duración mínima de la sesión debe ser de ${accompaniment.minimumHours} hora(s)`)
+				}
+
+				if (diffInHours > accompaniment.maxHoursPerSession) {
+					this.removeFiles(preparationFiles)
+					throw new BadRequestException(`La duración máxima de la sesión debe ser de ${accompaniment.maxHoursPerSession} hora(s)`)
 				}
 
 				if (startDate < now || endDate < now) {
