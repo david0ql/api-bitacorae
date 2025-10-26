@@ -27,6 +27,13 @@ export class BusinessService {
 		private readonly mailService: MailService
 	) {}
 
+	private constructFileUrl(filePath: string): string {
+		if (!filePath) return filePath
+		return filePath.startsWith('http') 
+			? filePath 
+			: `${envVars.APP_URL}/${filePath}`
+	}
+
 	async create(createBusinessDto: CreateBusinessDto, businessName: string, file?: Express.Multer.File) {
 		const {
 			socialReason,
@@ -239,6 +246,12 @@ export class BusinessService {
 				relations: ['economicActivities', 'strengtheningAreas', 'marketScope', 'productStatus']
 			})
 
+			if (!business) return null
+
+			// Construct complete URL for evidence file
+			if (business.evidence) {
+				business.evidence = this.constructFileUrl(business.evidence)
+			}
 
 			return business
 		} finally {
@@ -316,7 +329,7 @@ export class BusinessService {
 		await businessRepository.save(existingBusiness)
 
 		// Return with relations
-		return await businessRepository.findOne({
+		const updatedBusiness = await businessRepository.findOne({
 			where: { id },
 			relations: ['economicActivities', 'strengtheningAreas'],
 			select: {
@@ -360,6 +373,13 @@ export class BusinessService {
 				}
 			}
 		})
+
+		// Construct complete URL for evidence file
+		if (updatedBusiness?.evidence) {
+			updatedBusiness.evidence = this.constructFileUrl(updatedBusiness.evidence)
+		}
+
+		return updatedBusiness
 	} catch (e) {
 		if (file) {
 			const fullPath = this.fileUploadService.getFullPath('business', file.filename)
