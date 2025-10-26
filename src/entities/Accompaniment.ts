@@ -33,6 +33,9 @@ export class Accompaniment {
   @Column("int", { name: "max_hours_per_session" })
   maxHoursPerSession: number;
 
+  @Column("int", { name: "minimum_hours", default: 1 })
+  minimumHours: number;
+
   @Column("timestamp", {
     name: "created_at",
     default: () => "CURRENT_TIMESTAMP",

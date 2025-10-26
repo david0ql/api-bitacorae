@@ -23,6 +23,11 @@ export class CreateAccompanimentDto {
 	@IsNumber()
 	maxHoursPerSession: number;
 
+	@ApiProperty({ description: 'Mínimo de horas', example: 1 })
+	@IsNotEmpty()
+	@IsNumber()
+	minimumHours: number;
+
 	@ApiProperty({
 		description: 'Áreas de fortalecimiento (IDs)',
 		example: [1, 2]

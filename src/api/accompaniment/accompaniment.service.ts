@@ -26,7 +26,7 @@ export class AccompanimentService {
 		console.log('🏁 AccompanimentService.create called with businessName:', businessName)
 		console.log('📋 CreateAccompanimentDto:', createAccompanimentDto)
 		
-		const { businessId, expertId, totalHours, maxHoursPerSession, strengtheningAreas } = createAccompanimentDto
+		const { businessId, expertId, totalHours, maxHoursPerSession, minimumHours, strengtheningAreas } = createAccompanimentDto
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
 		
 		if (!businessDataSource) {
@@ -52,6 +52,7 @@ export class AccompanimentService {
 			if (existingAccompaniment) throw new BadRequestException(`La empresa con el ID ${businessId} ya está siendo acompañada por el experto con el ID ${expertId}`)
 
 			if(totalHours < maxHoursPerSession) throw new BadRequestException(`El total de horas (${totalHours}) no puede ser menor a las horas máximas por sesión (${maxHoursPerSession})`)
+			if(minimumHours > maxHoursPerSession) throw new BadRequestException(`El mínimo de horas (${minimumHours}) no puede ser mayor a las horas máximas por sesión (${maxHoursPerSession})`)
 
 			const usedHoursResult = await accompanimentRepository
 				.createQueryBuilder("accompaniment")
@@ -71,6 +72,7 @@ export class AccompanimentService {
 				expertId,
 				totalHours,
 				maxHoursPerSession,
+				minimumHours,
 				strengtheningAreas: strengtheningAreaEntities
 			})
 
@@ -421,7 +423,7 @@ export class AccompanimentService {
 	async update(id: number, updateAccompanimentDto: UpdateAccompanimentDto, businessName: string) {
 		if(!id) return { affected: 0 }
 
-		const { businessId, expertId, totalHours, maxHoursPerSession, strengtheningAreas } = updateAccompanimentDto
+		const { businessId, expertId, totalHours, maxHoursPerSession, minimumHours, strengtheningAreas } = updateAccompanimentDto
 
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
 		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
@@ -454,6 +456,10 @@ export class AccompanimentService {
 				throw new BadRequestException(`El total de horas (${totalHours}) no puede ser menor a las horas máximas por sesión (${maxHoursPerSession})`)
 			}
 
+			if(minimumHours && maxHoursPerSession && minimumHours > maxHoursPerSession) {
+				throw new BadRequestException(`El mínimo de horas (${minimumHours}) no puede ser mayor a las horas máximas por sesión (${maxHoursPerSession})`)
+			}
+
 			if(totalHours && businessId) {
 				const usedHoursResult = await accompanimentRepository
 					.createQueryBuilder("accompaniment")
@@ -484,6 +490,7 @@ export class AccompanimentService {
 			if (expertId) existingAccompaniment.expertId = expertId
 			if (totalHours) existingAccompaniment.totalHours = totalHours
 			if (maxHoursPerSession) existingAccompaniment.maxHoursPerSession = maxHoursPerSession
+			if (minimumHours) existingAccompaniment.minimumHours = minimumHours
 
 			if(strengtheningAreas) {
 				const strengtheningAreaEntities = await strengtheningAreaRepository.findBy({
