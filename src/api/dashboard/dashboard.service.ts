@@ -28,7 +28,7 @@ export class DashboardService {
 			`)
 			const sessionHours = await businessDataSource.query(`
 				SELECT
-					IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
+					IFNULL(ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
 				FROM
 					session s
 			`)
