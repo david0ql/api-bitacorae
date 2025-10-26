@@ -27,6 +27,13 @@ export class ExpertService {
 		private readonly mailService: MailService
 	) {}
 
+	private constructFileUrl(filePath: string): string {
+		if (!filePath) return filePath
+		return filePath.startsWith('http') 
+			? filePath 
+			: `${envVars.APP_URL}/${filePath}`
+	}
+
 	async create(createExpertDto: CreateExpertDto, businessName: string, file?: Express.Multer.File) {
 		const {
 			firstName,
@@ -286,7 +293,7 @@ export class ExpertService {
 
 		try {
 			const expertRepository = businessDataSource.getRepository(Expert)
-			return await expertRepository.findOne({
+			const expert = await expertRepository.findOne({
 				select: {
 					id: true,
 					userId: true,
@@ -331,6 +338,15 @@ export class ExpertService {
 				where: { id },
 				relations: ['documentType', 'consultorType', 'gender', 'educationLevel', 'strengtheningAreas']
 			})
+
+			if (!expert) return null
+
+			// Construct complete URL for photo
+			if (expert.photo) {
+				expert.photo = this.constructFileUrl(expert.photo)
+			}
+
+			return expert
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
@@ -378,7 +394,7 @@ export class ExpertService {
 		await expertRepository.save(existingExpert)
 
 		// Volver a consultar para obtener las relaciones
-		return await expertRepository.findOne({
+		const updatedExpert = await expertRepository.findOne({
 			where: { id },
 			relations: ['strengtheningAreas'],
 			select: {
@@ -407,6 +423,13 @@ export class ExpertService {
 				}
 			}
 		})
+
+		// Construct complete URL for photo
+		if (updatedExpert?.photo) {
+			updatedExpert.photo = this.constructFileUrl(updatedExpert.photo)
+		}
+
+		return updatedExpert
 		} catch (e) {
 			if (file) {
 				const fullPath = this.fileUploadService.getFullPath('user', file.filename)
