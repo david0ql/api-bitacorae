@@ -36,10 +36,16 @@ export class BusinessController {
 		return this.businessService.findAll(pageOptionsDto, businessName)
 	}
 
-	@Get(':id')
+	@Get('/byFilter/:filter')
 	@HttpCode(200)
-	findOne(@Param('id') id: string, @BusinessName() businessName: string) {
-		return this.businessService.findOne(+id, businessName)
+	findAllByFilter(@Param('filter') filter: string, @BusinessName() businessName: string) {
+		return this.businessService.findAllByFilter(filter, businessName)
+	}
+
+	@Get('/byFilter')
+	@HttpCode(200)
+	findAllByFilterEmpty(@BusinessName() businessName: string) {
+		return this.businessService.findAllByFilter('', businessName)
 	}
 
 	@Get('/name/:id')
@@ -48,10 +54,10 @@ export class BusinessController {
 		return this.businessService.findName(+id, businessName)
 	}
 
-	@Get('/byFilter/:filter')
+	@Get(':id')
 	@HttpCode(200)
-	findAllByFilter(@Param('filter') filter: string, @BusinessName() businessName: string) {
-		return this.businessService.findAllByFilter(filter, businessName)
+	findOne(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.businessService.findOne(+id, businessName)
 	}
 
 	@Patch(':id')

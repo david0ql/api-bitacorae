@@ -226,10 +226,22 @@ export class BusinessService {
 
 		try {
 			const businessRepository = businessDataSource.getRepository(Business)
-			return await businessRepository.find({
-				select: { id: true, socialReason: true },
-				where: { socialReason: filter }
-			})
+			
+			// Si el filtro está vacío o es undefined, devolver todas las empresas
+			if (!filter || filter.trim() === '') {
+				return await businessRepository.find({
+					select: { id: true, socialReason: true },
+					order: { socialReason: 'ASC' }
+				})
+			}
+
+			// Usar LIKE para búsqueda parcial en lugar de coincidencia exacta
+			return await businessRepository
+				.createQueryBuilder('business')
+				.select(['business.id', 'business.socialReason'])
+				.where('business.socialReason LIKE :filter', { filter: `%${filter}%` })
+				.orderBy('business.socialReason', 'ASC')
+				.getMany()
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}

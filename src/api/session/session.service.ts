@@ -417,6 +417,44 @@ export class SessionService {
 		}
 	}
 
+	async findAllByFilter(filter: string, businessName: string) {
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+
+		try {
+			const sessionRepository = businessDataSource.getRepository(Session)
+			
+			// If filter is empty or undefined, return all sessions
+			if (!filter || filter.trim() === '') {
+				const result = await sessionRepository
+					.createQueryBuilder('s')
+					.select([
+						's.id AS value',
+						'CONCAT(s.title, " - ", DATE_FORMAT(s.start_datetime, "%Y-%m-%d %H:%i"), " / ", DATE_FORMAT(s.end_datetime, "%Y-%m-%d %H:%i")) AS label'
+					])
+					.orderBy('s.startDatetime', 'DESC')
+					.take(10)
+					.getRawMany()
+				return result || []
+			}
+			
+			// Otherwise, filter by title
+			const result = await sessionRepository
+				.createQueryBuilder('s')
+				.select([
+					's.id AS value',
+					'CONCAT(s.title, " - ", DATE_FORMAT(s.start_datetime, "%Y-%m-%d %H:%i"), " / ", DATE_FORMAT(s.end_datetime, "%Y-%m-%d %H:%i")) AS label'
+				])
+				.where('s.title LIKE :filter', { filter: `%${filter}%` })
+				.orderBy('s.startDatetime', 'DESC')
+				.take(10)
+				.getRawMany()
+			return result || []
+		} finally {
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
+		}
+	}
+
 	async findAllForBusiness(user: JwtUser, pageOptionsDto: PageOptionsDto, businessName: string): Promise<PageDto<Session>> {
 		const { id: userId } = user
 		const { take, skip, order } = pageOptionsDto
@@ -477,31 +515,6 @@ export class SessionService {
 			const totalCount = Number(countResult[0]?.total) ?? 0
 			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 			return new PageDto(rawItems, pageMetaDto)
-		} finally {
-			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
-		}
-	}
-
-	async findAllByFilter(filter: string, businessName: string) {
-		if(!filter) return []
-
-		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
-		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
-
-		try {
-			const sessionRepository = businessDataSource.getRepository(Session)
-			const session = await sessionRepository
-				.createQueryBuilder('s')
-				.select([
-					's.id AS value',
-					'CONCAT(s.title, " - ", DATE_FORMAT(s.start_datetime, "%Y-%m-%d %H:%i"), " / ", DATE_FORMAT(s.end_datetime, "%Y-%m-%d %H:%i")) AS label'
-				])
-				.where('s.title LIKE :filter', { filter: `%${filter}%` })
-				.take(10)
-				.setParameters({ appUrl: envVars.APP_URL })
-				.getRawMany()
-
-			return session || []
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}

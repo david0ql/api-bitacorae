@@ -55,16 +55,22 @@ export class SessionController {
 		return this.sessionService.findAllForBusiness(user, pageOptionsDto, businessName)
 	}
 
-	@Get(':id')
+	@Get('/byFilter')
 	@HttpCode(200)
-	findOne(@CurrentUser() user: JwtUser, @Param('id') id: string, @BusinessName() businessName: string) {
-		return this.sessionService.findOne(user, +id, businessName)
+	findAllByFilterEmpty(@BusinessName() businessName: string) {
+		return this.sessionService.findAllByFilter('', businessName)
 	}
 
 	@Get('/byFilter/:filter')
 	@HttpCode(200)
 	findAllByFilter(@Param('filter') filter: string, @BusinessName() businessName: string) {
 		return this.sessionService.findAllByFilter(filter, businessName)
+	}
+
+	@Get(':id')
+	@HttpCode(200)
+	findOne(@CurrentUser() user: JwtUser, @Param('id') id: string, @BusinessName() businessName: string) {
+		return this.sessionService.findOne(user, +id, businessName)
 	}
 
 	@Patch(':id')

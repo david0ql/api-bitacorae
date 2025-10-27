@@ -309,16 +309,22 @@ export class ReportService {
 	}
 
 	async create(createReportDto: CreateReportDto, businessName: string) {
+		console.log('📊 ReportService.create called with:', { createReportDto, businessName })
+		
 		const { name, reportTypeId, sessionId, businessId, expertId } = createReportDto
 		let data: any = {}
 
+		console.log('📊 Processing report type:', reportTypeId)
+
 		if(reportTypeId === 1) {
+			console.log('📊 Processing session report for sessionId:', sessionId)
 			const session = await this.getSessionWithRelations(sessionId, businessName)
 			if (!session) throw new BadRequestException(`Sesión con id ${sessionId} no encontrada`)
 
 			const { preparationFiles, attachments, activities } = await this.mapFiles(sessionId, businessName)
 			const diffInHours = this.dateService.getHoursDiff(session.startDatetime, session.endDatetime)
 			const generationDate = this.dateService.getFormattedNow()
+			console.log('📊 Generating session PDF...')
 			const file = await this.generateSessionPdfData(
 				session,
 				diffInHours,
@@ -331,41 +337,53 @@ export class ReportService {
 		}
 
 		if(reportTypeId === 2) {
+			console.log('📊 Processing business report for businessId:', businessId)
 			const business = await this.getBusinessWithRelations(businessId, businessName)
 			if (!business) throw new BadRequestException(`Empresa con id ${businessId} no encontrada`)
 			const generationDate = this.dateService.getFormattedNow()
 			const reportData = await this.getBusinessReportData(business, generationDate, businessName)
 			const attachmentPaths = await this.findApprovedSessionAttachments({ businessId }, businessName)
+			console.log('📊 Generating business PDF...')
 			const file = await this.pdfService.generateReportByBusinessPdf(reportData, attachmentPaths, 'business', businessName)
 			data = { name, reportTypeId, businessId, filePath: file.filePath }
 		}
 
 		if(reportTypeId === 3) {
+			console.log('📊 Processing business-expert report for businessId:', businessId, 'expertId:', expertId)
 			const business = await this.getBusinessWithRelations(businessId, businessName, expertId)
 			if (!business) throw new BadRequestException(`No se encontraron acompañamientos para la empresa con id ${businessId} y experto con id ${expertId}`)
 			const generationDate = this.dateService.getFormattedNow()
 			const reportData = await this.getBusinessReportData(business, generationDate, businessName)
 			const attachmentPaths = await this.findApprovedSessionAttachments({ businessId, expertId }, businessName)
+			console.log('📊 Generating business-expert PDF...')
 			const file = await this.pdfService.generateReportByBusinessPdf(reportData, attachmentPaths, 'business-expert', businessName)
 			data = { name, reportTypeId, businessId, expertId, filePath: file.filePath }
 		}
 
 		if(reportTypeId === 4) {
+			console.log('📊 Processing expert report for expertId:', expertId)
 			const expert = await this.getExpertWithRelations(expertId, businessName)
 			if (!expert) throw new BadRequestException(`Experto con id ${expertId} no encontrado`)
 			const generationDate = this.dateService.getFormattedNow()
 			const reportData = await this.getExpertReportData(expert, generationDate, businessName)
 			const attachmentPaths = await this.findApprovedSessionAttachments({ expertId }, businessName)
+			console.log('📊 Generating expert PDF...')
 			const file = await this.pdfService.generateReportByExpertPdf(reportData, attachmentPaths, businessName)
 			data = { name, reportTypeId, expertId, filePath: file.filePath }
 		}
 
+		console.log('📊 Saving report to database with data:', data)
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
 		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 		try {
 			const reportRepository = businessDataSource.getRepository(Report)
 			const report = reportRepository.create(data)
-			return await reportRepository.save(report)
+			const savedReport = await reportRepository.save(report)
+			console.log('📊 Report saved successfully:', savedReport)
+			return savedReport
+		} catch (error) {
+			console.error('📊 Error saving report:', error)
+			throw error
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
