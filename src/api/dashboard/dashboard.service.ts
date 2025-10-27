@@ -330,20 +330,26 @@ export class DashboardService {
 			})
 
 			//*********** */
-			// Posiciones/cargos
+			// Tipos de consultores/expertos
 			const positions = (await businessDataSource.query(`
 				SELECT
-					p.name AS name,
-					COUNT(DISTINCT b.id) AS value 
+					ct.name AS name,
+					COUNT(DISTINCT e.id) AS expert_count,
+					SUM(a.total_hours) AS total_hours,
+					COUNT(DISTINCT b.id) AS business_count
 				FROM
-					business b
-					INNER JOIN position p ON p.id = b.position_id
-				GROUP BY p.id, p.name
-				ORDER BY value DESC
+					expert e
+					INNER JOIN consultor_type ct ON ct.id = e.consultor_type_id
+					INNER JOIN accompaniment a ON a.expert_id = e.id
+					INNER JOIN business b ON b.id = a.business_id
+				GROUP BY ct.id, ct.name
+				ORDER BY expert_count DESC
 			`)).map((item) => {
 				return {
 					name: item.name,
-					value: parseInt(item.value)
+					value: parseInt(item.expert_count),
+					total_hours: parseInt(item.total_hours) || 0,
+					business_count: parseInt(item.business_count)
 				}
 			})
 
