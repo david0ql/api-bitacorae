@@ -66,6 +66,10 @@ export class DashboardService {
 				total: businessSize.reduce((acc, curr) => acc + curr.value, 0)
 			}
 	//*********** */
+			// Get platform program start date
+			const platformData = await businessDataSource.query(`SELECT program_start_date FROM platform LIMIT 1`)
+			const programStartDate = platformData[0]?.program_start_date || '2025-02-01' // Default fallback
+			
 			const cohorts = await businessDataSource.query(`SELECT id, name, start_date, end_date FROM cohort c ORDER BY c.order`)
 			let result3 = await Promise.all(cohorts.map(async cohort => {
 				const data = await businessDataSource.query(`
@@ -106,7 +110,7 @@ export class DashboardService {
 					LEFT JOIN empresas_por_mes b ON b.month = m.month
 					ORDER BY m.month
 
-				`, [cohort.start_date, cohort.end_date, cohort.id, cohort.id])
+				`, [programStartDate, cohort.end_date, cohort.id, cohort.id])
 
 				const categories = data.map((d: any) => d.month)
 
