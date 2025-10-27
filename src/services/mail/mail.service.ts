@@ -165,12 +165,14 @@ export class MailService {
 	}
 
 	private formatDateArray(date: Date): [number, number, number, number, number] {
+		// Usar métodos UTC para evitar problemas de zona horaria
+		// El servidor puede estar en una zona horaria diferente a la del usuario
 		return [
-			date.getFullYear(),
-			date.getMonth() + 1,
-			date.getDate(),
-			date.getHours(),
-			date.getMinutes()
+			date.getUTCFullYear(),
+			date.getUTCMonth() + 1,
+			date.getUTCDate(),
+			date.getUTCHours(),
+			date.getUTCMinutes()
 		]
 	}
 
@@ -221,8 +223,10 @@ export class MailService {
 		console.log('  - Subject:', subject)
 
 		// Validar y ajustar fechas para el calendario
-		const startDateTime = new Date(startDate)
-		let endDateTime = new Date(endDate)
+		// Las fechas vienen en formato "YYYY-MM-DD HH:mm:ss" y representan la hora local del usuario
+		// Necesitamos parsearlas correctamente para que el calendario las muestre en la zona horaria correcta
+		const startDateTime = new Date(startDate + ' GMT-0500') // Ajustar a la zona horaria de Colombia (GMT-5)
+		let endDateTime = new Date(endDate + ' GMT-0500') // Ajustar a la zona horaria de Colombia (GMT-5)
 		
 		// Si las fechas son iguales, agregar 1 hora a la fecha de fin
 		if (startDateTime.getTime() === endDateTime.getTime()) {
