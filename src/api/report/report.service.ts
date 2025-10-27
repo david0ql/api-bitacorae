@@ -192,7 +192,7 @@ export class ReportService {
 					accompaniment.sessions.map(async session => {
 						const { preparationFiles, attachments, activities } = await this.mapFiles(session.id, businessName)
 						const diffInHours = this.dateService.getHoursDiff(session.startDatetime, session.endDatetime)
-						if (session.statusId === 3 && diffInHours) {
+						if ([2, 3, 4].includes(session.statusId) && diffInHours) {
 							totalRegisteredHours += diffInHours
 						}
 						return {
