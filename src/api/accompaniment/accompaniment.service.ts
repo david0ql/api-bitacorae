@@ -122,7 +122,7 @@ export class AccompanimentService {
 						SELECT
 							a.business_id,
 							COUNT(DISTINCT s.id) AS scheduledSessions,
-							ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)) AS completedHours
+							ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)) AS completedHours
 						FROM accompaniment a
 						INNER JOIN session s ON s.accompaniment_id = a.id
 						GROUP BY a.business_id
@@ -155,7 +155,7 @@ export class AccompanimentService {
 						SELECT
 							a.id AS accompaniment_id,
 							COUNT(DISTINCT s.id) AS scheduledSessions,
-							ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)) AS completedHours
+							ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)) AS completedHours
 						FROM accompaniment a
 						INNER JOIN session s ON s.accompaniment_id = a.id
 						WHERE a.expert_id = ${expert.id}
@@ -257,7 +257,7 @@ export class AccompanimentService {
 					b.id AS businessId,
 					b.assigned_hours AS assignedHours,
 					IFNULL(COUNT(DISTINCT s.id), 0) AS scheduledSessions,
-					IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
+					IFNULL(ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
 				FROM
 					accompaniment a
 					INNER JOIN expert e ON e.id = a.expert_id
@@ -312,7 +312,7 @@ export class AccompanimentService {
 					b.id AS businessId,
 					b.assigned_hours AS assignedHours,
 					IFNULL(COUNT(DISTINCT s.id), 0) AS scheduledSessions,
-					IFNULL(ROUND(SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
+					IFNULL(ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
 				FROM
 					accompaniment a
 					INNER JOIN expert e ON e.id = a.expert_id
