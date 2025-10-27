@@ -185,7 +185,7 @@ export class BusinessService {
 					DATE_FORMAT(b.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
 					IF(u.active = 1, 'Si', 'No') AS userActive,
 					CONCAT(c.first_name, ' ', c.last_name, ' - ', b.email) AS userInfo,
-					CONCAT(IFNULL(ROUND((SUM(CASE WHEN s.status_id = 3 THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END) / b.assigned_hours) * 100, 0), 0), '%') AS progress
+					CONCAT(IFNULL(ROUND((SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END) / b.assigned_hours) * 100, 0), 0), '%') AS progress
 				FROM
 					business b
 					INNER JOIN user u ON u.id = b.user_id
