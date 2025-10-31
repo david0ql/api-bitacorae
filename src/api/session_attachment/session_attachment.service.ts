@@ -29,7 +29,13 @@ export class SessionAttachmentService {
 				filePath,
 				externalPath
 			})
-			return await sessionAttachmentRepository.save(sessionAttachment)
+			const savedAttachment = await sessionAttachmentRepository.save(sessionAttachment)
+			
+			// Return with fileUrl for frontend compatibility
+			return {
+				...savedAttachment,
+				fileUrl: savedAttachment.filePath ? `${envVars.APP_URL}/${savedAttachment.filePath}` : null
+			}
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
@@ -56,8 +62,15 @@ export class SessionAttachmentService {
 				queryBuilder.getMany(),
 				queryBuilder.getCount()
 			])
+			
+			// Map items to include fileUrl with full URL
+			const mappedItems = items.map(item => ({
+				...item,
+				fileUrl: item.filePath ? `${envVars.APP_URL}/${item.filePath}` : null
+			}))
+			
 			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
-			return new PageDto(items, pageMetaDto)
+			return new PageDto(mappedItems, pageMetaDto)
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
