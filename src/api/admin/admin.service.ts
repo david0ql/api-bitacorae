@@ -135,11 +135,14 @@ export class AdminService {
 				.select([
 					'a.id AS id',
 					`CONCAT(a.firstName, ' ', a.lastName) AS name`,
-					'a.documentNumber AS document',
+					'a.documentNumber AS documentNumber',
+					'dt.name AS documentTypeName',
 					'a.phone AS phone',
 					'u.email AS email',
+					'u.createdAt AS createdAt',
 				])
 				.innerJoin('a.user', 'u')
+				.leftJoin('a.documentType', 'dt')
 				.where('u.roleId = :roleId', { roleId: 1 }) // Solo usuarios con role Admin
 				.orderBy('a.firstName', 'ASC')
 				.addOrderBy('a.lastName', 'ASC')

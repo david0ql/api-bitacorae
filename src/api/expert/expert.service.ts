@@ -155,6 +155,7 @@ export class ExpertService {
 					e.email AS email,
 					e.phone AS phone,
 					e.document_type_id AS documentTypeId,
+					dt.name AS documentTypeName,
 					e.document_number AS documentNumber,
 					CONCAT(?, '/', e.photo) AS photo,
 					e.consultor_type_id AS consultorTypeId,
@@ -169,6 +170,7 @@ export class ExpertService {
 					e.linkedin AS linkedin,
 					e.profile AS profile,
 					u.active AS active,
+					u.createdAt AS createdAt,
 					IF(u.active = 1, 'Si', 'No') AS userActive,
 					IF(COUNT(sa.id) > 0,
 						CONCAT('[',
@@ -182,6 +184,7 @@ export class ExpertService {
 				FROM expert e
 				INNER JOIN user u ON u.id = e.user_id
 				INNER JOIN consultor_type ct ON ct.id = e.consultor_type_id
+				LEFT JOIN document_type dt ON dt.id = e.document_type_id
 				LEFT JOIN expert_strengthening_area_rel esa ON esa.expert_id = e.id
 				LEFT JOIN strengthening_area sa ON sa.id = esa.strengthening_area_id
 				GROUP BY e.id
