@@ -9,8 +9,6 @@ import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
-import { CurrentUser } from '../auth/decorators/current-user.decorator'
-import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { PageDto } from 'src/dto/page.dto'
 import { Admin } from 'src/entities/Admin'
@@ -33,8 +31,8 @@ export class AdminController {
 
 	@Get()
 	@HttpCode(200)
-	findAll(@CurrentUser() user: JwtUser, @Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<Admin>> {
-		return this.adminService.findAll(user, pageOptionsDto, businessName)
+	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<Admin>> {
+		return this.adminService.findAll(pageOptionsDto, businessName)
 	}
 
 	@Get(':id')

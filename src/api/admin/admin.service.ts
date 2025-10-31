@@ -9,7 +9,6 @@ import { DynamicDatabaseService } from 'src/services/dynamic-database/dynamic-da
 
 import { UpdateAdminDto } from './dto/update-admin.dto'
 
-import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 
 import envVars from 'src/config/env'
@@ -125,9 +124,7 @@ export class AdminService {
 		}
 	}
 
-	async findAll(user: JwtUser, pageOptionsDto: PageOptionsDto, businessName: string): Promise<PageDto<Admin>> {
-		const { id: userId } = user
-
+	async findAll(pageOptionsDto: PageOptionsDto, businessName: string): Promise<PageDto<Admin>> {
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
 		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
@@ -143,7 +140,7 @@ export class AdminService {
 					'u.email AS email',
 				])
 				.innerJoin('a.user', 'u')
-				.where('a.userId != :userId', { userId })
+				.where('u.roleId = :roleId', { roleId: 1 }) // Solo usuarios con role Admin
 				.orderBy('a.firstName', 'ASC')
 				.addOrderBy('a.lastName', 'ASC')
 
