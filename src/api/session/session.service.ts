@@ -109,10 +109,10 @@ export class SessionService {
 			description: activity.description,
 			requiresDeliverable: activity.requiresDeliverable ? 'Sí' : 'No',
 			dueDatetime: this.dateService.formatDate(activity.dueDatetime),
-			attachmentPath: activity.attachmentPath,
+			attachmentPath: activity.attachmentPath ? (activity.attachmentPath.startsWith('http') ? activity.attachmentPath : `${envVars.APP_URL}/${activity.attachmentPath}`) : null,
 			responses: activity.sessionActivityResponses?.map(response => ({
 				message: response.deliverableDescription || 'Sin descripción',
-				attachmentPath: response.deliverableFilePath,
+				attachmentPath: response.deliverableFilePath ? (response.deliverableFilePath.startsWith('http') ? response.deliverableFilePath : `${envVars.APP_URL}/${response.deliverableFilePath}`) : null,
 				createdAt: this.dateService.formatDate(response.respondedDatetime)
 			})) || []
 		})) || []
