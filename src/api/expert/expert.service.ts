@@ -170,7 +170,7 @@ export class ExpertService {
 					e.linkedin AS linkedin,
 					e.profile AS profile,
 					u.active AS active,
-					u.createdAt AS createdAt,
+					u.created_at AS createdAt,
 					IF(u.active = 1, 'Si', 'No') AS userActive,
 					IF(COUNT(sa.id) > 0,
 						CONCAT('[',
