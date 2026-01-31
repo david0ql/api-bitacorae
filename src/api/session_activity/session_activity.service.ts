@@ -15,6 +15,8 @@ import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 import { MailService } from 'src/services/mail/mail.service'
 import { DateService } from 'src/services/date/date.service'
+import { RequestAttachmentService } from 'src/services/request-attachment/request-attachment.service'
+import { REQUEST_ATTACHMENT_TYPES } from 'src/services/request-attachment/request-attachment.constants'
 
 import envVars from 'src/config/env'
 
@@ -24,21 +26,26 @@ export class SessionActivityService {
 		private readonly dynamicDbService: DynamicDatabaseService,
 		private readonly fileUploadService: FileUploadService,
 		private readonly mailService: MailService,
-		private readonly dateService: DateService
+		private readonly dateService: DateService,
+		private readonly requestAttachmentService: RequestAttachmentService
 	) {}
 
-	async create(user: JwtUser, createSessionActivityDto: CreateSessionActivityDto, businessName: string, file?: Express.Multer.File) {
+	async create(user: JwtUser, createSessionActivityDto: CreateSessionActivityDto, businessName: string, files?: Express.Multer.File[]) {
 		console.log('🚀 [SESSION ACTIVITY CREATE] Iniciando creación de actividad de sesión')
 		console.log('📝 [SESSION ACTIVITY CREATE] DTO recibido:', JSON.stringify(createSessionActivityDto, null, 2))
 		console.log('🏢 [SESSION ACTIVITY CREATE] Business name (dbName):', businessName)
-		console.log('📎 [SESSION ACTIVITY CREATE] File:', file?.filename || 'ninguno')
+		console.log('📎 [SESSION ACTIVITY CREATE] Files:', files?.length || 0, 'archivos')
 		if (!businessName) throw new BadRequestException('businessName es requerido')
+		await this.requestAttachmentService.ensureHomologated(businessName)
 		
 		const { title, description, dueDatetime, requiresDeliverable, sessionId } = createSessionActivityDto
 		const { id } = user
 		const now = this.dateService.getNow()
 
-		const fullPath = file ? this.fileUploadService.getFullPath('session-activity', file.filename) : undefined
+		const uploadedFiles = files ?? []
+		const primaryFilePath = uploadedFiles.length > 0
+			? this.fileUploadService.getFullPath('session-activity', uploadedFiles[0].filename)
+			: undefined
 
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
 		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
@@ -52,18 +59,20 @@ export class SessionActivityService {
 				relations: ['accompaniment', 'accompaniment.business.user', 'accompaniment.expert.user']
 			})
 			if (!session) {
-				if (fullPath) {
-					this.fileUploadService.deleteFile(fullPath)
-				}
+				uploadedFiles.forEach((uploadedFile) => {
+					const filePath = this.fileUploadService.getFullPath('session-activity', uploadedFile.filename)
+					this.fileUploadService.deleteFile(filePath)
+				})
 				throw new BadRequestException(`Sesión con id ${sessionId} no encontrada`)
 			}
 
 			if(dueDatetime) {
 				const date = this.dateService.parseToDate(dueDatetime)
 				if (date < now) {
-					if (fullPath) {
-						this.fileUploadService.deleteFile(fullPath)
-					}
+					uploadedFiles.forEach((uploadedFile) => {
+						const filePath = this.fileUploadService.getFullPath('session-activity', uploadedFile.filename)
+						this.fileUploadService.deleteFile(filePath)
+					})
 					throw new BadRequestException('La fecha de entrega no puede ser anterior a la fecha actual')
 				}
 			}
@@ -75,10 +84,20 @@ export class SessionActivityService {
 				description,
 				requiresDeliverable,
 				dueDatetime,
-				attachmentPath: fullPath
+				attachmentPath: primaryFilePath
 			})
 
 			const savedSessionActivity = await sessionActivityRepository.save(sessionActivity)
+
+			if (uploadedFiles.length > 0) {
+				await this.requestAttachmentService.createAttachments({
+					businessName,
+					requestType: REQUEST_ATTACHMENT_TYPES.SESSION_ACTIVITY_ATTACHMENT,
+					requestId: savedSessionActivity.id,
+					folder: 'session-activity',
+					files: uploadedFiles
+				})
+			}
 
 			try {
 				const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
@@ -95,16 +114,17 @@ export class SessionActivityService {
 					expertEmail,
 					sessionDateTime,
 					dueDateTime
-				}, businessName, file)
+				}, businessName, uploadedFiles[0])
 			} catch (e) {
 				console.error('Error sending new session activity email:', e)
 			}
 
 			return savedSessionActivity
 		} catch (e) {
-			if (fullPath) {
-				this.fileUploadService.deleteFile(fullPath)
-			}
+			uploadedFiles.forEach((uploadedFile) => {
+				const filePath = this.fileUploadService.getFullPath('session-activity', uploadedFile.filename)
+				this.fileUploadService.deleteFile(filePath)
+			})
 			throw e
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
@@ -116,6 +136,7 @@ export class SessionActivityService {
 		console.log('📝 [SESSION ACTIVITY FINDALL] Session ID:', sessionId)
 		console.log('📝 [SESSION ACTIVITY FINDALL] Page options:', JSON.stringify(pageOptionsDto, null, 2))
 		console.log('🏢 [SESSION ACTIVITY FINDALL] Business name (dbName):', businessName)
+		await this.requestAttachmentService.ensureHomologated(businessName)
 		
 		const { take, skip, order } = pageOptionsDto
 
@@ -201,10 +222,24 @@ export class SessionActivityService {
 				responsesByActivity[activityId].push(JSON.parse(response.response))
 			})
 
-			const items = rawItems.map(item => ({
-				...item,
-				responses: responsesByActivity[item.id] || []
-			}))
+			const activityIds = rawItems.map(item => item.id)
+			const attachmentsByActivity = await this.requestAttachmentService.findByRequestIds({
+				businessName,
+				requestType: REQUEST_ATTACHMENT_TYPES.SESSION_ACTIVITY_ATTACHMENT,
+				requestIds: activityIds
+			})
+
+			const items = rawItems.map(item => {
+				const attachments = attachmentsByActivity[item.id] || []
+				const fileUrls = attachments.map(att => att.fileUrl).filter(Boolean)
+				return {
+					...item,
+					attachments,
+					fileUrls,
+					fileUrl: fileUrls[0] || item.fileUrl || null,
+					responses: responsesByActivity[item.id] || []
+				}
+			})
 
 			const totalCount = Number(countResult[0]?.total) ?? 0
 			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })

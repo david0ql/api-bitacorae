@@ -7,11 +7,12 @@ import { DateService } from 'src/services/date/date.service'
 import { SessionController } from './session.controller'
 import { DynamicDatabaseModule } from 'src/services/dynamic-database/dynamic-database.module'
 import { MailModule } from 'src/services/mail/mail.module'
+import { RequestAttachmentModule } from 'src/services/request-attachment/request-attachment.module'
 
 @Module({
 	controllers: [SessionController],
 	providers: [SessionService, FileUploadService, PdfService, DateService],
-	imports: [DynamicDatabaseModule, MailModule]
+	imports: [DynamicDatabaseModule, MailModule, RequestAttachmentModule]
 })
 
 export class SessionModule {}

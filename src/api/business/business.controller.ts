@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards, UseInterceptors, UploadedFile, StreamableFile, Header } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards, UseInterceptors, UploadedFile, UploadedFiles, StreamableFile, Header } from '@nestjs/common'
 
 import { BusinessService } from './business.service'
 import { Business } from 'src/entities/Business'
@@ -23,11 +23,11 @@ export class BusinessController {
 
 	@Post()
 	@HttpCode(200)
-	@UseInterceptors(FileUploadInterceptor('file', 'business'))
+	@UseInterceptors(FileUploadInterceptor('file', 'business', true))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreateBusinessDto })
-	create(@Body() createBusinessDto: CreateBusinessDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
-		return this.businessService.create(createBusinessDto, businessName, file)
+	create(@Body() createBusinessDto: CreateBusinessDto, @BusinessName() businessName: string, @UploadedFiles() files?: Express.Multer.File[]) {
+		return this.businessService.create(createBusinessDto, businessName, files)
 	}
 
 	@Get()
@@ -87,11 +87,11 @@ export class BusinessController {
 
 	@Patch(':id')
 	@HttpCode(200)
-	@UseInterceptors(FileUploadInterceptor('file', 'business'))
+	@UseInterceptors(FileUploadInterceptor('file', 'business', true))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: UpdateBusinessDto })
-	update(@Param('id') id: string, @Body() updateBusinessDto: UpdateBusinessDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
-		return this.businessService.update(+id, updateBusinessDto, businessName, file)
+	update(@Param('id') id: string, @Body() updateBusinessDto: UpdateBusinessDto, @BusinessName() businessName: string, @UploadedFiles() files?: Express.Multer.File[]) {
+		return this.businessService.update(+id, updateBusinessDto, businessName, files)
 	}
 
 	@Delete(':id')

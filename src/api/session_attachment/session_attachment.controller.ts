@@ -8,12 +8,12 @@ import {
 	UseGuards,
 	HttpCode,
 	Query,
-	UploadedFile,
+	UploadedFiles,
 	UseInterceptors,
 	BadRequestException,
 } from '@nestjs/common'
 import { SessionAttachmentService } from './session_attachment.service'
-import { SessionAttachment } from 'src/entities/SessionAttachment'
+import { RequestAttachment } from 'src/entities/RequestAttachment'
 import { PageDto } from 'src/dto/page.dto'
 import { PageOptionsDto } from 'src/dto/page-options.dto'
 import { CreateSessionAttachmentDto } from './dto/create-session_attachment.dto'
@@ -32,19 +32,19 @@ export class SessionAttachmentController {
 
 	@Post()
 	@HttpCode(200)
-	@UseInterceptors(FileUploadInterceptor('file', 'session-attachment'))
+	@UseInterceptors(FileUploadInterceptor('file', 'session-attachment', true))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreateSessionAttachmentDto })
-	create(@Body() createDto: CreateSessionAttachmentDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
-		if (!file) {
+	create(@Body() createDto: CreateSessionAttachmentDto, @BusinessName() businessName: string, @UploadedFiles() files?: Express.Multer.File[]) {
+		if (!files?.length && !createDto.externalPath) {
 			throw new BadRequestException('File is required')
 		}
-		return this.sessionAttachmentService.create(createDto, file, businessName)
+		return this.sessionAttachmentService.create(createDto, files, businessName)
 	}
 
 	@Get('/bySession/:id')
 	@HttpCode(200)
-	findAll(@Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<SessionAttachment>> {
+	findAll(@Param('id') id: string, @Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<RequestAttachment>> {
 		return this.sessionAttachmentService.findAll(+id, pageOptionsDto, businessName)
 	}
 

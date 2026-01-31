@@ -27,6 +27,8 @@ import { UpdateBusinessDto } from './dto/update-business.dto'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 import { MailService } from 'src/services/mail/mail.service'
 import { DynamicDatabaseService } from 'src/services/dynamic-database/dynamic-database.service'
+import { RequestAttachmentService } from 'src/services/request-attachment/request-attachment.service'
+import { REQUEST_ATTACHMENT_TYPES } from 'src/services/request-attachment/request-attachment.constants'
 
 import envVars from 'src/config/env'
 
@@ -54,7 +56,8 @@ export class BusinessService {
 	constructor(
 		private readonly dynamicDbService: DynamicDatabaseService,
 		private readonly fileUploadService: FileUploadService,
-		private readonly mailService: MailService
+		private readonly mailService: MailService,
+		private readonly requestAttachmentService: RequestAttachmentService
 	) {}
 
 	private constructFileUrl(filePath: string): string {
@@ -187,7 +190,7 @@ export class BusinessService {
 		return ids
 	}
 
-	async create(createBusinessDto: CreateBusinessDto, businessName: string, file?: Express.Multer.File) {
+	async create(createBusinessDto: CreateBusinessDto, businessName: string, files?: Express.Multer.File[]) {
 		const {
 			socialReason,
 			documentTypeId,
@@ -224,8 +227,12 @@ export class BusinessService {
 		if (!businessName) {
 			throw new BadRequestException('Se requiere especificar una empresa para crear el negocio')
 		}
+		await this.requestAttachmentService.ensureHomologated(businessName)
 
-		const fullPath = file ? this.fileUploadService.getFullPath('business', file.filename) : undefined
+		const uploadedFiles = files ?? []
+		const primaryFilePath = uploadedFiles.length > 0
+			? this.fileUploadService.getFullPath('business', uploadedFiles[0].filename)
+			: undefined
 
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
 		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
@@ -239,9 +246,10 @@ export class BusinessService {
 			const existingUser = await userRepository.findOne({ where: { email } })
 
 			if(existingUser) {
-				if (fullPath) {
-					this.fileUploadService.deleteFile(fullPath)
-				}
+				uploadedFiles.forEach((uploadedFile) => {
+					const filePath = this.fileUploadService.getFullPath('business', uploadedFile.filename)
+					this.fileUploadService.deleteFile(filePath)
+				})
 				throw new BadRequestException('El correo electrónico ya existe')
 			}
 
@@ -297,9 +305,19 @@ export class BusinessService {
 					assignedHours,
 					cohortId,
 					diagnostic,
-					evidence: fullPath
+					evidence: primaryFilePath
 				})
 			)
+
+			if (uploadedFiles.length > 0) {
+				await this.requestAttachmentService.createAttachments({
+					businessName,
+					requestType: REQUEST_ATTACHMENT_TYPES.BUSINESS_EVIDENCE,
+					requestId: savedBusiness.id,
+					folder: 'business',
+					files: uploadedFiles
+				})
+			}
 
 			try {
 				this.mailService.sendWelcomeEmail({
@@ -313,9 +331,10 @@ export class BusinessService {
 
 			return savedBusiness
 		} catch (e) {
-			if (fullPath) {
-				this.fileUploadService.deleteFile(fullPath)
-			}
+			uploadedFiles.forEach((uploadedFile) => {
+				const filePath = this.fileUploadService.getFullPath('business', uploadedFile.filename)
+				this.fileUploadService.deleteFile(filePath)
+			})
 			throw e
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
@@ -437,6 +456,7 @@ export class BusinessService {
 		if (!file) {
 			throw new BadRequestException('Se requiere un archivo de Excel')
 		}
+		await this.requestAttachmentService.ensureHomologated(businessName)
 		const originalName = (file.originalname || '').toLowerCase()
 		if (!originalName.endsWith('.xlsx')) {
 			throw new BadRequestException('El archivo debe ser .xlsx')
@@ -587,6 +607,7 @@ export class BusinessService {
 			}
 
 			const welcomeUsers: { name: string; email: string; password: string }[] = []
+			const createdEvidenceAttachments: { businessId: number; evidenceUrl: string }[] = []
 
 			await businessDataSource.transaction(async (manager) => {
 				const userRepository = manager.getRepository(User)
@@ -653,6 +674,13 @@ export class BusinessService {
 						})
 					)
 
+					if (data.business_evidence_url) {
+						createdEvidenceAttachments.push({
+							businessId: savedBusiness.id,
+							evidenceUrl: data.business_evidence_url
+						})
+					}
+
 					const contactStrengtheningEntities = await strengtheningAreaRepository.findBy({
 						id: In(data.contact_strengthening_area_ids)
 					})
@@ -692,6 +720,22 @@ export class BusinessService {
 					this.mailService.sendWelcomeEmail(user, businessName)
 				} catch (e) {
 					console.error('Error sending welcome email:', e)
+				}
+			}
+
+			if (createdEvidenceAttachments.length > 0) {
+				for (const attachment of createdEvidenceAttachments) {
+					try {
+						await this.requestAttachmentService.createAttachments({
+							businessName,
+							requestType: REQUEST_ATTACHMENT_TYPES.BUSINESS_EVIDENCE,
+							requestId: attachment.businessId,
+							folder: 'business',
+							externalPath: attachment.evidenceUrl
+						})
+					} catch (e) {
+						console.error('Error creating evidence attachment from bulk upload:', e)
+					}
 				}
 			}
 
@@ -800,12 +844,19 @@ export class BusinessService {
 
 			if (!business) return null
 
-			// Construct complete URL for evidence file
-			if (business.evidence) {
-				business.evidence = this.constructFileUrl(business.evidence)
-			}
+			const evidenceFiles = await this.requestAttachmentService.findByRequest({
+				businessName,
+				requestType: REQUEST_ATTACHMENT_TYPES.BUSINESS_EVIDENCE,
+				requestId: id
+			})
 
-			return business
+			const evidenceUrl = evidenceFiles?.[0]?.fileUrl || (business.evidence ? this.constructFileUrl(business.evidence) : null)
+
+			return {
+				...business,
+				evidence: evidenceUrl,
+				evidenceFiles
+			}
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
@@ -831,10 +882,16 @@ export class BusinessService {
 		}
 	}
 
-	async update(id: number, updateBusinessDto: UpdateBusinessDto, businessName: string, file?: Express.Multer.File) {
+	async update(id: number, updateBusinessDto: UpdateBusinessDto, businessName: string, files?: Express.Multer.File[]) {
 		if (!businessName) {
 			throw new BadRequestException('Se requiere especificar una empresa para actualizar el negocio')
 		}
+		await this.requestAttachmentService.ensureHomologated(businessName)
+
+		const uploadedFiles = files ?? []
+		const primaryFilePath = uploadedFiles.length > 0
+			? this.fileUploadService.getFullPath('business', uploadedFiles[0].filename)
+			: undefined
 
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
 		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
@@ -853,8 +910,6 @@ export class BusinessService {
 				throw new BadRequestException(`No se encontró un negocio con el ID ${id}`)
 			}
 
-		const fullPath = file ? this.fileUploadService.getFullPath('business', file.filename) : undefined
-
 		// Handle the relations FIRST
 		if (updateBusinessDto.economicActivities) {
 			const economicActivityEntities = await economicActivityRepository.findBy({
@@ -870,8 +925,8 @@ export class BusinessService {
 			existingBusiness.strengtheningAreas = strengtheningAreaEntities
 		}
 
-		if (fullPath) {
-			existingBusiness.evidence = fullPath
+		if (primaryFilePath) {
+			existingBusiness.evidence = primaryFilePath
 		}
 
 		// Then assign the basic properties, excluding the relations
@@ -879,6 +934,16 @@ export class BusinessService {
 		Object.assign(existingBusiness, updateData)
 
 		await businessRepository.save(existingBusiness)
+
+		if (uploadedFiles.length > 0) {
+			await this.requestAttachmentService.createAttachments({
+				businessName,
+				requestType: REQUEST_ATTACHMENT_TYPES.BUSINESS_EVIDENCE,
+				requestId: id,
+				folder: 'business',
+				files: uploadedFiles
+			})
+		}
 
 		// Return with relations
 		const updatedBusiness = await businessRepository.findOne({
@@ -926,17 +991,28 @@ export class BusinessService {
 			}
 		})
 
-		// Construct complete URL for evidence file
-		if (updatedBusiness?.evidence) {
-			updatedBusiness.evidence = this.constructFileUrl(updatedBusiness.evidence)
+		if (!updatedBusiness) {
+			throw new BadRequestException(`No se encontró un negocio con el ID ${id}`)
 		}
 
-		return updatedBusiness
-	} catch (e) {
-		if (file) {
-			const fullPath = this.fileUploadService.getFullPath('business', file.filename)
-			this.fileUploadService.deleteFile(fullPath)
+		const evidenceFiles = await this.requestAttachmentService.findByRequest({
+			businessName,
+			requestType: REQUEST_ATTACHMENT_TYPES.BUSINESS_EVIDENCE,
+			requestId: id
+		})
+
+		const evidenceUrl = evidenceFiles?.[0]?.fileUrl || (updatedBusiness.evidence ? this.constructFileUrl(updatedBusiness.evidence) : null)
+
+		return {
+			...updatedBusiness,
+			evidence: evidenceUrl,
+			evidenceFiles
 		}
+	} catch (e) {
+		uploadedFiles.forEach((uploadedFile) => {
+			const filePath = this.fileUploadService.getFullPath('business', uploadedFile.filename)
+			this.fileUploadService.deleteFile(filePath)
+		})
 		throw e
 	} finally {
 		// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached

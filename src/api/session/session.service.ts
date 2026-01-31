@@ -1,9 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { In } from 'typeorm'
 
 import { Session } from 'src/entities/Session'
 import { Accompaniment } from 'src/entities/Accompaniment'
 import { SessionPreparationFile } from 'src/entities/SessionPreparationFile'
-import { SessionAttachment } from 'src/entities/SessionAttachment'
+import { SessionActivity } from 'src/entities/SessionActivity'
+import { RequestAttachment } from 'src/entities/RequestAttachment'
 import { DynamicDatabaseService } from 'src/services/dynamic-database/dynamic-database.service'
 
 import { PageDto } from 'src/dto/page.dto'
@@ -16,6 +18,8 @@ import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 import { MailService } from 'src/services/mail/mail.service'
 import { PdfService } from 'src/services/pdf/pdf.service'
 import { DateService } from 'src/services/date/date.service'
+import { RequestAttachmentService } from 'src/services/request-attachment/request-attachment.service'
+import { REQUEST_ATTACHMENT_TYPES } from 'src/services/request-attachment/request-attachment.constants'
 
 import envVars from 'src/config/env'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
@@ -27,7 +31,8 @@ export class SessionService {
 		private readonly fileUploadService: FileUploadService,
 		private readonly mailService: MailService,
 		private readonly pdfService: PdfService,
-		private readonly dateService: DateService
+		private readonly dateService: DateService,
+		private readonly requestAttachmentService: RequestAttachmentService
 	) {}
 
 	private async removeFiles(preparationFiles: string[]) {
@@ -72,7 +77,6 @@ export class SessionService {
 
 		try {
 			const sessionPreparationFileRepository = businessDataSource.getRepository(SessionPreparationFile)
-			const sessionAttachmentRepository = businessDataSource.getRepository(SessionAttachment)
 
 			const preparationFilesData = await sessionPreparationFileRepository.find({ where: { sessionId } })
 			const preparationFiles = preparationFilesData.map((file, index) => ({
@@ -80,10 +84,14 @@ export class SessionService {
 				filePath: file.filePath.startsWith('http') ? file.filePath : `${envVars.APP_URL}/${file.filePath}`
 			}))
 
-			const attachmentsData = await sessionAttachmentRepository.find({ where: { sessionId } })
+			const attachmentsData = await this.requestAttachmentService.findByRequest({
+				businessName,
+				requestType: REQUEST_ATTACHMENT_TYPES.SESSION_ATTACHMENT,
+				requestId: sessionId
+			})
 			const attachments = attachmentsData.map(file => ({
 				name: file.name,
-				filePath: file.externalPath ? file.externalPath : (file.filePath ? `${envVars.APP_URL}/${file.filePath}` : '')
+				filePath: file.fileUrl || ''
 			}))
 
 			return { preparationFiles, attachments }
@@ -528,6 +536,7 @@ export class SessionService {
 		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
 		try {
+			await this.requestAttachmentService.ensureHomologated(businessName)
 			const sessionRepository = businessDataSource.getRepository(Session)
 			const rawSession = await sessionRepository
 				.createQueryBuilder('session')
@@ -554,21 +563,28 @@ export class SessionService {
 						WHERE spf.session_id = session.id
 					) AS preparationFiles`,
 					`(
-						SELECT GROUP_CONCAT(CONCAT(:appUrl, "/", sa.file_path) SEPARATOR '||')
-						FROM session_attachment sa
-						WHERE sa.session_id = session.id
+						SELECT GROUP_CONCAT(
+							CASE
+								WHEN ra.external_path IS NOT NULL AND ra.external_path <> '' THEN ra.external_path
+								WHEN ra.file_path IS NOT NULL AND ra.file_path <> '' THEN CONCAT(:appUrl, "/", ra.file_path)
+								ELSE NULL
+							END
+							SEPARATOR '||'
+						)
+						FROM request_attachment ra
+						WHERE ra.request_type = :requestType
+							AND ra.request_id = session.id
 					) AS attachments`
 				])
 				.innerJoin('session.status', 'status')
 				.innerJoin('session.accompaniment', 'accompaniment')
 				.innerJoin('accompaniment.business', 'business')
 				.innerJoin('accompaniment.expert', 'expert')
-				.leftJoin('session.sessionAttachments', 'sa', 'sa.session_id = session.id')
 				.leftJoin('session_preparation_file', 'spf', 'spf.session_id = session.id')
 				.where('session.id = :id', { id })
 				.andWhere(roleId !== 1 && roleId !== 2 ? '(business.userId = :userId OR expert.userId = :userId)' : '1=1', { userId })
 				.groupBy('session.id')
-				.setParameters({ appUrl: envVars.APP_URL })
+				.setParameters({ appUrl: envVars.APP_URL, requestType: REQUEST_ATTACHMENT_TYPES.SESSION_ATTACHMENT })
 				.getRawOne()
 
 			if (!rawSession) return {}
@@ -838,6 +854,8 @@ export class SessionService {
 		try {
 			const sessionRepository = businessDataSource.getRepository(Session)
 			const sessionPreparationFileRepository = businessDataSource.getRepository(SessionPreparationFile)
+			const requestAttachmentRepository = businessDataSource.getRepository(RequestAttachment)
+			const sessionActivityRepository = businessDataSource.getRepository(SessionActivity)
 
 			console.log('🔍 [SESSION REMOVE] Buscando sesión con ID:', id)
 			const session = await sessionRepository.findOne({ where: { id } })
@@ -854,6 +872,54 @@ export class SessionService {
 			if(session.statusId !== 1) {
 				console.log('❌ [SESSION REMOVE] Sesión no está en estado creada (statusId:', session.statusId, ')')
 				throw new BadRequestException('No se puede eliminar una sesión que no está en estado creada')
+			}
+
+			await this.requestAttachmentService.ensureHomologated(businessName)
+
+			const sessionAttachments = await requestAttachmentRepository.find({
+				where: {
+					requestType: REQUEST_ATTACHMENT_TYPES.SESSION_ATTACHMENT,
+					requestId: id
+				}
+			})
+
+			sessionAttachments.forEach((attachment) => {
+				if (attachment.filePath) {
+					this.fileUploadService.deleteFile(attachment.filePath)
+				}
+			})
+
+			if (sessionAttachments.length > 0) {
+				await requestAttachmentRepository.delete({
+					requestType: REQUEST_ATTACHMENT_TYPES.SESSION_ATTACHMENT,
+					requestId: id
+				})
+			}
+
+			const sessionActivities = await sessionActivityRepository.find({
+				select: { id: true },
+				where: { sessionId: id }
+			})
+
+			const sessionActivityIds = sessionActivities.map(activity => activity.id)
+			if (sessionActivityIds.length > 0) {
+				const activityAttachments = await requestAttachmentRepository.find({
+					where: {
+						requestType: REQUEST_ATTACHMENT_TYPES.SESSION_ACTIVITY_ATTACHMENT,
+						requestId: In(sessionActivityIds)
+					}
+				})
+
+				activityAttachments.forEach((attachment) => {
+					if (attachment.filePath) {
+						this.fileUploadService.deleteFile(attachment.filePath)
+					}
+				})
+
+				await requestAttachmentRepository.delete({
+					requestType: REQUEST_ATTACHMENT_TYPES.SESSION_ACTIVITY_ATTACHMENT,
+					requestId: In(sessionActivityIds)
+				})
 			}
 
 			console.log('🔍 [SESSION REMOVE] Buscando archivos de preparación...')

@@ -4,7 +4,6 @@ import { Business } from 'src/entities/Business'
 import { Expert } from 'src/entities/Expert'
 import { Session } from 'src/entities/Session'
 import { SessionPreparationFile } from 'src/entities/SessionPreparationFile'
-import { SessionAttachment } from 'src/entities/SessionAttachment'
 import { SessionActivity } from 'src/entities/SessionActivity'
 import { DynamicDatabaseService } from 'src/services/dynamic-database/dynamic-database.service'
 import { PageDto } from 'src/dto/page.dto'
@@ -15,6 +14,8 @@ import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 import { DateService } from 'src/services/date/date.service'
 import { PdfService } from 'src/services/pdf/pdf.service'
 import envVars from 'src/config/env'
+import { RequestAttachmentService } from 'src/services/request-attachment/request-attachment.service'
+import { REQUEST_ATTACHMENT_TYPES } from 'src/services/request-attachment/request-attachment.constants'
 
 @Injectable()
 export class ReportService {
@@ -22,7 +23,8 @@ export class ReportService {
 		private readonly dynamicDbService: DynamicDatabaseService,
 		private readonly fileUploadService: FileUploadService,
 		private readonly dateService: DateService,
-		private readonly pdfService: PdfService
+		private readonly pdfService: PdfService,
+		private readonly requestAttachmentService: RequestAttachmentService
 	) {}
 
 	private async getSessionWithRelations(sessionId: number, businessName: string) {
@@ -110,32 +112,42 @@ export class ReportService {
 		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 		try {
 			const sessionPreparationFileRepository = businessDataSource.getRepository(SessionPreparationFile)
-			const sessionAttachmentRepository = businessDataSource.getRepository(SessionAttachment)
 			const sessionActivityRepository = businessDataSource.getRepository(SessionActivity)
 			const preparationFilesData = await sessionPreparationFileRepository.find({ where: { sessionId } })
 			const preparationFiles = preparationFilesData.map((file, index) => ({
 				name: 'Archivo ' + (index + 1),
 				filePath: file.filePath.startsWith('http') ? file.filePath : `${envVars.APP_URL}/${file.filePath}`
 			}))
-			const attachmentsData = await sessionAttachmentRepository.find({ where: { sessionId } })
+			const attachmentsData = await this.requestAttachmentService.findByRequest({
+				businessName,
+				requestType: REQUEST_ATTACHMENT_TYPES.SESSION_ATTACHMENT,
+				requestId: sessionId
+			})
 			const attachments = attachmentsData.map(file => ({
 				name: file.name,
-				filePath: file.externalPath ? file.externalPath : (file.filePath ? `${envVars.APP_URL}/${file.filePath}` : '')
+				filePath: file.fileUrl || ''
 			}))
 			const activitiesData = await sessionActivityRepository.find({
 				where: { sessionId },
 				relations: ['sessionActivityResponses']
 			})
+			const activityIds = activitiesData.map(activity => activity.id)
+			const activityAttachments = await this.requestAttachmentService.findByRequestIds({
+				businessName,
+				requestType: REQUEST_ATTACHMENT_TYPES.SESSION_ACTIVITY_ATTACHMENT,
+				requestIds: activityIds
+			})
 			const activities = activitiesData.map(activity => {
+				const firstAttachment = (activityAttachments[activity.id] || [])[0]
 				const activityResponse = activity.sessionActivityResponses[0]
 				return {
 					title: activity.title,
 					description: activity.description,
 					requiresDeliverable: activity.requiresDeliverable,
 					dueDate: this.dateService.formatDate(activity.dueDatetime),
-					attachment: activity.attachmentPath ? {
+					attachment: firstAttachment?.fileUrl ? {
 						name: 'Archivo de actividad',
-						filePath: envVars.APP_URL + '/' + activity.attachmentPath
+						filePath: firstAttachment.fileUrl
 					} : null,
 					respondedDate: activityResponse ? this.dateService.formatDate(activityResponse.respondedDatetime) : 'No registra.',
 					deliverableDescription: activityResponse?.deliverableDescription || 'No registra.',

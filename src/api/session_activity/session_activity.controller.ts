@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, HttpCode, UseGuards, Query, UseInterceptors, UploadedFile } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, HttpCode, UseGuards, Query, UseInterceptors, UploadedFiles } from '@nestjs/common'
 
 import { SessionActivityService } from './session_activity.service'
 import { SessionActivity } from 'src/entities/SessionActivity'
@@ -25,16 +25,16 @@ export class SessionActivityController {
 
 	@Post()
 	@HttpCode(200)
-	@UseInterceptors(FileUploadInterceptor('file', 'session-activity'))
+	@UseInterceptors(FileUploadInterceptor('file', 'session-activity', true))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: CreateSessionActivityDto })
-	create(@CurrentUser() user: JwtUser, @Body() createSessionActivityDto: CreateSessionActivityDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+	create(@CurrentUser() user: JwtUser, @Body() createSessionActivityDto: CreateSessionActivityDto, @BusinessName() businessName: string, @UploadedFiles() files?: Express.Multer.File[]) {
 		console.log('🎯 [SESSION ACTIVITY CONTROLLER] POST /session-activity recibido')
 		console.log('🎯 [SESSION ACTIVITY CONTROLLER] Body recibido:', JSON.stringify(createSessionActivityDto, null, 2))
 		console.log('🎯 [SESSION ACTIVITY CONTROLLER] Business name (dbName):', businessName)
-		console.log('🎯 [SESSION ACTIVITY CONTROLLER] File:', file?.filename || 'ninguno')
+		console.log('🎯 [SESSION ACTIVITY CONTROLLER] Files:', files?.length || 0, 'archivos')
 		
-		return this.sessionActivityService.create(user, createSessionActivityDto, businessName, file)
+		return this.sessionActivityService.create(user, createSessionActivityDto, businessName, files)
 	}
 
 	@Get('/bySession/:id')
@@ -53,7 +53,7 @@ export class SessionActivityController {
 	@UseInterceptors(FileUploadInterceptor('file', 'session-activity'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: RespondSessionActivityDto })
-	respond(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() respondDto: RespondSessionActivityDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+	respond(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() respondDto: RespondSessionActivityDto, @BusinessName() businessName: string, @UploadedFiles() file?: Express.Multer.File) {
 		return this.sessionActivityService.respond(user, +id, respondDto, businessName, file)
 	}
 
