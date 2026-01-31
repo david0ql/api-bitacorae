@@ -109,7 +109,11 @@ export class AccompanimentService {
 						NULL
 					) AS strengtheningAreas,
 					b.assigned_hours AS assignedHours,
-					IFNULL(stats.scheduledSessions, 0) AS scheduledSessions,
+					IFNULL(acc_stats.accompanimentsCount, 0) AS accompanimentsCount,
+					IFNULL(acc_stats.accompanimentHours, 0) AS accompanimentHours,
+					IFNULL(stats.totalSessions, 0) AS scheduledSessions,
+					IFNULL(stats.completedSessions, 0) AS completedSessions,
+					IFNULL(stats.totalSessionHours, 0) AS totalSessionHours,
 					IFNULL(stats.completedHours, 0) AS completedHours
 				FROM
 					business b
@@ -120,11 +124,21 @@ export class AccompanimentService {
 					LEFT JOIN strengthening_area sa ON sa.id = asar.strengthening_area_id
 					LEFT JOIN (
 						SELECT
+							business_id,
+							COUNT(DISTINCT id) AS accompanimentsCount,
+							IFNULL(SUM(total_hours), 0) AS accompanimentHours
+						FROM accompaniment
+						GROUP BY business_id
+					) acc_stats ON acc_stats.business_id = b.id
+					LEFT JOIN (
+						SELECT
 							a.business_id,
-							COUNT(DISTINCT s.id) AS scheduledSessions,
+							COUNT(DISTINCT s.id) AS totalSessions,
+							SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN 1 ELSE 0 END) AS completedSessions,
+							ROUND(SUM(TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime))) AS totalSessionHours,
 							ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)) AS completedHours
 						FROM accompaniment a
-						INNER JOIN session s ON s.accompaniment_id = a.id
+						LEFT JOIN session s ON s.accompaniment_id = a.id
 						GROUP BY a.business_id
 					) stats ON stats.business_id = b.id
 				GROUP BY b.id
@@ -153,13 +167,24 @@ export class AccompanimentService {
 					),
 					session_stats AS (
 						SELECT
-							a.id AS accompaniment_id,
-							COUNT(DISTINCT s.id) AS scheduledSessions,
+							a.business_id,
+							COUNT(DISTINCT s.id) AS totalSessions,
+							SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN 1 ELSE 0 END) AS completedSessions,
+							ROUND(SUM(TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime))) AS totalSessionHours,
 							ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)) AS completedHours
 						FROM accompaniment a
-						INNER JOIN session s ON s.accompaniment_id = a.id
+						LEFT JOIN session s ON s.accompaniment_id = a.id
 						WHERE a.expert_id = ${expert.id}
-						GROUP BY a.id
+						GROUP BY a.business_id
+					),
+					accompaniment_stats AS (
+						SELECT
+							business_id,
+							COUNT(DISTINCT id) AS accompanimentsCount,
+							IFNULL(SUM(total_hours), 0) AS accompanimentHours
+						FROM accompaniment
+						WHERE expert_id = ${expert.id}
+						GROUP BY business_id
 					)
 
 					SELECT
@@ -178,7 +203,11 @@ export class AccompanimentService {
 							NULL
 						) AS strengtheningAreas,
 						b.assigned_hours AS assignedHours,
-						IFNULL(ss.scheduledSessions, 0) AS scheduledSessions,
+						IFNULL(acc_stats.accompanimentsCount, 0) AS accompanimentsCount,
+						IFNULL(acc_stats.accompanimentHours, 0) AS accompanimentHours,
+						IFNULL(ss.totalSessions, 0) AS scheduledSessions,
+						IFNULL(ss.completedSessions, 0) AS completedSessions,
+						IFNULL(ss.totalSessionHours, 0) AS totalSessionHours,
 						IFNULL(ss.completedHours, 0) AS completedHours
 					FROM
 						business b
@@ -187,7 +216,8 @@ export class AccompanimentService {
 						INNER JOIN expert_accompaniment ea ON ea.business_id = b.id
 						LEFT JOIN accompaniment_strengthening_area_rel asar ON asar.accompaniment_id = ea.accompaniment_id
 						LEFT JOIN strengthening_area sa ON sa.id = asar.strengthening_area_id
-						LEFT JOIN session_stats ss ON ss.accompaniment_id = ea.accompaniment_id
+						LEFT JOIN session_stats ss ON ss.business_id = b.id
+						LEFT JOIN accompaniment_stats acc_stats ON acc_stats.business_id = b.id
 					GROUP BY b.id
 					ORDER BY b.id ${order}
 					LIMIT ${take} OFFSET ${skip}
@@ -257,6 +287,8 @@ export class AccompanimentService {
 					b.id AS businessId,
 					b.assigned_hours AS assignedHours,
 					IFNULL(COUNT(DISTINCT s.id), 0) AS scheduledSessions,
+					IFNULL(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN 1 ELSE 0 END), 0) AS completedSessions,
+					IFNULL(ROUND(SUM(TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime))), 0) AS totalSessionHours,
 					IFNULL(ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
 				FROM
 					accompaniment a
@@ -312,6 +344,8 @@ export class AccompanimentService {
 					b.id AS businessId,
 					b.assigned_hours AS assignedHours,
 					IFNULL(COUNT(DISTINCT s.id), 0) AS scheduledSessions,
+					IFNULL(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN 1 ELSE 0 END), 0) AS completedSessions,
+					IFNULL(ROUND(SUM(TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime))), 0) AS totalSessionHours,
 					IFNULL(ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
 				FROM
 					accompaniment a

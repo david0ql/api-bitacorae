@@ -11,6 +11,8 @@ import { ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { BusinessName } from 'src/decorators/business-name.decorator'
+import { CurrentUser } from '../auth/decorators/current-user.decorator'
+import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 
 @Controller('report')
 @ApiBearerAuth()
@@ -22,6 +24,12 @@ export class ReportController {
 	@HttpCode(200)
 	create(@Body() createReportDto: CreateReportDto, @BusinessName() businessName: string) {
 		return this.reportService.create(createReportDto, businessName)
+	}
+
+	@Get('instance')
+	@HttpCode(200)
+	getInstanceReport(@CurrentUser() user: JwtUser, @BusinessName() businessName: string) {
+		return this.reportService.getInstanceReport(user, businessName)
 	}
 
 	@Get()

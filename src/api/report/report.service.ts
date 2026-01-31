@@ -1,10 +1,11 @@
-import { Injectable, BadRequestException } from '@nestjs/common'
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common'
 import { Report } from 'src/entities/Report'
 import { Business } from 'src/entities/Business'
 import { Expert } from 'src/entities/Expert'
 import { Session } from 'src/entities/Session'
 import { SessionPreparationFile } from 'src/entities/SessionPreparationFile'
 import { SessionActivity } from 'src/entities/SessionActivity'
+import { Business as AdminBusiness } from 'src/entities/admin/Business'
 import { DynamicDatabaseService } from 'src/services/dynamic-database/dynamic-database.service'
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -16,6 +17,9 @@ import { PdfService } from 'src/services/pdf/pdf.service'
 import envVars from 'src/config/env'
 import { RequestAttachmentService } from 'src/services/request-attachment/request-attachment.service'
 import { REQUEST_ATTACHMENT_TYPES } from 'src/services/request-attachment/request-attachment.constants'
+import { InjectDataSource } from '@nestjs/typeorm'
+import { DataSource } from 'typeorm'
+import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 
 @Injectable()
 export class ReportService {
@@ -24,7 +28,9 @@ export class ReportService {
 		private readonly fileUploadService: FileUploadService,
 		private readonly dateService: DateService,
 		private readonly pdfService: PdfService,
-		private readonly requestAttachmentService: RequestAttachmentService
+		private readonly requestAttachmentService: RequestAttachmentService,
+		@InjectDataSource(envVars.DB_ALIAS_ADMIN)
+		private readonly adminDataSource: DataSource
 	) {}
 
 	private async getSessionWithRelations(sessionId: number, businessName: string) {
@@ -431,6 +437,410 @@ export class ReportService {
 			return new PageDto(items, pageMetaDto)
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
+		}
+	}
+
+	private normalizeNumber(value: any): number {
+		const num = Number(value)
+		return Number.isFinite(num) ? num : 0
+	}
+
+
+	private buildTotals(rows: any[]) {
+		return rows.reduce((acc, row) => {
+			acc.businessesCount += this.normalizeNumber(row.businessesCount)
+			acc.assignedHours += this.normalizeNumber(row.assignedHours)
+			acc.accompanimentsCount += this.normalizeNumber(row.accompanimentsCount)
+			acc.accompanimentHours += this.normalizeNumber(row.accompanimentHours)
+			acc.totalSessions += this.normalizeNumber(row.totalSessions)
+			acc.completedSessions += this.normalizeNumber(row.completedSessions)
+			acc.pendingSessions += this.normalizeNumber(row.pendingSessions)
+			acc.totalSessionHours += this.normalizeNumber(row.totalSessionHours)
+			acc.completedHours += this.normalizeNumber(row.completedHours)
+			acc.pendingSessionHours += this.normalizeNumber(row.pendingSessionHours)
+			acc.remainingHoursToAssign += this.normalizeNumber(row.remainingHoursToAssign)
+			acc.remainingHoursToComplete += this.normalizeNumber(row.remainingHoursToComplete)
+			return acc
+		}, {
+			businessesCount: 0,
+			assignedHours: 0,
+			accompanimentsCount: 0,
+			accompanimentHours: 0,
+			totalSessions: 0,
+			completedSessions: 0,
+			pendingSessions: 0,
+			totalSessionHours: 0,
+			completedHours: 0,
+			pendingSessionHours: 0,
+			remainingHoursToAssign: 0,
+			remainingHoursToComplete: 0
+		})
+	}
+
+	async getInstanceReport(user: JwtUser, businessName: string) {
+		if (user.roleId !== 1) {
+			throw new ForbiddenException('No tienes permisos para acceder a este reporte')
+		}
+
+		if (!businessName) {
+			throw new BadRequestException('No se recibió la instancia actual')
+		}
+
+		return this.getBusinessReportByInstance(businessName)
+	}
+
+	private async getBusinessReportByInstance(dbName: string) {
+		const adminBusinessRepository = this.adminDataSource.getRepository(AdminBusiness)
+		const instance = await adminBusinessRepository.findOne({
+			where: { dbName },
+			select: ['id', 'name', 'dbName']
+		})
+
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(dbName)
+		if (!businessDataSource) {
+			throw new BadRequestException(`No se pudo conectar a la base de datos de la instancia: ${dbName}`)
+		}
+
+		const businesses = await businessDataSource.query(`
+			SELECT
+				b.id AS id,
+				b.social_reason AS socialReason,
+				CONCAT(c.first_name, ' ', c.last_name) AS contactName,
+				bs.name AS businessSize,
+				b.assigned_hours AS assignedHours,
+				IFNULL(acc_stats.accompanimentsCount, 0) AS accompanimentsCount,
+				IFNULL(acc_stats.accompanimentHours, 0) AS accompanimentHours,
+				IFNULL(sess_stats.totalSessions, 0) AS totalSessions,
+				IFNULL(sess_stats.completedSessions, 0) AS completedSessions,
+				IFNULL(sess_stats.totalSessionHours, 0) AS totalSessionHours,
+				IFNULL(sess_stats.completedHours, 0) AS completedHours
+			FROM business b
+			LEFT JOIN contact_information c ON c.business_id = b.id
+			LEFT JOIN business_size bs ON bs.id = b.business_size_id
+			LEFT JOIN (
+				SELECT
+					business_id,
+					COUNT(DISTINCT id) AS accompanimentsCount,
+					IFNULL(SUM(total_hours), 0) AS accompanimentHours
+				FROM accompaniment
+				GROUP BY business_id
+			) acc_stats ON acc_stats.business_id = b.id
+			LEFT JOIN (
+				SELECT
+					a.business_id,
+					COUNT(DISTINCT s.id) AS totalSessions,
+					SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN 1 ELSE 0 END) AS completedSessions,
+					ROUND(SUM(TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime))) AS totalSessionHours,
+					ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)) AS completedHours
+				FROM accompaniment a
+				LEFT JOIN session s ON s.accompaniment_id = a.id
+				GROUP BY a.business_id
+			) sess_stats ON sess_stats.business_id = b.id
+			ORDER BY b.id
+		`)
+
+		const experts = await businessDataSource.query(`
+			WITH acc_stats AS (
+				SELECT
+					expert_id,
+					COUNT(*) AS accompanimentsCount,
+					COUNT(DISTINCT business_id) AS businessesCount,
+					IFNULL(SUM(total_hours), 0) AS accompanimentHours
+				FROM accompaniment
+				GROUP BY expert_id
+			),
+			sess_stats AS (
+				SELECT
+					a.expert_id,
+					COUNT(DISTINCT s.id) AS totalSessions,
+					SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN 1 ELSE 0 END) AS completedSessions,
+					ROUND(SUM(TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime))) AS totalSessionHours,
+					ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)) AS completedHours
+				FROM accompaniment a
+				LEFT JOIN session s ON s.accompaniment_id = a.id
+				GROUP BY a.expert_id
+			)
+			SELECT
+				e.id AS id,
+				CONCAT(e.first_name, ' ', e.last_name) AS expertName,
+				e.email AS expertEmail,
+				ct.name AS consultorType,
+				IFNULL(acc_stats.accompanimentsCount, 0) AS accompanimentsCount,
+				IFNULL(acc_stats.businessesCount, 0) AS businessesCount,
+				IFNULL(acc_stats.accompanimentHours, 0) AS accompanimentHours,
+				IFNULL(sess_stats.totalSessions, 0) AS totalSessions,
+				IFNULL(sess_stats.completedSessions, 0) AS completedSessions,
+				IFNULL(sess_stats.totalSessionHours, 0) AS totalSessionHours,
+				IFNULL(sess_stats.completedHours, 0) AS completedHours
+			FROM expert e
+			LEFT JOIN consultor_type ct ON ct.id = e.consultor_type_id
+			LEFT JOIN acc_stats ON acc_stats.expert_id = e.id
+			LEFT JOIN sess_stats ON sess_stats.expert_id = e.id
+			ORDER BY e.id
+		`)
+
+		const consultorTypes = await businessDataSource.query(`
+			WITH expert_stats AS (
+				SELECT
+					consultor_type_id,
+					COUNT(DISTINCT id) AS expertsCount
+				FROM expert
+				GROUP BY consultor_type_id
+			),
+			acc_stats AS (
+				SELECT
+					e.consultor_type_id,
+					COUNT(DISTINCT a.id) AS accompanimentsCount,
+					COUNT(DISTINCT a.business_id) AS businessesCount,
+					IFNULL(SUM(a.total_hours), 0) AS accompanimentHours
+				FROM accompaniment a
+				LEFT JOIN expert e ON e.id = a.expert_id
+				GROUP BY e.consultor_type_id
+			),
+			sess_stats AS (
+				SELECT
+					e.consultor_type_id,
+					COUNT(DISTINCT s.id) AS totalSessions,
+					SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN 1 ELSE 0 END) AS completedSessions,
+					ROUND(SUM(TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime))) AS totalSessionHours,
+					ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)) AS completedHours
+				FROM accompaniment a
+				LEFT JOIN expert e ON e.id = a.expert_id
+				LEFT JOIN session s ON s.accompaniment_id = a.id
+				GROUP BY e.consultor_type_id
+			)
+			SELECT
+				ct.id AS id,
+				ct.name AS consultorType,
+				IFNULL(expert_stats.expertsCount, 0) AS expertsCount,
+				IFNULL(acc_stats.businessesCount, 0) AS businessesCount,
+				IFNULL(acc_stats.accompanimentsCount, 0) AS accompanimentsCount,
+				IFNULL(acc_stats.accompanimentHours, 0) AS accompanimentHours,
+				IFNULL(sess_stats.totalSessions, 0) AS totalSessions,
+				IFNULL(sess_stats.completedSessions, 0) AS completedSessions,
+				IFNULL(sess_stats.totalSessionHours, 0) AS totalSessionHours,
+				IFNULL(sess_stats.completedHours, 0) AS completedHours
+			FROM consultor_type ct
+			LEFT JOIN expert_stats ON expert_stats.consultor_type_id = ct.id
+			LEFT JOIN acc_stats ON acc_stats.consultor_type_id = ct.id
+			LEFT JOIN sess_stats ON sess_stats.consultor_type_id = ct.id
+			ORDER BY ct.id
+		`)
+
+		const sessionStatuses = await businessDataSource.query(`
+			SELECT
+				ss.id AS id,
+				ss.name AS status,
+				COUNT(s.id) AS sessions,
+				ROUND(IFNULL(SUM(TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime)), 0)) AS totalSessionHours
+			FROM session_status ss
+			LEFT JOIN session s ON s.status_id = ss.id
+			GROUP BY ss.id
+			ORDER BY ss.id
+		`)
+
+		const strengtheningAreas = await businessDataSource.query(`
+			WITH acc_stats AS (
+				SELECT
+					asar.strengthening_area_id AS strengtheningAreaId,
+					COUNT(DISTINCT a.id) AS accompanimentsCount,
+					IFNULL(SUM(a.total_hours), 0) AS accompanimentHours
+				FROM accompaniment_strengthening_area_rel asar
+				INNER JOIN accompaniment a ON a.id = asar.accompaniment_id
+				GROUP BY asar.strengthening_area_id
+			),
+			sess_stats AS (
+				SELECT
+					asar.strengthening_area_id AS strengtheningAreaId,
+					COUNT(DISTINCT s.id) AS totalSessions,
+					SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN 1 ELSE 0 END) AS completedSessions,
+					ROUND(SUM(TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime))) AS totalSessionHours,
+					ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)) AS completedHours
+				FROM accompaniment_strengthening_area_rel asar
+				INNER JOIN accompaniment a ON a.id = asar.accompaniment_id
+				LEFT JOIN session s ON s.accompaniment_id = a.id
+				GROUP BY asar.strengthening_area_id
+			)
+			SELECT
+				sa.id AS id,
+				sa.name AS strengtheningArea,
+				IFNULL(acc_stats.accompanimentsCount, 0) AS accompanimentsCount,
+				IFNULL(acc_stats.accompanimentHours, 0) AS accompanimentHours,
+				IFNULL(sess_stats.totalSessions, 0) AS totalSessions,
+				IFNULL(sess_stats.completedSessions, 0) AS completedSessions,
+				IFNULL(sess_stats.totalSessionHours, 0) AS totalSessionHours,
+				IFNULL(sess_stats.completedHours, 0) AS completedHours
+			FROM strengthening_area sa
+			LEFT JOIN acc_stats ON acc_stats.strengtheningAreaId = sa.id
+			LEFT JOIN sess_stats ON sess_stats.strengtheningAreaId = sa.id
+			ORDER BY sa.id
+		`)
+
+		const sessionMonths = await businessDataSource.query(`
+			SELECT
+				DATE_FORMAT(s.start_datetime, '%Y-%m') AS month,
+				COUNT(*) AS sessions,
+				SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN 1 ELSE 0 END) AS completedSessions,
+				ROUND(SUM(TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime))) AS totalSessionHours,
+				ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)) AS completedHours
+			FROM session s
+			GROUP BY month
+			ORDER BY month
+		`)
+
+		const normalizedBusinesses = businesses.map((row) => {
+			const assignedHours = this.normalizeNumber(row.assignedHours)
+			const accompanimentHours = this.normalizeNumber(row.accompanimentHours)
+			const totalSessionHours = this.normalizeNumber(row.totalSessionHours)
+			const completedHours = this.normalizeNumber(row.completedHours)
+			const completedSessions = this.normalizeNumber(row.completedSessions)
+			const totalSessions = this.normalizeNumber(row.totalSessions)
+
+			const pendingSessions = Math.max(totalSessions - completedSessions, 0)
+			const pendingSessionHours = Math.max(totalSessionHours - completedHours, 0)
+			const remainingHoursToAssign = Math.max(assignedHours - accompanimentHours, 0)
+			const remainingHoursToComplete = Math.max(assignedHours - completedHours, 0)
+			const progress = assignedHours > 0 ? Math.round((completedHours / assignedHours) * 100) : 0
+
+			return {
+				...row,
+				assignedHours,
+				accompanimentHours,
+				totalSessionHours,
+				completedHours,
+				totalSessions,
+				completedSessions,
+				pendingSessions,
+				pendingSessionHours,
+				remainingHoursToAssign,
+				remainingHoursToComplete,
+				progress
+			}
+		})
+
+		const normalizedExperts = experts.map((row) => {
+			const accompanimentHours = this.normalizeNumber(row.accompanimentHours)
+			const totalSessionHours = this.normalizeNumber(row.totalSessionHours)
+			const completedHours = this.normalizeNumber(row.completedHours)
+			const totalSessions = this.normalizeNumber(row.totalSessions)
+			const completedSessions = this.normalizeNumber(row.completedSessions)
+
+			const pendingSessions = Math.max(totalSessions - completedSessions, 0)
+			const pendingSessionHours = Math.max(totalSessionHours - completedHours, 0)
+			const remainingHoursToComplete = Math.max(accompanimentHours - completedHours, 0)
+			const progress = accompanimentHours > 0 ? Math.round((completedHours / accompanimentHours) * 100) : 0
+
+			return {
+				...row,
+				accompanimentHours,
+				totalSessionHours,
+				completedHours,
+				totalSessions,
+				completedSessions,
+				pendingSessions,
+				pendingSessionHours,
+				remainingHoursToComplete,
+				progress
+			}
+		})
+
+		const normalizedConsultorTypes = consultorTypes.map((row) => {
+			const accompanimentHours = this.normalizeNumber(row.accompanimentHours)
+			const totalSessionHours = this.normalizeNumber(row.totalSessionHours)
+			const completedHours = this.normalizeNumber(row.completedHours)
+			const totalSessions = this.normalizeNumber(row.totalSessions)
+			const completedSessions = this.normalizeNumber(row.completedSessions)
+
+			const pendingSessions = Math.max(totalSessions - completedSessions, 0)
+			const pendingSessionHours = Math.max(totalSessionHours - completedHours, 0)
+			const remainingHoursToComplete = Math.max(accompanimentHours - completedHours, 0)
+			const progress = accompanimentHours > 0 ? Math.round((completedHours / accompanimentHours) * 100) : 0
+
+			return {
+				...row,
+				accompanimentHours,
+				totalSessionHours,
+				completedHours,
+				totalSessions,
+				completedSessions,
+				pendingSessions,
+				pendingSessionHours,
+				remainingHoursToComplete,
+				progress
+			}
+		})
+
+		const normalizedStrengtheningAreas = strengtheningAreas.map((row) => {
+			const accompanimentHours = this.normalizeNumber(row.accompanimentHours)
+			const totalSessionHours = this.normalizeNumber(row.totalSessionHours)
+			const completedHours = this.normalizeNumber(row.completedHours)
+			const totalSessions = this.normalizeNumber(row.totalSessions)
+			const completedSessions = this.normalizeNumber(row.completedSessions)
+
+			const pendingSessions = Math.max(totalSessions - completedSessions, 0)
+			const pendingSessionHours = Math.max(totalSessionHours - completedHours, 0)
+			const remainingHoursToComplete = Math.max(accompanimentHours - completedHours, 0)
+			const progress = accompanimentHours > 0 ? Math.round((completedHours / accompanimentHours) * 100) : 0
+
+			return {
+				...row,
+				accompanimentHours,
+				totalSessionHours,
+				completedHours,
+				totalSessions,
+				completedSessions,
+				pendingSessions,
+				pendingSessionHours,
+				remainingHoursToComplete,
+				progress
+			}
+		})
+
+		const normalizedSessionStatuses = sessionStatuses.map((row) => {
+			const sessions = this.normalizeNumber(row.sessions)
+			const totalSessionHours = this.normalizeNumber(row.totalSessionHours)
+			return {
+				...row,
+				sessions,
+				totalSessionHours
+			}
+		})
+
+		const normalizedSessionMonths = sessionMonths.map((row) => {
+			const totalSessionHours = this.normalizeNumber(row.totalSessionHours)
+			const completedHours = this.normalizeNumber(row.completedHours)
+			const sessions = this.normalizeNumber(row.sessions)
+			const completedSessions = this.normalizeNumber(row.completedSessions)
+			const pendingSessions = Math.max(sessions - completedSessions, 0)
+			const pendingSessionHours = Math.max(totalSessionHours - completedHours, 0)
+			const progress = totalSessionHours > 0 ? Math.round((completedHours / totalSessionHours) * 100) : 0
+			return {
+				...row,
+				totalSessionHours,
+				completedHours,
+				sessions,
+				completedSessions,
+				pendingSessions,
+				pendingSessionHours,
+				progress
+			}
+		})
+
+		const totals = this.buildTotals(normalizedBusinesses)
+		const progress = totals.assignedHours > 0 ? Math.round((totals.completedHours / totals.assignedHours) * 100) : 0
+
+		return {
+			instance: instance || { dbName },
+			businesses: normalizedBusinesses,
+			experts: normalizedExperts,
+			consultorTypes: normalizedConsultorTypes,
+			sessionStatuses: normalizedSessionStatuses,
+			strengtheningAreas: normalizedStrengtheningAreas,
+			sessionMonths: normalizedSessionMonths,
+			totals: {
+				...totals,
+				progress
+			}
 		}
 	}
 
