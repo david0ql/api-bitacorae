@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common'
 
 import { ServiceService } from './service.service'
 import { Service } from 'src/entities/Service'
@@ -12,10 +12,12 @@ import { ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { BusinessName } from 'src/decorators/business-name.decorator'
+import { BusinessCacheInterceptor } from 'src/services/cache/business-cache.interceptor'
 
 @Controller('service')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseInterceptors(BusinessCacheInterceptor)
 export class ServiceController {
 	constructor(private readonly serviceService: ServiceService) {}
 

@@ -12,26 +12,165 @@ export class DashboardService {
 		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
 
 		try {
-			const dataBusiness = await businessDataSource.query(`
-				SELECT
-					COUNT(b.id) AS business_count,
-					SUM(b.assigned_hours) totalHours
-				FROM
-					business b
-			`)
-			const activeBusiness = await businessDataSource.query(`
-				SELECT
-					COUNT(DISTINCT b.id) AS business_active_count
-				FROM
-					business b
-					INNER JOIN accompaniment a ON a.business_id = b.id
-			`)
-			const sessionHours = await businessDataSource.query(`
-				SELECT
-					IFNULL(ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
-				FROM
-					session s
-			`)
+			const [
+				dataBusiness,
+				activeBusiness,
+				sessionHours,
+				businessSizeRaw,
+				platformData,
+				cohorts,
+				economicSectorsRaw,
+				strengtheningAreasRaw,
+				productStatusesRaw,
+				marketScopesRaw,
+				positionsRaw,
+				educationLevelsRaw,
+				gendersRaw,
+				experienceRangesRaw,
+				dateRange
+			] = await Promise.all([
+				businessDataSource.query(`
+					SELECT
+						COUNT(b.id) AS business_count,
+						SUM(b.assigned_hours) totalHours
+					FROM
+						business b
+				`),
+				businessDataSource.query(`
+					SELECT
+						COUNT(DISTINCT b.id) AS business_active_count
+					FROM
+						business b
+						INNER JOIN accompaniment a ON a.business_id = b.id
+				`),
+				businessDataSource.query(`
+					SELECT
+						IFNULL(ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
+					FROM
+						session s
+				`),
+				businessDataSource.query(`
+					SELECT
+						bs.name AS name,
+						COUNT(*) AS value 
+					FROM
+						business b
+						INNER JOIN business_size bs ON b.business_size_id = bs.id
+					GROUP BY bs.id
+				`),
+				businessDataSource.query(`SELECT program_start_date FROM platform LIMIT 1`),
+				businessDataSource.query(`SELECT id, name, start_date, end_date FROM cohort c ORDER BY c.order`),
+				businessDataSource.query(`
+					SELECT
+						ea.name AS name,
+						COUNT(DISTINCT b.id) AS value 
+					FROM
+						business b
+						INNER JOIN business_economic_activity_rel bea ON bea.business_id = b.id
+						INNER JOIN economic_activity ea ON ea.id = bea.economic_activity_id
+					GROUP BY ea.id, ea.name
+					ORDER BY value DESC
+				`),
+				businessDataSource.query(`
+					SELECT
+						sa.name AS name,
+						COUNT(DISTINCT b.id) AS value 
+					FROM
+						business b
+						INNER JOIN business_strengthening_area_rel bsa ON bsa.business_id = b.id
+						INNER JOIN strengthening_area sa ON sa.id = bsa.strengthening_area_id
+					GROUP BY sa.id, sa.name
+					ORDER BY value DESC
+				`),
+				businessDataSource.query(`
+					SELECT
+						ps.name AS name,
+						COUNT(DISTINCT b.id) AS value 
+					FROM
+						business b
+						INNER JOIN product_status ps ON ps.id = b.product_status_id
+					GROUP BY ps.id, ps.name
+					ORDER BY value DESC
+				`),
+				businessDataSource.query(`
+					SELECT
+						ms.name AS name,
+						COUNT(DISTINCT b.id) AS value 
+					FROM
+						business b
+						INNER JOIN market_scope ms ON ms.id = b.market_scope_id
+					GROUP BY ms.id, ms.name
+					ORDER BY value DESC
+				`),
+				businessDataSource.query(`
+					SELECT
+						ct.name AS name,
+						COUNT(DISTINCT e.id) AS expert_count,
+						SUM(a.total_hours) AS total_hours,
+						COUNT(DISTINCT b.id) AS business_count
+					FROM
+						expert e
+						INNER JOIN consultor_type ct ON ct.id = e.consultor_type_id
+						INNER JOIN accompaniment a ON a.expert_id = e.id
+						INNER JOIN business b ON b.id = a.business_id
+					GROUP BY ct.id, ct.name
+					ORDER BY expert_count DESC
+				`),
+				businessDataSource.query(`
+					SELECT
+						el.name AS name,
+						COUNT(DISTINCT ci.id) AS value 
+					FROM
+						contact_information ci
+						INNER JOIN education_level el ON el.id = ci.education_level_id
+					GROUP BY el.id, el.name
+					ORDER BY value DESC
+				`),
+				businessDataSource.query(`
+					SELECT
+						g.name AS name,
+						COUNT(DISTINCT ci.id) AS value 
+					FROM
+						contact_information ci
+						INNER JOIN gender g ON g.id = ci.gender_id
+					GROUP BY g.id, g.name
+					ORDER BY value DESC
+				`),
+				businessDataSource.query(`
+					SELECT
+						CASE 
+							WHEN ci.experience_years < 2 THEN '0-2 años'
+							WHEN ci.experience_years BETWEEN 2 AND 5 THEN '2-5 años'
+							WHEN ci.experience_years BETWEEN 5 AND 10 THEN '5-10 años'
+							WHEN ci.experience_years > 10 THEN 'Más de 10 años'
+							ELSE 'No especificado'
+						END AS name,
+						COUNT(DISTINCT ci.id) AS value 
+					FROM
+						contact_information ci
+					GROUP BY 
+						CASE 
+							WHEN ci.experience_years < 2 THEN '0-2 años'
+							WHEN ci.experience_years BETWEEN 2 AND 5 THEN '2-5 años'
+							WHEN ci.experience_years BETWEEN 5 AND 10 THEN '5-10 años'
+							WHEN ci.experience_years > 10 THEN 'Más de 10 años'
+							ELSE 'No especificado'
+						END
+					ORDER BY value DESC
+				`),
+				businessDataSource.query(`
+					SELECT 
+						LEAST(
+							COALESCE((SELECT MIN(DATE(start_datetime)) FROM session WHERE start_datetime IS NOT NULL), '2024-01-01'),
+							COALESCE((SELECT MIN(DATE(created_at)) FROM business WHERE created_at IS NOT NULL), '2024-01-01')
+						) AS min_date,
+						GREATEST(
+							COALESCE((SELECT MAX(DATE(start_datetime)) FROM session WHERE start_datetime IS NOT NULL), '2024-12-31'),
+							COALESCE((SELECT MAX(DATE(created_at)) FROM business WHERE created_at IS NOT NULL), '2024-12-31')
+						) AS max_date
+				`)
+			])
+
 			// Calculate percentage safely
 			const assignedHours = dataBusiness[0].totalHours || 0
 			const completedHours = sessionHours[0].completedHours || 0
@@ -47,15 +186,7 @@ export class DashboardService {
 				percentage: percentage
 			}
 	//*********** */
-			const businessSize = (await businessDataSource.query(`
-				SELECT
-					bs.name AS name,
-					COUNT(*) AS value 
-				FROM
-					business b
-					INNER JOIN business_size bs ON b.business_size_id = bs.id
-				GROUP BY bs.id
-			`)).map((item) => {
+			const businessSize = businessSizeRaw.map((item) => {
 				return {
 					name: item.name,
 					value: parseInt(item.value)
@@ -67,10 +198,8 @@ export class DashboardService {
 			}
 	//*********** */
 			// Get platform program start date
-			const platformData = await businessDataSource.query(`SELECT program_start_date FROM platform LIMIT 1`)
 			const programStartDate = platformData[0]?.program_start_date || '2025-02-01' // Default fallback
-			
-			const cohorts = await businessDataSource.query(`SELECT id, name, start_date, end_date FROM cohort c ORDER BY c.order`)
+
 			let result3 = await Promise.all(cohorts.map(async cohort => {
 				const data = await businessDataSource.query(`
 					WITH RECURSIVE month_series AS (
@@ -113,19 +242,9 @@ export class DashboardService {
 				`, [programStartDate, cohort.end_date, cohort.id, cohort.id])
 
 				const categories = data.map((d: any) => d.month)
-
-				const hours = categories.map(month => {
-					const entry = data.find((d: any) => d.month === month)
-					return entry ? entry.total_horas : 0
-				})
-				const sessions = categories.map(month => {
-					const entry = data.find((d: any) => d.month === month)
-					return entry ? entry.total_sesiones : 0
-				})
-				const businesses = categories.map(month => {
-					const entry = data.find((d: any) => d.month === month)
-					return entry ? entry.total_empresas : 0
-				})
+				const hours = data.map((d: any) => Number(d.total_horas) || 0)
+				const sessions = data.map((d: any) => Number(d.total_sesiones) || 0)
+				const businesses = data.map((d: any) => Number(d.total_empresas) || 0)
 
 				const totalHours = hours.reduce((acc, cur) => acc + Number(cur), 0)
 				const totalSessions = sessions.reduce((acc, cur) => acc + Number(cur), 0)
@@ -162,18 +281,6 @@ export class DashboardService {
 			}
 	//*********** */
 			// Obtener fechas mínimas y máximas para el rango
-			const dateRange = await businessDataSource.query(`
-				SELECT 
-					LEAST(
-						COALESCE((SELECT MIN(DATE(start_datetime)) FROM session WHERE start_datetime IS NOT NULL), '2024-01-01'),
-						COALESCE((SELECT MIN(DATE(created_at)) FROM business WHERE created_at IS NOT NULL), '2024-01-01')
-					) AS min_date,
-					GREATEST(
-						COALESCE((SELECT MAX(DATE(start_datetime)) FROM session WHERE start_datetime IS NOT NULL), '2024-12-31'),
-						COALESCE((SELECT MAX(DATE(created_at)) FROM business WHERE created_at IS NOT NULL), '2024-12-31')
-					) AS max_date
-			`)
-			
 			const minDate = dateRange[0]?.min_date || '2024-01-01'
 			const maxDate = dateRange[0]?.max_date || '2024-12-31'
 			
@@ -219,18 +326,9 @@ export class DashboardService {
 			console.log('globalDataRaw debug:', globalDataRaw)
 			
 			const categories4 = globalDataRaw.map((d: any) => d.month)
-			const hours4 = categories4.map(month => {
-				const entry = globalDataRaw.find((d: any) => d.month === month)
-				return entry ? entry.total_horas : 0
-			})
-			const sessions4 = categories4.map(month => {
-				const entry = globalDataRaw.find((d: any) => d.month === month)
-				return entry ? entry.total_sesiones : 0
-			})
-			const businesses4 = categories4.map(month => {
-				const entry = globalDataRaw.find((d: any) => d.month === month)
-				return entry ? entry.total_empresas : 0
-			})
+			const hours4 = globalDataRaw.map((d: any) => Number(d.total_horas) || 0)
+			const sessions4 = globalDataRaw.map((d: any) => Number(d.total_sesiones) || 0)
+			const businesses4 = globalDataRaw.map((d: any) => Number(d.total_empresas) || 0)
 			const totalHours4 = hours4.reduce((acc, cur) => acc + Number(cur), 0)
 			const totalSessions4 = sessions4.reduce((acc, cur) => acc + Number(cur), 0)
 			const totalBusinesses4 = businesses4.reduce((acc, cur) => acc + Number(cur), 0)
@@ -257,17 +355,7 @@ export class DashboardService {
 
 			//*********** */
 			// Sectores económicos
-			const economicSectors = (await businessDataSource.query(`
-				SELECT
-					ea.name AS name,
-					COUNT(DISTINCT b.id) AS value 
-				FROM
-					business b
-					INNER JOIN business_economic_activity_rel bea ON bea.business_id = b.id
-					INNER JOIN economic_activity ea ON ea.id = bea.economic_activity_id
-				GROUP BY ea.id, ea.name
-				ORDER BY value DESC
-			`)).map((item) => {
+			const economicSectors = economicSectorsRaw.map((item) => {
 				return {
 					name: item.name,
 					value: parseInt(item.value)
@@ -276,17 +364,7 @@ export class DashboardService {
 
 			//*********** */
 			// Áreas de experticia
-			const strengtheningAreas = (await businessDataSource.query(`
-				SELECT
-					sa.name AS name,
-					COUNT(DISTINCT b.id) AS value 
-				FROM
-					business b
-					INNER JOIN business_strengthening_area_rel bsa ON bsa.business_id = b.id
-					INNER JOIN strengthening_area sa ON sa.id = bsa.strengthening_area_id
-				GROUP BY sa.id, sa.name
-				ORDER BY value DESC
-			`)).map((item) => {
+			const strengtheningAreas = strengtheningAreasRaw.map((item) => {
 				return {
 					name: item.name,
 					value: parseInt(item.value)
@@ -295,16 +373,7 @@ export class DashboardService {
 
 			//*********** */
 			// Estados de producto
-			const productStatuses = (await businessDataSource.query(`
-				SELECT
-					ps.name AS name,
-					COUNT(DISTINCT b.id) AS value 
-				FROM
-					business b
-					INNER JOIN product_status ps ON ps.id = b.product_status_id
-				GROUP BY ps.id, ps.name
-				ORDER BY value DESC
-			`)).map((item) => {
+			const productStatuses = productStatusesRaw.map((item) => {
 				return {
 					name: item.name,
 					value: parseInt(item.value)
@@ -313,16 +382,7 @@ export class DashboardService {
 
 			//*********** */
 			// Alcance de mercado
-			const marketScopes = (await businessDataSource.query(`
-				SELECT
-					ms.name AS name,
-					COUNT(DISTINCT b.id) AS value 
-				FROM
-					business b
-					INNER JOIN market_scope ms ON ms.id = b.market_scope_id
-				GROUP BY ms.id, ms.name
-				ORDER BY value DESC
-			`)).map((item) => {
+			const marketScopes = marketScopesRaw.map((item) => {
 				return {
 					name: item.name,
 					value: parseInt(item.value)
@@ -331,20 +391,7 @@ export class DashboardService {
 
 			//*********** */
 			// Tipos de consultores/expertos
-			const positions = (await businessDataSource.query(`
-				SELECT
-					ct.name AS name,
-					COUNT(DISTINCT e.id) AS expert_count,
-					SUM(a.total_hours) AS total_hours,
-					COUNT(DISTINCT b.id) AS business_count
-				FROM
-					expert e
-					INNER JOIN consultor_type ct ON ct.id = e.consultor_type_id
-					INNER JOIN accompaniment a ON a.expert_id = e.id
-					INNER JOIN business b ON b.id = a.business_id
-				GROUP BY ct.id, ct.name
-				ORDER BY expert_count DESC
-			`)).map((item) => {
+			const positions = positionsRaw.map((item) => {
 				return {
 					name: item.name,
 					value: parseInt(item.expert_count),
@@ -355,16 +402,7 @@ export class DashboardService {
 
 			//*********** */
 			// Niveles de educación
-			const educationLevels = (await businessDataSource.query(`
-				SELECT
-					el.name AS name,
-					COUNT(DISTINCT ci.id) AS value 
-				FROM
-					contact_information ci
-					INNER JOIN education_level el ON el.id = ci.education_level_id
-				GROUP BY el.id, el.name
-				ORDER BY value DESC
-			`)).map((item) => {
+			const educationLevels = educationLevelsRaw.map((item) => {
 				return {
 					name: item.name,
 					value: parseInt(item.value)
@@ -373,16 +411,7 @@ export class DashboardService {
 
 			//*********** */
 			// Géneros
-			const genders = (await businessDataSource.query(`
-				SELECT
-					g.name AS name,
-					COUNT(DISTINCT ci.id) AS value 
-				FROM
-					contact_information ci
-					INNER JOIN gender g ON g.id = ci.gender_id
-				GROUP BY g.id, g.name
-				ORDER BY value DESC
-			`)).map((item) => {
+			const genders = gendersRaw.map((item) => {
 				return {
 					name: item.name,
 					value: parseInt(item.value)
@@ -391,28 +420,7 @@ export class DashboardService {
 
 			//*********** */
 			// Experiencia por rangos
-			const experienceRanges = (await businessDataSource.query(`
-				SELECT
-					CASE 
-						WHEN ci.experience_years < 2 THEN '0-2 años'
-						WHEN ci.experience_years BETWEEN 2 AND 5 THEN '2-5 años'
-						WHEN ci.experience_years BETWEEN 5 AND 10 THEN '5-10 años'
-						WHEN ci.experience_years > 10 THEN 'Más de 10 años'
-						ELSE 'No especificado'
-					END AS name,
-					COUNT(DISTINCT ci.id) AS value 
-				FROM
-					contact_information ci
-				GROUP BY 
-					CASE 
-						WHEN ci.experience_years < 2 THEN '0-2 años'
-						WHEN ci.experience_years BETWEEN 2 AND 5 THEN '2-5 años'
-						WHEN ci.experience_years BETWEEN 5 AND 10 THEN '5-10 años'
-						WHEN ci.experience_years > 10 THEN 'Más de 10 años'
-						ELSE 'No especificado'
-					END
-				ORDER BY value DESC
-			`)).map((item) => {
+			const experienceRanges = experienceRangesRaw.map((item) => {
 				return {
 					name: item.name,
 					value: parseInt(item.value)

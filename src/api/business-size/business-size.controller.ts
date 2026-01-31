@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, Query, UseGuards } from '@nestjs/common'
+import { Controller, Get, HttpCode, Query, UseGuards, UseInterceptors } from '@nestjs/common'
 
 import { BusinessSizeService } from './business-size.service'
 import { BusinessSize } from 'src/entities/BusinessSize'
@@ -10,10 +10,12 @@ import { ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { BusinessName } from 'src/decorators/business-name.decorator'
+import { BusinessCacheInterceptor } from 'src/services/cache/business-cache.interceptor'
 
 @Controller('business-size')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseInterceptors(BusinessCacheInterceptor)
 export class BusinessSizeController {
   	constructor(private readonly businessSizeService: BusinessSizeService) {}
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common'
 
 import { StrengtheningAreaService } from './strengthening_area.service'
 import { StrengtheningArea } from 'src/entities/StrengtheningArea'
@@ -12,10 +12,12 @@ import { ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { BusinessName } from 'src/decorators/business-name.decorator'
+import { BusinessCacheInterceptor } from 'src/services/cache/business-cache.interceptor'
 
 @Controller('strengthening-area')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseInterceptors(BusinessCacheInterceptor)
 export class StrengtheningAreaController {
 	constructor(private readonly strengtheningAreaService: StrengtheningAreaService) {}
 
@@ -29,6 +31,12 @@ export class StrengtheningAreaController {
 	@HttpCode(200)
 	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<StrengtheningArea>> {
 		return this.strengtheningAreaService.findAll(pageOptionsDto, businessName)
+	}
+
+	@Get(':id')
+	@HttpCode(200)
+	findOne(@Param('id') id: string, @BusinessName() businessName: string) {
+		return this.strengtheningAreaService.findOne(+id, businessName)
 	}
 
 	@Patch(':id')

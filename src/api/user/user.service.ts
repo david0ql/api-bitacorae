@@ -39,6 +39,7 @@ export class UserService {
 				SELECT
 					u.id AS userId,
 					u.email AS email,
+					r.name AS roleName,
 					a.first_name AS firstName,
 					a.last_name AS lastName,
 					a.document_type_id AS documentTypeId,
@@ -65,6 +66,7 @@ export class UserService {
 					) AS strengtheningAreas
 				FROM
 					user u
+					INNER JOIN role r ON r.id = u.role_id
 					INNER JOIN admin a ON a.user_id = u.id
 					LEFT JOIN admin_strengthening_area_rel asa ON asa.admin_id = a.id
 					LEFT JOIN strengthening_area sa ON sa.id = asa.strengthening_area_id
@@ -78,6 +80,7 @@ export class UserService {
 				SELECT
 					u.id AS userId,
 					u.email AS email,
+					r.name AS roleName,
 					a.first_name AS firstName,
 					a.last_name AS lastName,
 					a.document_type_id AS documentTypeId,
@@ -104,6 +107,7 @@ export class UserService {
 					) AS strengtheningAreas
 				FROM
 					user u
+					INNER JOIN role r ON r.id = u.role_id
 					INNER JOIN auditor a ON a.user_id = u.id
 					LEFT JOIN auditor_strengthening_area_rel asa ON asa.auditor_id = a.id
 					LEFT JOIN strengthening_area sa ON sa.id = asa.strengthening_area_id
@@ -117,6 +121,7 @@ export class UserService {
 				SELECT
 					u.id AS userId,
 					u.email AS email,
+					r.name AS roleName,
 					e.first_name AS firstName,
 					e.last_name AS lastName,
 					e.document_type_id AS documentTypeId,
@@ -143,6 +148,7 @@ export class UserService {
 					) AS strengtheningAreas
 				FROM
 					user u
+					INNER JOIN role r ON r.id = u.role_id
 					INNER JOIN expert e ON e.user_id = u.id
 					LEFT JOIN expert_strengthening_area_rel esa ON esa.expert_id = e.id
 					LEFT JOIN strengthening_area sa ON sa.id = esa.strengthening_area_id
@@ -156,6 +162,7 @@ export class UserService {
 				SELECT
 					u.id AS userId,
 					u.email AS email,
+					r.name AS roleName,
 					ci.first_name AS firstName,
 					ci.last_name AS lastName,
 					ci.document_type_id AS documentTypeId,
@@ -182,6 +189,7 @@ export class UserService {
 					) AS strengtheningAreas
 				FROM
 					user u
+					INNER JOIN role r ON r.id = u.role_id
 					INNER JOIN contact_information ci ON ci.business_id = (
 						SELECT b.id FROM business b WHERE b.user_id = u.id LIMIT 1
 					)

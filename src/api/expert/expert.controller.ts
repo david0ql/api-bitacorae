@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards, UseInterceptors, UploadedFile, StreamableFile, Header } from '@nestjs/common'
 
 import { ExpertService } from './expert.service'
 import { Expert } from 'src/entities/Expert'
@@ -35,6 +35,31 @@ export class ExpertController {
 	@HttpCode(200)
 	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string): Promise<PageDto<Expert>> {
 		return this.expertService.findAll(pageOptionsDto, businessName)
+	}
+
+	@Get('bulk-template')
+	@HttpCode(200)
+	@Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+	@Header('Content-Disposition', 'attachment; filename="plantilla-expertos.xlsx"')
+	async downloadBulkTemplate(@BusinessName() businessName: string) {
+		const buffer = await this.expertService.getBulkTemplate(businessName)
+		return new StreamableFile(buffer)
+	}
+
+	@Post('bulk-upload')
+	@HttpCode(200)
+	@UseInterceptors(FileUploadInterceptor('file', 'imports'))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({
+		schema: {
+			type: 'object',
+			properties: {
+				file: { type: 'string', format: 'binary' }
+			}
+		}
+	})
+	bulkUpload(@BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+		return this.expertService.bulkUpload(file, businessName)
 	}
 
 	@Get('/forBusiness')

@@ -8,8 +8,10 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { FileUploadInterceptor } from 'src/services/file-upload/file-upload.interceptor'
 import { CreatePlatformDto } from './dto/create-platform.dto'
 import { BusinessName } from 'src/decorators/business-name.decorator'
+import { BusinessCacheInterceptor } from 'src/services/cache/business-cache.interceptor'
 
 @Controller('platform')
+@UseInterceptors(BusinessCacheInterceptor)
 export class PlatformController {
 	constructor(private readonly platformService: PlatformService) {}
 

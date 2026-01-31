@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, Query, UseGuards } from '@nestjs/common'
+import { Controller, Get, HttpCode, Query, UseGuards, UseInterceptors } from '@nestjs/common'
 
 import { SessionStatusService } from './session_status.service'
 
@@ -10,10 +10,12 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { PermissionsGuard } from '../auth/guards/permissions.guard'
 import { SessionStatus } from 'src/entities/SessionStatus'
 import { BusinessName } from 'src/decorators/business-name.decorator'
+import { BusinessCacheInterceptor } from 'src/services/cache/business-cache.interceptor'
 
 @Controller('session-status')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseInterceptors(BusinessCacheInterceptor)
 export class SessionStatusController {
 	constructor(private readonly sessionStatusService: SessionStatusService) {}
 

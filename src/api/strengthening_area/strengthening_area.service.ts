@@ -37,19 +37,40 @@ export class StrengtheningAreaService {
 			const strengtheningAreaRepository = businessDataSource.getRepository(StrengtheningArea)
 			const queryBuilder = strengtheningAreaRepository.createQueryBuilder('area')
 				.select([
-					'area.id',
-					'area.name',
-					'area.levelId'
+					'area.id AS id',
+					'area.name AS name',
+					'area.levelId AS levelId',
+					'level.name AS levelName'
 				])
+				.leftJoin(StrengtheningLevel, 'level', 'level.id = area.levelId')
 				.orderBy('area.name', pageOptionsDto.order)
 				.skip(pageOptionsDto.skip)
 				.take(pageOptionsDto.take)
 			const [items, totalCount] = await Promise.all([
-				queryBuilder.getMany(),
+				queryBuilder.getRawMany(),
 				queryBuilder.getCount()
 			])
 			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 			return new PageDto(items, pageMetaDto)
+		} finally {
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
+		}
+	}
+
+	async findOne(id: number, businessName: string) {
+		if (!id) return {}
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+		try {
+			const strengtheningAreaRepository = businessDataSource.getRepository(StrengtheningArea)
+			return await strengtheningAreaRepository.findOne({
+				where: { id },
+				select: {
+					id: true,
+					name: true,
+					levelId: true
+				}
+			})
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}

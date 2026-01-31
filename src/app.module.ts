@@ -1,5 +1,6 @@
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common'
+import { CacheModule } from '@nestjs/cache-manager'
 import { ServeStaticModule } from '@nestjs/serve-static'
 import { join } from 'path'
 
@@ -47,6 +48,10 @@ import envVars from './config/env'
 
 @Module({
 	imports: [
+		CacheModule.register({
+			isGlobal: true,
+			ttl: 300000
+		}),
 		ServeStaticModule.forRoot({
 			rootPath: join(__dirname, '..', envVars.UPLOADS_DIR),
 			serveRoot: `/${envVars.UPLOADS_DIR}`

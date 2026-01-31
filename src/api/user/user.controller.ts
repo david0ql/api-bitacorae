@@ -13,10 +13,12 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 import { ChangePasswordByAdminDto } from './dto/change-password-by-admin.dto'
 import { BusinessName } from 'src/decorators/business-name.decorator'
+import { UserCacheInterceptor } from 'src/services/cache/user-cache.interceptor'
 
 @Controller('user')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseInterceptors(UserCacheInterceptor)
 export class UserController {
 	constructor(private readonly userService: UserService) {}
 

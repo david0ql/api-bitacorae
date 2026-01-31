@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query, UseGuards, UseInterceptors, UploadedFile, StreamableFile, Header } from '@nestjs/common'
 
 import { BusinessService } from './business.service'
 import { Business } from 'src/entities/Business'
@@ -34,6 +34,31 @@ export class BusinessController {
 	@HttpCode(200)
 	findAll(@Query() pageOptionsDto: PageOptionsDto, @BusinessName() businessName: string, @BusinessPlainName() businessPlainName: string): Promise<PageDto<Business>> {
 		return this.businessService.findAll(pageOptionsDto, businessName)
+	}
+
+	@Get('bulk-template')
+	@HttpCode(200)
+	@Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+	@Header('Content-Disposition', 'attachment; filename="plantilla-empresas.xlsx"')
+	async downloadBulkTemplate(@BusinessName() businessName: string) {
+		const buffer = await this.businessService.getBulkTemplate(businessName)
+		return new StreamableFile(buffer)
+	}
+
+	@Post('bulk-upload')
+	@HttpCode(200)
+	@UseInterceptors(FileUploadInterceptor('file', 'imports'))
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({
+		schema: {
+			type: 'object',
+			properties: {
+				file: { type: 'string', format: 'binary' }
+			}
+		}
+	})
+	bulkUpload(@BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
+		return this.businessService.bulkUpload(file, businessName)
 	}
 
 	@Get('/byFilter/:filter')
