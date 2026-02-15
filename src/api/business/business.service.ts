@@ -31,6 +31,7 @@ import { RequestAttachmentService } from 'src/services/request-attachment/reques
 import { REQUEST_ATTACHMENT_TYPES } from 'src/services/request-attachment/request-attachment.constants'
 
 import envVars from 'src/config/env'
+import { createPublicBulkToken, getBusinessNameFromPublicBulkToken } from 'src/utils/public-bulk-token.util'
 
 type CatalogKey =
 	| 'documentTypes'
@@ -49,6 +50,11 @@ type BulkColumn = {
 	required: boolean
 	type: 'string' | 'number' | 'boolean' | 'numberArray'
 	catalog?: CatalogKey
+}
+
+type BulkRowFailure = {
+	rowIndex: number
+	reasons: string[]
 }
 
 @Injectable()
@@ -158,6 +164,35 @@ export class BusinessService {
 		}
 	}
 
+	async getBulkCatalogs(businessName: string) {
+		if (!businessName) {
+			throw new BadRequestException('Se requiere especificar una empresa para consultar catalogos')
+		}
+
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+
+		try {
+			return this.loadBulkCatalogs(businessDataSource)
+		} finally {
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
+		}
+	}
+
+	getPublicBulkLinkToken(businessName: string) {
+		if (!businessName) {
+			throw new BadRequestException('Se requiere especificar una empresa para generar el enlace público')
+		}
+
+		return {
+			token: createPublicBulkToken(businessName, 'business')
+		}
+	}
+
+	resolveBusinessNameFromPublicBulkToken(token: string) {
+		return getBusinessNameFromPublicBulkToken(token, 'business')
+	}
+
 	private getCellText(value: any): string {
 		if (value === null || value === undefined) return ''
 		if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
@@ -188,6 +223,17 @@ export class BusinessService {
 			.filter(Boolean)
 		const ids = parts.map((part) => Number(part)).filter((num) => Number.isFinite(num))
 		return ids
+	}
+
+	private getBulkInsertErrorMessage(error: any): string {
+		const dbErrorCode = error?.driverError?.code || error?.code
+		if (dbErrorCode === 'ER_DUP_ENTRY') {
+			return 'Ya existe un registro con un dato único duplicado (correo o documento).'
+		}
+		if (dbErrorCode === 'ER_NO_REFERENCED_ROW_2') {
+			return 'Alguno de los IDs de catálogo ya no existe.'
+		}
+		return 'No fue posible insertar la fila por una validación de base de datos.'
 	}
 
 	async create(createBusinessDto: CreateBusinessDto, businessName: string, files?: Express.Multer.File[]) {
@@ -320,7 +366,7 @@ export class BusinessService {
 			}
 
 			try {
-				this.mailService.sendWelcomeEmail({
+				await this.mailService.sendWelcomeEmail({
 					name: socialReason,
 					email,
 					password
@@ -517,9 +563,9 @@ export class BusinessService {
 					.map((item) => item.email.toLowerCase())
 			)
 			const seenEmails = new Set<string>()
-
 			const rowsToCreate: { rowIndex: number; data: Record<string, any> }[] = []
-			const errors: string[] = []
+			const failedRows: BulkRowFailure[] = []
+			let totalRows = 0
 
 			for (let rowIndex = 2; rowIndex <= sheet.rowCount; rowIndex += 1) {
 				const row = sheet.getRow(rowIndex)
@@ -531,6 +577,7 @@ export class BusinessService {
 				})
 
 				if (!hasAnyValue) continue
+				totalRows += 1
 
 				const rowErrors: string[] = []
 				const parsed: Record<string, any> = {}
@@ -591,88 +638,123 @@ export class BusinessService {
 					if (seenEmails.has(businessEmail)) {
 						rowErrors.push('business_email esta duplicado en el archivo')
 					}
-					seenEmails.add(businessEmail)
 				}
 
 				if (rowErrors.length > 0) {
-					errors.push(`Fila ${rowIndex}: ${rowErrors.join('; ')}`)
+					failedRows.push({
+						rowIndex,
+						reasons: rowErrors
+					})
 					continue
+				}
+
+				if (businessEmail) {
+					seenEmails.add(businessEmail)
 				}
 
 				rowsToCreate.push({ rowIndex, data: parsed })
 			}
 
-			if (errors.length > 0) {
-				throw new BadRequestException(errors)
-			}
-
 			const welcomeUsers: { name: string; email: string; password: string }[] = []
 			const createdEvidenceAttachments: { businessId: number; evidenceUrl: string }[] = []
+			let created = 0
 
-			await businessDataSource.transaction(async (manager) => {
-				const userRepository = manager.getRepository(User)
-				const businessRepository = manager.getRepository(Business)
-				const contactRepository = manager.getRepository(ContactInformation)
-				const economicActivityRepository = manager.getRepository(EconomicActivity)
-				const strengtheningAreaRepository = manager.getRepository(StrengtheningArea)
+			for (const row of rowsToCreate) {
+				const data = row.data
 
-				for (const row of rowsToCreate) {
-					const data = row.data
+				try {
+					const savedBusiness = await businessDataSource.transaction(async (manager) => {
+						const userRepository = manager.getRepository(User)
+						const businessRepository = manager.getRepository(Business)
+						const contactRepository = manager.getRepository(ContactInformation)
+						const economicActivityRepository = manager.getRepository(EconomicActivity)
+						const strengtheningAreaRepository = manager.getRepository(StrengtheningArea)
 
-					const salt = bcrypt.genSaltSync(10)
-					const hash = bcrypt.hashSync(String(data.business_password), salt)
+						const salt = bcrypt.genSaltSync(10)
+						const hash = bcrypt.hashSync(String(data.business_password), salt)
 
-					const newUser = await userRepository.save(
-						userRepository.create({
-							roleId: 4,
-							name: data.business_social_reason,
-							email: data.business_email,
-							password: hash
+						const newUser = await userRepository.save(
+							userRepository.create({
+								roleId: 4,
+								name: data.business_social_reason,
+								email: data.business_email,
+								password: hash
+							})
+						)
+
+						const economicActivityEntities = await economicActivityRepository.findBy({
+							id: In(data.business_economic_activity_ids)
 						})
-					)
-
-					const economicActivityEntities = await economicActivityRepository.findBy({
-						id: In(data.business_economic_activity_ids)
-					})
-					const businessStrengtheningEntities = await strengtheningAreaRepository.findBy({
-						id: In(data.business_strengthening_area_ids)
-					})
-
-					const savedBusiness = await businessRepository.save(
-						businessRepository.create({
-							userId: newUser.id,
-							socialReason: data.business_social_reason,
-							documentTypeId: data.business_document_type_id,
-							documentNumber: data.business_document_number,
-							address: data.business_address,
-							phone: data.business_phone,
-							email: data.business_email,
-							economicActivities: economicActivityEntities,
-							businessSizeId: data.business_size_id,
-							numberOfEmployees: data.business_number_of_employees,
-							lastYearSales: data.business_last_year_sales,
-							twoYearsAgoSales: data.business_two_years_ago_sales,
-							threeYearsAgoSales: data.business_three_years_ago_sales,
-							facebook: data.business_facebook,
-							instagram: data.business_instagram,
-							twitter: data.business_twitter,
-							website: data.business_website,
-							linkedin: data.business_linkedin,
-							positionId: data.business_position_id,
-							hasFoundedBefore: data.business_has_founded_before,
-							observation: data.business_observation,
-							numberOfPeopleLeading: data.business_number_of_people_leading,
-							productStatusId: data.business_product_status_id,
-							marketScopeId: data.business_market_scope_id,
-							businessPlan: data.business_business_plan,
-							businessSegmentation: data.business_business_segmentation,
-							strengtheningAreas: businessStrengtheningEntities,
-							assignedHours: data.business_assigned_hours,
-							cohortId: data.business_cohort_id,
-							diagnostic: data.business_diagnostic,
-							evidence: data.business_evidence_url
+						const businessStrengtheningEntities = await strengtheningAreaRepository.findBy({
+							id: In(data.business_strengthening_area_ids)
 						})
-					)
+
+						const currentBusiness = await businessRepository.save(
+							businessRepository.create({
+								userId: newUser.id,
+								socialReason: data.business_social_reason,
+								documentTypeId: data.business_document_type_id,
+								documentNumber: data.business_document_number,
+								address: data.business_address,
+								phone: data.business_phone,
+								email: data.business_email,
+								economicActivities: economicActivityEntities,
+								businessSizeId: data.business_size_id,
+								numberOfEmployees: data.business_number_of_employees,
+								lastYearSales: data.business_last_year_sales,
+								twoYearsAgoSales: data.business_two_years_ago_sales,
+								threeYearsAgoSales: data.business_three_years_ago_sales,
+								facebook: data.business_facebook,
+								instagram: data.business_instagram,
+								twitter: data.business_twitter,
+								website: data.business_website,
+								linkedin: data.business_linkedin,
+								positionId: data.business_position_id,
+								hasFoundedBefore: data.business_has_founded_before,
+								observation: data.business_observation,
+								numberOfPeopleLeading: data.business_number_of_people_leading,
+								productStatusId: data.business_product_status_id,
+								marketScopeId: data.business_market_scope_id,
+								businessPlan: data.business_business_plan,
+								businessSegmentation: data.business_business_segmentation,
+								strengtheningAreas: businessStrengtheningEntities,
+								assignedHours: data.business_assigned_hours,
+								cohortId: data.business_cohort_id,
+								diagnostic: data.business_diagnostic,
+								evidence: data.business_evidence_url
+							})
+						)
+
+						const contactStrengtheningEntities = await strengtheningAreaRepository.findBy({
+							id: In(data.contact_strengthening_area_ids)
+						})
+
+						await contactRepository.save(
+							contactRepository.create({
+								businessId: currentBusiness.id,
+								firstName: data.contact_first_name,
+								lastName: data.contact_last_name,
+								email: data.contact_email,
+								phone: data.contact_phone,
+								documentTypeId: data.contact_document_type_id,
+								documentNumber: data.contact_document_number,
+								genderId: data.contact_gender_id,
+								experienceYears: data.contact_experience_years,
+								strengtheningAreas: contactStrengtheningEntities,
+								educationLevelId: data.contact_education_level_id,
+								facebook: data.contact_facebook,
+								instagram: data.contact_instagram,
+								twitter: data.contact_twitter,
+								website: data.contact_website,
+								linkedin: data.contact_linkedin,
+								profile: data.contact_profile
+							})
+						)
+
+						return currentBusiness
+					})
+
+					created += 1
 
 					if (data.business_evidence_url) {
 						createdEvidenceAttachments.push({
@@ -681,43 +763,23 @@ export class BusinessService {
 						})
 					}
 
-					const contactStrengtheningEntities = await strengtheningAreaRepository.findBy({
-						id: In(data.contact_strengthening_area_ids)
-					})
-
-					await contactRepository.save(
-						contactRepository.create({
-							businessId: savedBusiness.id,
-							firstName: data.contact_first_name,
-							lastName: data.contact_last_name,
-							email: data.contact_email,
-							phone: data.contact_phone,
-							documentTypeId: data.contact_document_type_id,
-							documentNumber: data.contact_document_number,
-							genderId: data.contact_gender_id,
-							experienceYears: data.contact_experience_years,
-							strengtheningAreas: contactStrengtheningEntities,
-							educationLevelId: data.contact_education_level_id,
-							facebook: data.contact_facebook,
-							instagram: data.contact_instagram,
-							twitter: data.contact_twitter,
-							website: data.contact_website,
-							linkedin: data.contact_linkedin,
-							profile: data.contact_profile
-						})
-					)
-
 					welcomeUsers.push({
 						name: data.business_social_reason,
 						email: data.business_email,
 						password: data.business_password
 					})
+				} catch (e) {
+					console.error(`Error inserting business row ${row.rowIndex}:`, e)
+					failedRows.push({
+						rowIndex: row.rowIndex,
+						reasons: [this.getBulkInsertErrorMessage(e)]
+					})
 				}
-			})
+			}
 
 			for (const user of welcomeUsers) {
 				try {
-					this.mailService.sendWelcomeEmail(user, businessName)
+					await this.mailService.sendWelcomeEmail(user, businessName)
 				} catch (e) {
 					console.error('Error sending welcome email:', e)
 				}
@@ -740,7 +802,10 @@ export class BusinessService {
 			}
 
 			return {
-				created: rowsToCreate.length
+				totalRows,
+				created,
+				failed: failedRows.length,
+				failedRows
 			}
 		} finally {
 			if (filePath) {

@@ -24,6 +24,7 @@ import { MailService } from 'src/services/mail/mail.service'
 
 import envVars from 'src/config/env'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
+import { createPublicBulkToken, getBusinessNameFromPublicBulkToken } from 'src/utils/public-bulk-token.util'
 
 type CatalogKey =
 	| 'documentTypes'
@@ -37,6 +38,11 @@ type BulkColumn = {
 	required: boolean
 	type: 'string' | 'number' | 'numberArray'
 	catalog?: CatalogKey
+}
+
+type BulkRowFailure = {
+	rowIndex: number
+	reasons: string[]
 }
 
 @Injectable()
@@ -102,6 +108,35 @@ export class ExpertService {
 		}
 	}
 
+	async getBulkCatalogs(businessName: string) {
+		if (!businessName) {
+			throw new BadRequestException('Se requiere especificar una empresa para consultar catalogos')
+		}
+
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+
+		try {
+			return this.loadBulkCatalogs(businessDataSource)
+		} finally {
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
+		}
+	}
+
+	getPublicBulkLinkToken(businessName: string) {
+		if (!businessName) {
+			throw new BadRequestException('Se requiere especificar una empresa para generar el enlace público')
+		}
+
+		return {
+			token: createPublicBulkToken(businessName, 'expert')
+		}
+	}
+
+	resolveBusinessNameFromPublicBulkToken(token: string) {
+		return getBusinessNameFromPublicBulkToken(token, 'expert')
+	}
+
 	private getCellText(value: any): string {
 		if (value === null || value === undefined) return ''
 		if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
@@ -125,6 +160,17 @@ export class ExpertService {
 			.filter(Boolean)
 		const ids = parts.map((part) => Number(part)).filter((num) => Number.isFinite(num))
 		return ids
+	}
+
+	private getBulkInsertErrorMessage(error: any): string {
+		const dbErrorCode = error?.driverError?.code || error?.code
+		if (dbErrorCode === 'ER_DUP_ENTRY') {
+			return 'Ya existe un registro con un dato único duplicado (correo o documento).'
+		}
+		if (dbErrorCode === 'ER_NO_REFERENCED_ROW_2') {
+			return 'Alguno de los IDs de catálogo ya no existe.'
+		}
+		return 'No fue posible insertar la fila por una validación de base de datos.'
 	}
 
 	async create(createExpertDto: CreateExpertDto, businessName: string, file?: Express.Multer.File) {
@@ -212,7 +258,7 @@ export class ExpertService {
 			const savedExpert = await expertRepository.save(expert)
 
 			try {
-				this.mailService.sendWelcomeEmail({
+				await this.mailService.sendWelcomeEmail({
 					name: `${firstName} ${lastName}`,
 					email,
 					password
@@ -373,9 +419,9 @@ export class ExpertService {
 					.map((item) => item.email.toLowerCase())
 			)
 			const seenEmails = new Set<string>()
-
 			const rowsToCreate: { rowIndex: number; data: Record<string, any> }[] = []
-			const errors: string[] = []
+			const failedRows: BulkRowFailure[] = []
+			let totalRows = 0
 
 			for (let rowIndex = 2; rowIndex <= sheet.rowCount; rowIndex += 1) {
 				const row = sheet.getRow(rowIndex)
@@ -387,6 +433,7 @@ export class ExpertService {
 				})
 
 				if (!hasAnyValue) continue
+				totalRows += 1
 
 				const rowErrors: string[] = []
 				const parsed: Record<string, any> = {}
@@ -440,89 +487,104 @@ export class ExpertService {
 					if (seenEmails.has(expertEmail)) {
 						rowErrors.push('expert_email esta duplicado en el archivo')
 					}
-					seenEmails.add(expertEmail)
 				}
 
 				if (rowErrors.length > 0) {
-					errors.push(`Fila ${rowIndex}: ${rowErrors.join('; ')}`)
+					failedRows.push({
+						rowIndex,
+						reasons: rowErrors
+					})
 					continue
+				}
+
+				if (expertEmail) {
+					seenEmails.add(expertEmail)
 				}
 
 				rowsToCreate.push({ rowIndex, data: parsed })
 			}
 
-			if (errors.length > 0) {
-				throw new BadRequestException(errors)
-			}
-
 			const welcomeUsers: { name: string; email: string; password: string }[] = []
+			let created = 0
 
-			await businessDataSource.transaction(async (manager) => {
-				const userRepository = manager.getRepository(User)
-				const expertRepository = manager.getRepository(Expert)
-				const strengtheningAreaRepository = manager.getRepository(StrengtheningArea)
+			for (const row of rowsToCreate) {
+				const data = row.data
 
-				for (const row of rowsToCreate) {
-					const data = row.data
+				try {
+					await businessDataSource.transaction(async (manager) => {
+						const userRepository = manager.getRepository(User)
+						const expertRepository = manager.getRepository(Expert)
+						const strengtheningAreaRepository = manager.getRepository(StrengtheningArea)
 
-					const salt = bcrypt.genSaltSync(10)
-					const hash = bcrypt.hashSync(String(data.expert_password), salt)
+						const salt = bcrypt.genSaltSync(10)
+						const hash = bcrypt.hashSync(String(data.expert_password), salt)
 
-					const newUser = await userRepository.save(
-						userRepository.create({
-							roleId: 3,
-							name: `${data.expert_first_name} ${data.expert_last_name}`,
-							email: data.expert_email,
-							password: hash
+						const newUser = await userRepository.save(
+							userRepository.create({
+								roleId: 3,
+								name: `${data.expert_first_name} ${data.expert_last_name}`,
+								email: data.expert_email,
+								password: hash
+							})
+						)
+
+						const strengtheningAreaEntities = await strengtheningAreaRepository.findBy({
+							id: In(data.expert_strengthening_area_ids)
 						})
-					)
 
-					const strengtheningAreaEntities = await strengtheningAreaRepository.findBy({
-						id: In(data.expert_strengthening_area_ids)
+						await expertRepository.save(
+							expertRepository.create({
+								userId: newUser.id,
+								firstName: data.expert_first_name,
+								lastName: data.expert_last_name,
+								email: data.expert_email,
+								phone: data.expert_phone,
+								documentTypeId: data.expert_document_type_id,
+								documentNumber: data.expert_document_number,
+								photo: data.expert_photo_url || null,
+								consultorTypeId: data.expert_consultor_type_id,
+								genderId: data.expert_gender_id,
+								experienceYears: data.expert_experience_years,
+								strengtheningAreas: strengtheningAreaEntities,
+								educationLevelId: data.expert_education_level_id,
+								facebook: data.expert_facebook,
+								instagram: data.expert_instagram,
+								twitter: data.expert_twitter,
+								website: data.expert_website,
+								linkedin: data.expert_linkedin,
+								profile: data.expert_profile
+							})
+						)
 					})
 
-					await expertRepository.save(
-						expertRepository.create({
-							userId: newUser.id,
-							firstName: data.expert_first_name,
-							lastName: data.expert_last_name,
-							email: data.expert_email,
-							phone: data.expert_phone,
-							documentTypeId: data.expert_document_type_id,
-							documentNumber: data.expert_document_number,
-							photo: data.expert_photo_url || null,
-							consultorTypeId: data.expert_consultor_type_id,
-							genderId: data.expert_gender_id,
-							experienceYears: data.expert_experience_years,
-							strengtheningAreas: strengtheningAreaEntities,
-							educationLevelId: data.expert_education_level_id,
-							facebook: data.expert_facebook,
-							instagram: data.expert_instagram,
-							twitter: data.expert_twitter,
-							website: data.expert_website,
-							linkedin: data.expert_linkedin,
-							profile: data.expert_profile
-						})
-					)
-
+					created += 1
 					welcomeUsers.push({
 						name: `${data.expert_first_name} ${data.expert_last_name}`,
 						email: data.expert_email,
 						password: data.expert_password
 					})
+				} catch (e) {
+					console.error(`Error inserting expert row ${row.rowIndex}:`, e)
+					failedRows.push({
+						rowIndex: row.rowIndex,
+						reasons: [this.getBulkInsertErrorMessage(e)]
+					})
 				}
-			})
+			}
 
 			for (const user of welcomeUsers) {
 				try {
-					this.mailService.sendWelcomeEmail(user, businessName)
+					await this.mailService.sendWelcomeEmail(user, businessName)
 				} catch (e) {
 					console.error('Error sending welcome email:', e)
 				}
 			}
 
 			return {
-				created: rowsToCreate.length
+				totalRows,
+				created,
+				failed: failedRows.length,
+				failedRows
 			}
 		} finally {
 			if (filePath) {

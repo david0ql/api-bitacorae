@@ -3,12 +3,13 @@ import { Module } from '@nestjs/common'
 import { BusinessService } from './business.service'
 import { FileUploadService } from 'src/services/file-upload/file-upload.service'
 import { BusinessController } from './business.controller'
+import { BusinessPublicController } from './business-public.controller'
 import { DynamicDatabaseModule } from 'src/services/dynamic-database/dynamic-database.module'
 import { MailModule } from 'src/services/mail/mail.module'
 import { RequestAttachmentModule } from 'src/services/request-attachment/request-attachment.module'
 
 @Module({
-	controllers: [BusinessController],
+	controllers: [BusinessController, BusinessPublicController],
 	providers: [BusinessService, FileUploadService],
 	imports: [DynamicDatabaseModule, MailModule, RequestAttachmentModule]
 })

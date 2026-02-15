@@ -43,6 +43,32 @@ export class SessionService {
 		}
 	}
 
+	private getAbsoluteFileUrl(filePath?: string | null) {
+		if (!filePath) return ''
+		return filePath.startsWith('http') ? filePath : `${envVars.APP_URL}/${filePath}`
+	}
+
+	private getDisplayFileName(filePathOrUrl?: string | null, fallback = 'Archivo') {
+		if (!filePathOrUrl) return fallback
+
+		const cleanPath = filePathOrUrl.split('?')[0].split('#')[0]
+		const parts = cleanPath.split('/')
+		const encodedFileName = parts[parts.length - 1] || cleanPath
+		let rawFileName = encodedFileName
+		try {
+			rawFileName = decodeURIComponent(encodedFileName)
+		} catch {
+			rawFileName = encodedFileName
+		}
+		if (!rawFileName) return fallback
+
+		// Stored names are persisted as "<safeName>-<timestamp>.<ext>"; remove suffix for display.
+		const withoutTimestamp = rawFileName.replace(/-\d{13}(?=\.[^.]+$)/, '')
+		const normalized = withoutTimestamp.replace(/_/g, ' ').trim()
+
+		return normalized || fallback
+	}
+
 	private async getSessionWithRelations(id: number, businessName: string) {
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
 		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
@@ -80,8 +106,8 @@ export class SessionService {
 
 			const preparationFilesData = await sessionPreparationFileRepository.find({ where: { sessionId } })
 			const preparationFiles = preparationFilesData.map((file, index) => ({
-				name: 'Archivo ' + (index + 1),
-				filePath: file.filePath.startsWith('http') ? file.filePath : `${envVars.APP_URL}/${file.filePath}`
+				name: this.getDisplayFileName(file.filePath, `Archivo ${index + 1}`),
+				filePath: this.getAbsoluteFileUrl(file.filePath)
 			}))
 
 			const attachmentsData = await this.requestAttachmentService.findByRequest({
@@ -589,10 +615,36 @@ export class SessionService {
 
 			if (!rawSession) return {}
 
+			const sessionPreparationFileRepository = businessDataSource.getRepository(SessionPreparationFile)
+			const sessionPreparationFiles = await sessionPreparationFileRepository.find({
+				where: { sessionId: id },
+				order: { id: 'ASC' }
+			})
+
+			const preparationFilesData = sessionPreparationFiles.map((file, index) => ({
+				name: this.getDisplayFileName(file.filePath, `Archivo ${index + 1}`),
+				fileUrl: this.getAbsoluteFileUrl(file.filePath)
+			}))
+
+			const sessionAttachmentsRaw = await this.requestAttachmentService.findByRequest({
+				businessName,
+				requestType: REQUEST_ATTACHMENT_TYPES.SESSION_ATTACHMENT,
+				requestId: id
+			})
+
+			const attachmentsData = sessionAttachmentsRaw.map((item, index) => ({
+				id: item.id,
+				name: item.name || this.getDisplayFileName(item.fileUrl || item.filePath, `Archivo adjunto ${index + 1}`),
+				fileUrl: item.fileUrl || this.getAbsoluteFileUrl(item.filePath),
+				externalPath: item.externalPath
+			}))
+
 			return {
 				...rawSession,
-				preparationFiles: rawSession.preparationFiles ? rawSession.preparationFiles.split('||') : [],
-				attachments: rawSession.attachments ? rawSession.attachments.split('||') : []
+				preparationFiles: preparationFilesData.map((item) => item.fileUrl),
+				attachments: attachmentsData.map((item) => item.fileUrl),
+				preparationFilesData,
+				attachmentsData
 			}
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached

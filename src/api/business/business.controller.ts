@@ -45,6 +45,12 @@ export class BusinessController {
 		return new StreamableFile(buffer)
 	}
 
+	@Get('public-link-token')
+	@HttpCode(200)
+	getPublicLinkToken(@BusinessName() businessName: string) {
+		return this.businessService.getPublicBulkLinkToken(businessName)
+	}
+
 	@Post('bulk-upload')
 	@HttpCode(200)
 	@UseInterceptors(FileUploadInterceptor('file', 'imports'))
