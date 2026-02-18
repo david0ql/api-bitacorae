@@ -7,8 +7,12 @@ export class ExpertPublicController {
 
 	@Get('bulk-catalogs')
 	@HttpCode(200)
-	getBulkCatalogs(@Query('bn') token: string) {
-		const businessName = this.expertService.resolveBusinessNameFromPublicBulkToken(token)
-		return this.expertService.getBulkCatalogs(businessName)
+	async getBulkCatalogs(@Query('bn') token: string) {
+		const { businessName, exp } = this.expertService.resolvePublicBulkToken(token)
+		const catalogs = await this.expertService.getBulkCatalogs(businessName)
+		return {
+			...catalogs,
+			tokenExp: exp
+		}
 	}
 }

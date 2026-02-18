@@ -16,6 +16,11 @@ type PublicBulkTokenPayload = {
 	exp: number
 }
 
+export type PublicBulkTokenInfo = {
+	businessName: string
+	exp: number
+}
+
 const getEncryptionKey = () => createHash('sha256').update(envVars.JWT_SECRET).digest()
 
 const toBase64Url = (value: Buffer) => value.toString('base64url')
@@ -45,10 +50,10 @@ export const createPublicBulkToken = (businessName: string, type: PublicBulkToke
 	return `${toBase64Url(iv)}.${toBase64Url(encrypted)}.${toBase64Url(authTag)}`
 }
 
-export const getBusinessNameFromPublicBulkToken = (
+const getPublicBulkTokenPayload = (
 	token: string,
 	expectedType: PublicBulkTokenType
-): string => {
+): PublicBulkTokenPayload => {
 	const invalidTokenError = new BadRequestException('El enlace público no es válido o ya expiró')
 
 	if (!token || typeof token !== 'string') {
@@ -83,8 +88,26 @@ export const getBusinessNameFromPublicBulkToken = (
 			throw invalidTokenError
 		}
 
-		return payload.businessName.trim()
+		return payload
 	} catch {
 		throw invalidTokenError
 	}
+}
+
+export const getPublicBulkTokenInfo = (
+	token: string,
+	expectedType: PublicBulkTokenType
+): PublicBulkTokenInfo => {
+	const payload = getPublicBulkTokenPayload(token, expectedType)
+	return {
+		businessName: payload.businessName.trim(),
+		exp: payload.exp
+	}
+}
+
+export const getBusinessNameFromPublicBulkToken = (
+	token: string,
+	expectedType: PublicBulkTokenType
+): string => {
+	return getPublicBulkTokenInfo(token, expectedType).businessName
 }

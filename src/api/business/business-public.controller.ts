@@ -7,8 +7,12 @@ export class BusinessPublicController {
 
 	@Get('bulk-catalogs')
 	@HttpCode(200)
-	getBulkCatalogs(@Query('bn') token: string) {
-		const businessName = this.businessService.resolveBusinessNameFromPublicBulkToken(token)
-		return this.businessService.getBulkCatalogs(businessName)
+	async getBulkCatalogs(@Query('bn') token: string) {
+		const { businessName, exp } = this.businessService.resolvePublicBulkToken(token)
+		const catalogs = await this.businessService.getBulkCatalogs(businessName)
+		return {
+			...catalogs,
+			tokenExp: exp
+		}
 	}
 }

@@ -31,7 +31,7 @@ import { RequestAttachmentService } from 'src/services/request-attachment/reques
 import { REQUEST_ATTACHMENT_TYPES } from 'src/services/request-attachment/request-attachment.constants'
 
 import envVars from 'src/config/env'
-import { createPublicBulkToken, getBusinessNameFromPublicBulkToken } from 'src/utils/public-bulk-token.util'
+import { createPublicBulkToken, getBusinessNameFromPublicBulkToken, getPublicBulkTokenInfo } from 'src/utils/public-bulk-token.util'
 
 type CatalogKey =
 	| 'documentTypes'
@@ -191,6 +191,10 @@ export class BusinessService {
 
 	resolveBusinessNameFromPublicBulkToken(token: string) {
 		return getBusinessNameFromPublicBulkToken(token, 'business')
+	}
+
+	resolvePublicBulkToken(token: string) {
+		return getPublicBulkTokenInfo(token, 'business')
 	}
 
 	private getCellText(value: any): string {

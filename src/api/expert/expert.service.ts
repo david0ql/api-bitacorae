@@ -24,7 +24,7 @@ import { MailService } from 'src/services/mail/mail.service'
 
 import envVars from 'src/config/env'
 import { JwtUser } from '../auth/interfaces/jwt-user.interface'
-import { createPublicBulkToken, getBusinessNameFromPublicBulkToken } from 'src/utils/public-bulk-token.util'
+import { createPublicBulkToken, getBusinessNameFromPublicBulkToken, getPublicBulkTokenInfo } from 'src/utils/public-bulk-token.util'
 
 type CatalogKey =
 	| 'documentTypes'
@@ -135,6 +135,10 @@ export class ExpertService {
 
 	resolveBusinessNameFromPublicBulkToken(token: string) {
 		return getBusinessNameFromPublicBulkToken(token, 'expert')
+	}
+
+	resolvePublicBulkToken(token: string) {
+		return getPublicBulkTokenInfo(token, 'expert')
 	}
 
 	private getCellText(value: any): string {
