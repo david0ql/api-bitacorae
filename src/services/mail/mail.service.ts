@@ -6,6 +6,7 @@ import { tmpdir } from 'os'
 import * as sanitizeHtml from 'sanitize-html'
 import { createEvent, EventAttributes } from 'ics'
 import Handlebars from 'handlebars'
+import * as moment from 'moment-timezone'
 
 import { WelcomeEmailContext } from './interfaces/welcome-email-context.interface'
 import { NewSessionEmailContext } from './interfaces/new-session-email-context.interface'
@@ -55,6 +56,7 @@ Handlebars.registerHelper('sanitizeHtmlEmail', (html: string) => {
 
 @Injectable()
 export class MailService {
+	private static readonly DEFAULT_TIMEZONE = 'America/Bogota'
 	private partialsDir = path.join(process.cwd(), 'src', 'services', 'mail', 'templates', 'partials')
 	private varCommons = {
 		year: new Date().getFullYear(),
@@ -164,16 +166,33 @@ export class MailService {
 		return calendarFilePath
 	}
 
-	private formatDateArray(date: Date): [number, number, number, number, number] {
-		// Usar métodos UTC para evitar problemas de zona horaria
-		// El servidor puede estar en una zona horaria diferente a la del usuario
-		return [
-			date.getUTCFullYear(),
-			date.getUTCMonth() + 1,
-			date.getUTCDate(),
-			date.getUTCHours(),
-			date.getUTCMinutes()
-		]
+	private parseAsBogotaDateTime(dateValue: string | Date): moment.Moment {
+		if (typeof dateValue === 'string') {
+			const parsed = moment.tz(dateValue, 'YYYY-MM-DD HH:mm:ss', MailService.DEFAULT_TIMEZONE)
+			if (!parsed.isValid()) throw new Error(`Fecha inválida para calendario: ${dateValue}`)
+			return parsed
+		}
+
+		// Para DATETIME de MySQL (sin zona), preservamos la hora "visible" y la asignamos a GMT-5.
+		const parsed = moment.tz(
+			{
+				year: dateValue.getFullYear(),
+				month: dateValue.getMonth(),
+				date: dateValue.getDate(),
+				hour: dateValue.getHours(),
+				minute: dateValue.getMinutes(),
+				second: dateValue.getSeconds()
+			},
+			MailService.DEFAULT_TIMEZONE
+		)
+
+		if (!parsed.isValid()) throw new Error('Fecha inválida para calendario')
+		return parsed
+	}
+
+	private formatUtcDateArrayFromMoment(dateValue: moment.Moment): [number, number, number, number, number] {
+		const utc = dateValue.clone().utc()
+		return [utc.year(), utc.month() + 1, utc.date(), utc.hour(), utc.minute()]
 	}
 
 	async sendWelcomeEmail(context: WelcomeEmailContext, businessName: string) {
@@ -222,15 +241,13 @@ export class MailService {
 		console.log('  - Notification email:', notificationEmail)
 		console.log('  - Subject:', subject)
 
-		// Validar y ajustar fechas para el calendario
-		// Las fechas vienen en formato "YYYY-MM-DD HH:mm:ss" y representan la hora local del usuario
-		// Necesitamos parsearlas correctamente para que el calendario las muestre en la zona horaria correcta
-		const startDateTime = new Date(startDate + ' GMT-0500') // Ajustar a la zona horaria de Colombia (GMT-5)
-		let endDateTime = new Date(endDate + ' GMT-0500') // Ajustar a la zona horaria de Colombia (GMT-5)
+		// Interpretar siempre las fechas de sesión como hora local de Colombia (GMT-5)
+		const startDateTime = this.parseAsBogotaDateTime(startDate)
+		let endDateTime = this.parseAsBogotaDateTime(endDate)
 		
 		// Si las fechas son iguales, agregar 1 hora a la fecha de fin
-		if (startDateTime.getTime() === endDateTime.getTime()) {
-			endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000) // +1 hora
+		if (startDateTime.valueOf() === endDateTime.valueOf()) {
+			endDateTime = startDateTime.clone().add(1, 'hour')
 			console.log('⚠️ [MAIL SERVICE] Fechas iguales detectadas, ajustando fecha de fin a +1 hora')
 		}
 
@@ -248,8 +265,12 @@ export class MailService {
 		const event: EventAttributes = {
 			title: `Sesión con ${expertName}`,
 			description: 'Sesión programada',
-			start: this.formatDateArray(startDateTime),
-			end: this.formatDateArray(endDateTime),
+			start: this.formatUtcDateArrayFromMoment(startDateTime),
+			end: this.formatUtcDateArrayFromMoment(endDateTime),
+			startInputType: 'utc',
+			endInputType: 'utc',
+			startOutputType: 'utc',
+			endOutputType: 'utc',
 			location: conferenceLink || 'Reunión virtual',
 			...(isValidUrl(conferenceLink) && conferenceLink && { url: conferenceLink }),
 			status: 'CONFIRMED',

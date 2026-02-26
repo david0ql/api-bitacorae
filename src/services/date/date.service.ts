@@ -1,16 +1,19 @@
 import { Injectable } from '@nestjs/common'
 import { format, isValid } from 'date-fns'
 import { es } from 'date-fns/locale'
+import * as moment from 'moment-timezone'
 
 @Injectable()
 export class DateService {
+	private static readonly DEFAULT_TIMEZONE = 'America/Bogota'
 	/**
 	 * Convierte un string `yyyy-MM-dd HH:mm:ss` o un Date a un Date (sin tocar la hora enviada)
 	 */
 	parseToDate(input: string | Date): Date {
 		if (typeof input === 'string') {
-			const parsedDate = new Date(input.replace(' ', 'T')) // '2025-04-25 10:00:00' -> '2025-04-25T10:00:00'
-			if (!isValid(parsedDate)) {
+			const parsedMoment = moment.tz(input, 'YYYY-MM-DD HH:mm:ss', DateService.DEFAULT_TIMEZONE)
+			const parsedDate = parsedMoment.toDate()
+			if (!parsedMoment.isValid() || !isValid(parsedDate)) {
 				throw new Error(`Fecha inválida: ${input}`)
 			}
 			return parsedDate
@@ -46,8 +49,9 @@ export class DateService {
 	 */
 	formatDate(date: Date): string {
 		const parsedDate = this.parseToDate(date)
-		const sessionDate = format(parsedDate, 'dd MMMM yyyy', { locale: es })
-		const sessionTime = format(parsedDate, 'hh:mm a', { locale: es })
+		const bogotaDate = moment(parsedDate).tz(DateService.DEFAULT_TIMEZONE).toDate()
+		const sessionDate = format(bogotaDate, 'dd MMMM yyyy', { locale: es })
+		const sessionTime = format(bogotaDate, 'hh:mm a', { locale: es })
 
 		return `${sessionDate} a las ${sessionTime}`
 	}
