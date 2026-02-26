@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { In } from 'typeorm'
 import { RequestAttachment } from 'src/entities/RequestAttachment'
 import { DynamicDatabaseService } from '../dynamic-database/dynamic-database.service'
@@ -32,6 +32,25 @@ export class RequestAttachmentService {
 		return originalName || `Archivo ${index + 1}`
 	}
 
+	private sanitizeExternalPath(externalPath?: string) {
+		const cleanedExternal = externalPath?.trim()
+		if (!cleanedExternal) return null
+
+		if (/^file:\/\//i.test(cleanedExternal)) {
+			throw new BadRequestException('No se permiten rutas locales (file://). Debe subir el archivo o usar un enlace https://')
+		}
+
+		if (/^[a-zA-Z]:\\/.test(cleanedExternal) || cleanedExternal.startsWith('/')) {
+			throw new BadRequestException('No se permiten rutas locales del equipo. Debe subir el archivo al sistema')
+		}
+
+		if (!/^https?:\/\//i.test(cleanedExternal)) {
+			throw new BadRequestException('El enlace externo debe iniciar con http:// o https://')
+		}
+
+		return cleanedExternal
+	}
+
 	async createAttachments(options: {
 		businessName: string
 		requestType: RequestAttachmentType
@@ -42,6 +61,7 @@ export class RequestAttachmentService {
 		externalPath?: string
 	}) {
 		const { businessName, requestType, requestId, folder, files = [], name, externalPath } = options
+		const sanitizedExternalPath = this.sanitizeExternalPath(externalPath)
 		await this.ensureHomologated(businessName)
 
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
@@ -67,8 +87,8 @@ export class RequestAttachmentService {
 						})
 					)
 				})
-			} else if (externalPath) {
-				const cleanedExternal = externalPath.trim()
+			} else if (sanitizedExternalPath) {
+				const cleanedExternal = sanitizedExternalPath
 				const fallbackName = cleanedExternal.split('/').pop() || 'Enlace externo'
 				attachments.push(
 					requestAttachmentRepository.create({
