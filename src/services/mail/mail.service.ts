@@ -58,14 +58,16 @@ Handlebars.registerHelper('sanitizeHtmlEmail', (html: string) => {
 export class MailService {
 	private static readonly DEFAULT_TIMEZONE = 'America/Bogota'
 	private partialsDir = path.join(process.cwd(), 'src', 'services', 'mail', 'templates', 'partials')
-	private varCommons = {
+	private readonly varCommonsDefaults = {
 		year: new Date().getFullYear(),
 		companyName: 'Bitácora-e',
+		operatorName: '',
 		programName: 'Consultorio Empresarial de Colsubsidio operado por BICTIA',
 		webUrl: envVars.WEB_URL,
 		logoUrl: `${envVars.APP_URL}/assets/email/logo_bictoria.jpg`,
 		notificationEmail: '',
 	}
+	private varCommons = { ...this.varCommonsDefaults }
 
 	constructor(
 		private readonly mailerService: MailerService,
@@ -85,6 +87,7 @@ export class MailService {
 
 	private async getPlatformVars(businessName: string) {
 		console.log('🔧 [MAIL SERVICE] getPlatformVars iniciado para business:', businessName)
+		this.varCommons = { ...this.varCommonsDefaults }
 		
 		if (!businessName) {
 			console.log('⚠️ [MAIL SERVICE] getPlatformVars: businessName vacío')
@@ -107,9 +110,15 @@ export class MailService {
 			
 			console.log('🔧 [MAIL SERVICE] Configuración de plataforma encontrada:', {
 				logoPath: platform?.logoPath,
+				operatorName: platform?.operatorName,
 				programName: platform?.programName,
 				notificationEmail: platform?.notificationEmail
 			})
+
+			if(platform?.operatorName) {
+				this.varCommons.operatorName = platform.operatorName
+				console.log('🔧 [MAIL SERVICE] Operator name actualizado:', this.varCommons.operatorName)
+			}
 			
 			if(platform?.logoPath) {
 				this.varCommons.logoUrl = `${envVars.APP_URL}/${platform.logoPath}`
@@ -129,6 +138,7 @@ export class MailService {
 			console.log('🔧 [MAIL SERVICE] Variables comunes finales:', {
 				year: this.varCommons.year,
 				companyName: this.varCommons.companyName,
+				operatorName: this.varCommons.operatorName,
 				programName: this.varCommons.programName,
 				webUrl: this.varCommons.webUrl,
 				logoUrl: this.varCommons.logoUrl,

@@ -69,6 +69,13 @@ export class SessionService {
 		return normalized || fallback
 	}
 
+	private buildBusinessMailDisplayName(userName?: string, socialReason?: string) {
+		const safeUserName = userName?.trim() || ''
+		const safeSocialReason = socialReason?.trim() || ''
+		if (safeUserName && safeSocialReason) return `${safeUserName} - ${safeSocialReason}`
+		return safeUserName || safeSocialReason || ''
+	}
+
 	private async getSessionWithRelations(id: number, businessName: string) {
 		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
 		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
@@ -295,17 +302,18 @@ export class SessionService {
 				console.log('📅 [SESSION CREATE] Fecha formateada:', sessionDateFormat)
 
 				const { email: businessEmail, name: businessUserName } = accompaniment.business?.user || { email: '', name: '' }
+				const businessDisplayName = this.buildBusinessMailDisplayName(businessUserName, accompaniment.business?.socialReason)
 				const { email: expertMail, name: expertName } = accompaniment.expert?.user || { email: '', name: '' }
 
 				console.log('👥 [SESSION CREATE] Datos de usuarios:')
 				console.log('  - Business email:', businessEmail)
-				console.log('  - Business name:', businessUserName)
+				console.log('  - Business name:', businessDisplayName)
 				console.log('  - Expert email:', expertMail)
 				console.log('  - Expert name:', expertName)
 
 				const emailContext = {
 					to: businessEmail,
-					businessName: businessUserName,
+					businessName: businessDisplayName,
 					expertName,
 					expertMail,
 					startDate: session.startDatetime,
@@ -813,12 +821,13 @@ export class SessionService {
 			try {
 				const sessionDateTime = this.dateService.formatDate(this.dateService.parseToDate(session.startDatetime))
 				const { email: businessEmail, name: businessUserName } = session.accompaniment?.business?.user || { email: '', name: '' }
+				const businessDisplayName = this.buildBusinessMailDisplayName(businessUserName, session.accompaniment?.business?.socialReason)
 				const { email: expertMail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
 
 				this.mailService.sendEndedSessionEmail({
 					sessionId: session.id,
 					to: businessEmail,
-					businessName: businessUserName,
+					businessName: businessDisplayName,
 					expertName,
 					expertMail,
 					sessionDateTime
@@ -866,13 +875,14 @@ export class SessionService {
 
 			try {
 				const { email: businessEmail, name: businessUserName } = session.accompaniment?.business?.user || { email: '', name: '' }
+				const businessDisplayName = this.buildBusinessMailDisplayName(businessUserName, session.accompaniment?.business?.socialReason)
 				const { email: expertMail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
 				
 				const sessionDate = this.dateService.formatDate(session.startDatetime)
 
 				this.mailService.sendApprovedSessionEmailContext({
 					to: businessEmail,
-					businessName: businessUserName,
+					businessName: businessDisplayName,
 					expertName: expertName,
 					expertMail,
 					sessionDateTime: sessionDate,

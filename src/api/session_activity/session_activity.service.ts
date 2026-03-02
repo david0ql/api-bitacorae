@@ -30,6 +30,13 @@ export class SessionActivityService {
 		private readonly requestAttachmentService: RequestAttachmentService
 	) {}
 
+	private buildBusinessMailDisplayName(userName?: string, socialReason?: string) {
+		const safeUserName = userName?.trim() || ''
+		const safeSocialReason = socialReason?.trim() || ''
+		if (safeUserName && safeSocialReason) return `${safeUserName} - ${safeSocialReason}`
+		return safeUserName || safeSocialReason || ''
+	}
+
 	async create(user: JwtUser, createSessionActivityDto: CreateSessionActivityDto, businessName: string, files?: Express.Multer.File[]) {
 		console.log('🚀 [SESSION ACTIVITY CREATE] Iniciando creación de actividad de sesión')
 		console.log('📝 [SESSION ACTIVITY CREATE] DTO recibido:', JSON.stringify(createSessionActivityDto, null, 2))
@@ -103,7 +110,8 @@ export class SessionActivityService {
 				const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
 				const dueDateTime = dueDatetime ? this.dateService.formatDate(new Date(dueDatetime)) : 'No especificada'
 
-				const { email: businessEmail, name: businessDisplayName } = session.accompaniment?.business?.user || { email: '', name: '' }
+				const { email: businessEmail, name: businessUserName } = session.accompaniment?.business?.user || { email: '', name: '' }
+				const businessDisplayName = this.buildBusinessMailDisplayName(businessUserName, session.accompaniment?.business?.socialReason)
 				const { email: expertEmail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
 
 				this.mailService.sendNewSessionActivityEmail({
@@ -309,7 +317,8 @@ export class SessionActivityService {
 
 				if (session) {
 					const sessionDateTime = this.dateService.formatDate(new Date(session.startDatetime))
-					const { email: businessEmail, name: businessDisplayName } = session.accompaniment?.business?.user || { email: '', name: '' }
+					const { email: businessEmail, name: businessUserName } = session.accompaniment?.business?.user || { email: '', name: '' }
+					const businessDisplayName = this.buildBusinessMailDisplayName(businessUserName, session.accompaniment?.business?.socialReason)
 					const { email: expertEmail, name: expertName } = session.accompaniment?.expert?.user || { email: '', name: '' }
 
 					this.mailService.sendRespondedSessionEmail({
