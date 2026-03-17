@@ -208,7 +208,7 @@ export class MailService {
 	async sendWelcomeEmail(context: WelcomeEmailContext, businessName: string) {
 		await this.getPlatformVars(businessName)
 
-		const { name, email, password } = context
+		const { name, email, password, role } = context
 		const { notificationEmail } = this.varCommons
 
 		const subject = 'Bienvenido a Bitácora-e'
@@ -223,7 +223,8 @@ export class MailService {
 				title: subject,
 				name,
 				email,
-				password
+				password,
+				role
 			}
 		})
 	}

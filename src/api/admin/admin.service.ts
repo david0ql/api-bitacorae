@@ -107,7 +107,8 @@ export class AdminService {
 				this.mailService.sendWelcomeEmail({
 					name: `${firstName} ${lastName}`,
 					email,
-					password
+					password,
+					role: 'Administrador'
 				}, businessName)
 			} catch (e) {
 				console.error('Error sending welcome email:', e)

@@ -107,7 +107,8 @@ export class AuditorService {
 				this.mailService.sendWelcomeEmail({
 					name: `${firstName} ${lastName}`,
 					email,
-					password
+					password,
+					role: 'Auditor'
 				}, businessName)
 			} catch (e) {
 				console.error('Error sending welcome email:', e)

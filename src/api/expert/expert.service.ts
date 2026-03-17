@@ -265,7 +265,8 @@ export class ExpertService {
 				await this.mailService.sendWelcomeEmail({
 					name: `${firstName} ${lastName}`,
 					email,
-					password
+					password,
+					role: 'Experto'
 				}, businessName)
 			} catch (e) {
 				console.error('Error sending welcome email:', e)
@@ -565,7 +566,8 @@ export class ExpertService {
 					welcomeUsers.push({
 						name: `${data.expert_first_name} ${data.expert_last_name}`,
 						email: data.expert_email,
-						password: data.expert_password
+						password: data.expert_password,
+						role: 'Experto'
 					})
 				} catch (e) {
 					console.error(`Error inserting expert row ${row.rowIndex}:`, e)

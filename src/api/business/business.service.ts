@@ -373,7 +373,8 @@ export class BusinessService {
 				await this.mailService.sendWelcomeEmail({
 					name: socialReason,
 					email,
-					password
+					password,
+					role: 'Empresa'
 				}, businessName)
 			} catch (e) {
 				console.error('Error sending welcome email:', e)
@@ -770,7 +771,8 @@ export class BusinessService {
 					welcomeUsers.push({
 						name: data.business_social_reason,
 						email: data.business_email,
-						password: data.business_password
+						password: data.business_password,
+						role: 'Empresa'
 					})
 				} catch (e) {
 					console.error(`Error inserting business row ${row.rowIndex}:`, e)
