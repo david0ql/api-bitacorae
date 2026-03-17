@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, HttpCode, UseGuards, Query, UseInterceptors, UploadedFiles } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, HttpCode, UseGuards, Query, UseInterceptors, UploadedFiles, UploadedFile } from '@nestjs/common'
 
 import { SessionActivityService } from './session_activity.service'
 import { SessionActivity } from 'src/entities/SessionActivity'
@@ -53,7 +53,7 @@ export class SessionActivityController {
 	@UseInterceptors(FileUploadInterceptor('file', 'session-activity'))
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({ type: RespondSessionActivityDto })
-	respond(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() respondDto: RespondSessionActivityDto, @BusinessName() businessName: string, @UploadedFiles() file?: Express.Multer.File) {
+	respond(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() respondDto: RespondSessionActivityDto, @BusinessName() businessName: string, @UploadedFile() file?: Express.Multer.File) {
 		return this.sessionActivityService.respond(user, +id, respondDto, businessName, file)
 	}
 

@@ -20,7 +20,8 @@ export class RequestAttachmentService {
 	}
 
 	private getFileUrl(filePath?: string | null, externalPath?: string | null) {
-		if (externalPath) return externalPath
+		const cleanExternal = externalPath?.trim() || null
+		if (cleanExternal) return cleanExternal
 		if (!filePath) return null
 		return filePath.startsWith('http') ? filePath : `${envVars.APP_URL}/${filePath}`
 	}

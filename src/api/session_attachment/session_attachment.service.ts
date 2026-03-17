@@ -54,13 +54,12 @@ export class SessionAttachmentService {
 			])
 			
 			// Map items to include fileUrl with full URL
-			const mappedItems = items.map(item => ({
-				...item,
-				fileUrl: item.externalPath
-					? item.externalPath
-					: (item.filePath ? (item.filePath.startsWith('http') ? item.filePath : `${envVars.APP_URL}/${item.filePath}`) : null),
-				sessionId: item.requestId
-			}))
+			const mappedItems = items.map(item => {
+				const externalPath = item.externalPath?.trim() || null
+				const fileUrl = externalPath
+					?? (item.filePath ? (item.filePath.startsWith('http') ? item.filePath : `${envVars.APP_URL}/${item.filePath}`) : null)
+				return { ...item, fileUrl, sessionId: item.requestId }
+			})
 			
 			const pageMetaDto = new PageMetaDto({ pageOptionsDto, totalCount })
 			return new PageDto(mappedItems, pageMetaDto)

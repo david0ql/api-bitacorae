@@ -356,9 +356,11 @@ export class SessionActivityService {
 
 		try {
 			const sessionActivityResponseRepository = businessDataSource.getRepository(SessionActivityResponse)
-			return await sessionActivityResponseRepository.update(id, { 
-				grade, 
-				gradedDatetime: this.dateService.getNow() 
+			const response = await sessionActivityResponseRepository.findOne({ where: { sessionActivityId: id } })
+			if (!response) throw new BadRequestException(`No se encontró una respuesta para la actividad con id ${id}`)
+			return await sessionActivityResponseRepository.update(response.id, {
+				grade,
+				gradedDatetime: this.dateService.getNow()
 			})
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
