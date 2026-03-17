@@ -509,7 +509,7 @@ export class ExpertService {
 				rowsToCreate.push({ rowIndex, data: parsed })
 			}
 
-			const welcomeUsers: { name: string; email: string; password: string }[] = []
+			const welcomeUsers: { name: string; email: string; password: string; role: string }[] = []
 			let created = 0
 
 			for (const row of rowsToCreate) {
