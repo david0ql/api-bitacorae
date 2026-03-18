@@ -88,16 +88,17 @@ export class RequestAttachmentService {
 						})
 					)
 				})
-			} else if (sanitizedExternalPath) {
-				const cleanedExternal = sanitizedExternalPath
-				const fallbackName = cleanedExternal.split('/').pop() || 'Enlace externo'
+			}
+
+			if (sanitizedExternalPath) {
+				const fallbackName = sanitizedExternalPath.split('/').pop() || 'Enlace externo'
 				attachments.push(
 					requestAttachmentRepository.create({
 						requestType,
 						requestId,
 						name: name?.trim() || fallbackName,
 						filePath: null,
-						externalPath: cleanedExternal
+						externalPath: sanitizedExternalPath
 					})
 				)
 			}
