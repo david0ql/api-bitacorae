@@ -5,7 +5,6 @@ import { ServeStaticModule } from '@nestjs/serve-static'
 import { join } from 'path'
 
 import { MailModule } from './services/mail/mail.module'
-import { RedisModule } from './services/redis/redis.module'
 import { DynamicDatabaseModule } from './services/dynamic-database/dynamic-database.module'
 import { BusinessHeaderMiddleware } from './middleware/business-header.middleware'
 import { AuthModule } from './api/auth/auth.module'
@@ -77,7 +76,6 @@ import envVars from './config/env'
 			timezone: 'local'
 		}),
 		MailModule,
-		RedisModule,
 		DynamicDatabaseModule,
 		AuthModule,
 		BusinessModule,

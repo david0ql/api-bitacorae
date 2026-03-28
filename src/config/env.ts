@@ -10,8 +10,6 @@ interface EnvVars {
 	DB_ALIAS_ADMIN: string;
 	JWT_SECRET: string;
 	PORT: number;
-	REDIS_HOST: string;
-	REDIS_PORT: number;
 	UPLOADS_DIR: string;
 	APP_URL: string;
 	WEB_URL: string;
@@ -33,8 +31,6 @@ const envSchema = joi
 		DB_ALIAS_ADMIN: joi.string().required(),
 		JWT_SECRET: joi.string().required(),
 		PORT: joi.number().required(),
-		REDIS_HOST: joi.string().required(),
-		REDIS_PORT: joi.number().required(),
 		UPLOADS_DIR: joi.string().required(),
 		APP_URL: joi.string().required(),
 		WEB_URL: joi.string().required(),

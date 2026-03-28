@@ -6,7 +6,6 @@ import { AuthService } from './auth.service'
 import { AuthController } from './auth.controller'
 import { Business } from 'src/entities/admin/Business'
 import { DynamicDatabaseModule } from 'src/services/dynamic-database/dynamic-database.module'
-import { RedisService } from 'src/services/redis/redis.service'
 
 import { JwtStrategy } from './strategies/jwt.strategy'
 import { JwtAuthGuard } from './guards/jwt-auth.guard'
@@ -24,7 +23,7 @@ import envVars from 'src/config/env'
 		})
 	],
 	controllers: [AuthController],
-	providers: [AuthService, JwtStrategy, JwtAuthGuard, PermissionsGuard, RedisService],
+	providers: [AuthService, JwtStrategy, JwtAuthGuard, PermissionsGuard],
 	exports: [JwtModule, JwtAuthGuard, PermissionsGuard]
 })
 
