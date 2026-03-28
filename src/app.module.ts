@@ -2,9 +2,12 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common'
 import { CacheModule } from '@nestjs/cache-manager'
 import { ServeStaticModule } from '@nestjs/serve-static'
+import { APP_INTERCEPTOR } from '@nestjs/core'
 import { join } from 'path'
 
 import { MailModule } from './services/mail/mail.module'
+import { CacheInvalidationInterceptor } from './services/cache/cache-invalidation.interceptor'
+import { CacheInvalidationService } from './services/cache/cache-invalidation.service'
 import { DynamicDatabaseModule } from './services/dynamic-database/dynamic-database.module'
 import { BusinessHeaderMiddleware } from './middleware/business-header.middleware'
 import { AuthModule } from './api/auth/auth.module'
@@ -114,7 +117,13 @@ import envVars from './config/env'
 		AuditorModule
 	],
 	controllers: [],
-	providers: []
+	providers: [
+		CacheInvalidationService,
+		{
+			provide: APP_INTERCEPTOR,
+			useClass: CacheInvalidationInterceptor
+		}
+	]
 })
 
 export class AppModule implements NestModule {
