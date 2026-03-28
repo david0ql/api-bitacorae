@@ -1,5 +1,5 @@
 import { In, Repository } from 'typeorm'
-import { BadRequestException, Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import * as bcrypt from 'bcrypt'
 
 import { User } from 'src/entities/User'
@@ -200,15 +200,37 @@ export class UserService {
 			`
 		}
 
+		if(!sql) {
+			throw new BadRequestException('El rol del usuario no es compatible con la carga del perfil')
+		}
+
 		console.log('🔍 [USER SERVICE] findOne - roleId:', roleId, 'userId:', userId, 'sql length:', sql.length)
 
 		return await this.dynamicEntityService.executeWithBusinessConnection(
 			businessName,
 			async (dataSource) => {
 				const result = await dataSource.query(sql, [envVars.APP_URL, envVars.UPLOADS_DIR, userId])
+				if (!result[0]) {
+					throw new NotFoundException(this.getMissingProfileMessage(roleId))
+				}
 				return result[0]
 			}
 		)
+	}
+
+	private getMissingProfileMessage(roleId: number) {
+		switch (roleId) {
+		case 1:
+			return 'El usuario administrador no tiene perfil asociado en la tabla admin'
+		case 2:
+			return 'El usuario auditor no tiene perfil asociado en la tabla auditor'
+		case 3:
+			return 'El usuario consultor no tiene perfil asociado en la tabla expert'
+		case 4:
+			return 'El usuario empresa no tiene perfil completo asociado en business/contact_information'
+		default:
+			return 'El usuario no tiene un perfil compatible para cargar la información'
+		}
 	}
 
 	async changePassword(user: JwtUser, changePasswordDto: ChangePasswordDto, businessName: string) {

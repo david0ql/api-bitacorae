@@ -1,5 +1,5 @@
-import { Repository } from 'typeorm'
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common'
+import { DataSource, Repository } from 'typeorm'
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import * as bcrypt from 'bcrypt'
 
@@ -39,6 +39,7 @@ export class AuthService {
 			if (!user) throw new NotFoundException('Usuario no encontrado')
 			if (!user.active) throw new UnauthorizedException('El usuario está inactivo')
 			if (!bcrypt.compareSync(password, user.password)) throw new NotFoundException('Credenciales inválidas')
+			await this.ensureUserProfileExists(businessDataSource, user.id, user.roleId)
 
 			const payload = { id: user.id, roleId: user.roleId, email, businessName }
 
@@ -48,6 +49,43 @@ export class AuthService {
 			}
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
+		}
+	}
+
+	private async ensureUserProfileExists(dataSource: DataSource, userId: number, roleId: number) {
+		let query = ''
+		let message = ''
+
+		switch (roleId) {
+		case 1:
+			query = 'SELECT 1 FROM admin WHERE user_id = ? LIMIT 1'
+			message = 'El usuario administrador no tiene perfil asociado en la tabla admin'
+			break
+		case 2:
+			query = 'SELECT 1 FROM auditor WHERE user_id = ? LIMIT 1'
+			message = 'El usuario auditor no tiene perfil asociado en la tabla auditor'
+			break
+		case 3:
+			query = 'SELECT 1 FROM expert WHERE user_id = ? LIMIT 1'
+			message = 'El usuario consultor no tiene perfil asociado en la tabla expert'
+			break
+		case 4:
+			query = `
+				SELECT 1
+				FROM business b
+				INNER JOIN contact_information ci ON ci.business_id = b.id
+				WHERE b.user_id = ?
+				LIMIT 1
+			`
+			message = 'El usuario empresa no tiene perfil completo asociado en business/contact_information'
+			break
+		default:
+			throw new BadRequestException('El rol del usuario no es compatible con el inicio de sesión')
+		}
+
+		const [rows] = await dataSource.query(query, [userId])
+		if (!rows?.length) {
+			throw new BadRequestException(message)
 		}
 	}
 
