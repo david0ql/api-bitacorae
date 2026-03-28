@@ -83,7 +83,7 @@ export class AuthService {
 			throw new BadRequestException('El rol del usuario no es compatible con el inicio de sesión')
 		}
 
-		const [rows] = await dataSource.query(query, [userId])
+		const rows = await dataSource.query(query, [userId])
 		if (!rows?.length) {
 			throw new BadRequestException(message)
 		}
