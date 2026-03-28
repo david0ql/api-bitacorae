@@ -17,6 +17,7 @@ import { ProductStatus } from 'src/entities/ProductStatus'
 import { MarketScope } from 'src/entities/MarketScope'
 import { Cohort } from 'src/entities/Cohort'
 import { ContactInformation } from 'src/entities/ContactInformation'
+import { Service } from 'src/entities/Service'
 
 import { PageDto } from 'src/dto/page.dto'
 import { PageMetaDto } from 'src/dto/page-meta.dto'
@@ -39,6 +40,7 @@ type CatalogKey =
 	| 'educationLevels'
 	| 'economicActivities'
 	| 'businessSizes'
+	| 'services'
 	| 'positions'
 	| 'productStatuses'
 	| 'marketScopes'
@@ -99,6 +101,7 @@ export class BusinessService {
 			{ key: 'business_email', required: true, type: 'string' },
 			{ key: 'business_economic_activity_ids', required: true, type: 'numberArray', catalog: 'economicActivities' },
 			{ key: 'business_size_id', required: true, type: 'number', catalog: 'businessSizes' },
+			{ key: 'business_service_id', required: true, type: 'number', catalog: 'services' },
 			{ key: 'business_number_of_employees', required: true, type: 'number' },
 			{ key: 'business_last_year_sales', required: true, type: 'number' },
 			{ key: 'business_two_years_ago_sales', required: true, type: 'number' },
@@ -132,6 +135,7 @@ export class BusinessService {
 			educationLevels,
 			economicActivities,
 			businessSizes,
+			services,
 			positions,
 			productStatuses,
 			marketScopes,
@@ -143,6 +147,7 @@ export class BusinessService {
 			dataSource.getRepository(EducationLevel).find({ select: { id: true, name: true }, order: { id: 'ASC' } }),
 			dataSource.getRepository(EconomicActivity).find({ select: { id: true, name: true }, order: { id: 'ASC' } }),
 			dataSource.getRepository(BusinessSize).find({ select: { id: true, name: true }, order: { id: 'ASC' } }),
+			dataSource.getRepository(Service).find({ select: { id: true, name: true }, order: { name: 'ASC' } }),
 			dataSource.getRepository(Position).find({ select: { id: true, name: true }, order: { id: 'ASC' } }),
 			dataSource.getRepository(ProductStatus).find({ select: { id: true, name: true }, order: { id: 'ASC' } }),
 			dataSource.getRepository(MarketScope).find({ select: { id: true, name: true }, order: { id: 'ASC' } }),
@@ -156,6 +161,7 @@ export class BusinessService {
 			educationLevels,
 			economicActivities,
 			businessSizes,
+			services,
 			positions,
 			productStatuses,
 			marketScopes,
@@ -250,6 +256,7 @@ export class BusinessService {
 			email,
 			economicActivities,
 			businessSizeId,
+			serviceId,
 			numberOfEmployees,
 			lastYearSales,
 			twoYearsAgoSales,
@@ -291,6 +298,7 @@ export class BusinessService {
 			const userRepository = businessDataSource.getRepository(User)
 			const economicActivityRepository = businessDataSource.getRepository(EconomicActivity)
 			const strengtheningAreaRepository = businessDataSource.getRepository(StrengtheningArea)
+			const serviceRepository = businessDataSource.getRepository(Service)
 			const businessRepository = businessDataSource.getRepository(Business)
 
 			const existingUser = await userRepository.findOne({ where: { email } })
@@ -323,6 +331,11 @@ export class BusinessService {
 				id: In(strengtheningAreas)
 			})
 
+			const service = await serviceRepository.findOne({ where: { id: serviceId } })
+			if (!service) {
+				throw new BadRequestException(`No se encontró un servicio con el ID ${serviceId}`)
+			}
+
 			const savedBusiness = await businessRepository.save(
 				businessRepository.create({
 					userId: newUser.id,
@@ -334,6 +347,7 @@ export class BusinessService {
 					email,
 					economicActivities: economicActivityEntities,
 					businessSizeId,
+					serviceId: service.id,
 					numberOfEmployees,
 					lastYearSales,
 					twoYearsAgoSales,
@@ -434,6 +448,7 @@ export class BusinessService {
 			business_email: 'empresa@ejemplo.com',
 			business_economic_activity_ids: catalogs.economicActivities.slice(0, 2).map((item) => item.id).join(','),
 			business_size_id: catalogs.businessSizes[0]?.id ?? 1,
+			business_service_id: catalogs.services[0]?.id ?? 1,
 			business_number_of_employees: 10,
 			business_last_year_sales: 1000000,
 			business_two_years_ago_sales: 900000,
@@ -464,9 +479,10 @@ export class BusinessService {
 			'2) Las columnas con sufijo _id deben usar IDs de la hoja Catalogos.',
 			'3) Las columnas con sufijo _ids aceptan multiples IDs separados por coma (ej: 1,2,3).',
 			'4) business_has_founded_before debe ser true o false (tambien acepta si/no).',
-			'5) business_evidence_url es obligatorio. Use una URL publica o una ruta relativa.',
-			'6) business_password es obligatorio. Se enviara al correo de la empresa.',
-			'7) Si hay errores, el sistema devolvera la fila y el campo a corregir.'
+			'5) business_service_id es obligatorio y debe usar un ID valido de la hoja Catalogos.',
+			'6) business_evidence_url es obligatorio. Use una URL publica o una ruta relativa.',
+			'7) business_password es obligatorio. Se enviara al correo de la empresa.',
+			'8) Si hay errores, el sistema devolvera la fila y el campo a corregir.'
 		]
 		tutorialLines.forEach((line) => tutorialSheet.addRow([line]))
 
@@ -494,6 +510,7 @@ export class BusinessService {
 		addCatalog('Education levels', catalogs.educationLevels)
 		addCatalog('Economic activities', catalogs.economicActivities)
 		addCatalog('Business sizes', catalogs.businessSizes)
+		addCatalog('Services', catalogs.services)
 		addCatalog('Positions', catalogs.positions)
 		addCatalog('Product statuses', catalogs.productStatuses)
 		addCatalog('Market scopes', catalogs.marketScopes)
@@ -556,6 +573,7 @@ export class BusinessService {
 				educationLevels: new Set(catalogs.educationLevels.map((item) => item.id)),
 				economicActivities: new Set(catalogs.economicActivities.map((item) => item.id)),
 				businessSizes: new Set(catalogs.businessSizes.map((item) => item.id)),
+				services: new Set(catalogs.services.map((item) => item.id)),
 				positions: new Set(catalogs.positions.map((item) => item.id)),
 				productStatuses: new Set(catalogs.productStatuses.map((item) => item.id)),
 				marketScopes: new Set(catalogs.marketScopes.map((item) => item.id)),
@@ -705,6 +723,7 @@ export class BusinessService {
 								email: data.business_email,
 								economicActivities: economicActivityEntities,
 								businessSizeId: data.business_size_id,
+								serviceId: data.business_service_id,
 								numberOfEmployees: data.business_number_of_employees,
 								lastYearSales: data.business_last_year_sales,
 								twoYearsAgoSales: data.business_two_years_ago_sales,
@@ -835,6 +854,7 @@ export class BusinessService {
 				SELECT
 					b.id AS id,
 					b.social_reason AS socialReason,
+					srv.name AS serviceName,
 					dt.name AS documentType,
 					b.document_number AS documentNumber,
 					DATE_FORMAT(b.created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
@@ -845,6 +865,7 @@ export class BusinessService {
 					business b
 					INNER JOIN user u ON u.id = b.user_id
 					INNER JOIN document_type dt ON dt.id = b.document_type_id
+					LEFT JOIN service srv ON srv.id = b.service_id
 					LEFT JOIN contact_information c ON c.business_id = b.id
 					LEFT JOIN accompaniment a ON a.business_id = b.id
 					LEFT JOIN session s ON s.accompaniment_id = a.id
@@ -910,7 +931,7 @@ export class BusinessService {
 			const businessRepository = businessDataSource.getRepository(Business)
 			const business = await businessRepository.findOne({
 				where: { id },
-				relations: ['economicActivities', 'strengtheningAreas', 'marketScope', 'productStatus']
+				relations: ['economicActivities', 'strengtheningAreas', 'marketScope', 'productStatus', 'service']
 			})
 
 			if (!business) return null
@@ -971,6 +992,7 @@ export class BusinessService {
 			const businessRepository = businessDataSource.getRepository(Business)
 			const economicActivityRepository = businessDataSource.getRepository(EconomicActivity)
 			const strengtheningAreaRepository = businessDataSource.getRepository(StrengtheningArea)
+			const serviceRepository = businessDataSource.getRepository(Service)
 
 			const existingBusiness = await businessRepository.findOne({
 				where: { id },
@@ -996,6 +1018,16 @@ export class BusinessService {
 			existingBusiness.strengtheningAreas = strengtheningAreaEntities
 		}
 
+		if (updateBusinessDto.serviceId !== undefined) {
+			const service = await serviceRepository.findOne({ where: { id: updateBusinessDto.serviceId } })
+			if (!service) {
+				throw new BadRequestException(`No se encontró un servicio con el ID ${updateBusinessDto.serviceId}`)
+			}
+			existingBusiness.serviceId = service.id
+		} else if (!existingBusiness.serviceId) {
+			throw new BadRequestException('El servicio es obligatorio para actualizar la empresa')
+		}
+
 		if (primaryFilePath) {
 			existingBusiness.evidence = primaryFilePath
 		}
@@ -1019,7 +1051,7 @@ export class BusinessService {
 		// Return with relations
 		const updatedBusiness = await businessRepository.findOne({
 			where: { id },
-			relations: ['economicActivities', 'strengtheningAreas'],
+			relations: ['economicActivities', 'strengtheningAreas', 'service'],
 			select: {
 				id: true,
 				userId: true,
@@ -1030,6 +1062,7 @@ export class BusinessService {
 				phone: true,
 				email: true,
 				businessSizeId: true,
+				serviceId: true,
 				numberOfEmployees: true,
 				lastYearSales: true,
 				twoYearsAgoSales: true,
@@ -1056,6 +1089,10 @@ export class BusinessService {
 					name: true
 				},
 				strengtheningAreas: {
+					id: true,
+					name: true
+				},
+				service: {
 					id: true,
 					name: true
 				}

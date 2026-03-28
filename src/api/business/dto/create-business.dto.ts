@@ -86,6 +86,15 @@ export class CreateBusinessDto {
 	readonly businessSizeId: number
 
 	@ApiProperty({
+		description: 'Service ID',
+		example: 1
+	})
+	@IsNotEmpty()
+	@Type(() => Number)
+	@IsNumber()
+	readonly serviceId: number
+
+	@ApiProperty({
 		description: 'Number of employees',
 		example: 10
 	})

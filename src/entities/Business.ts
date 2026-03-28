@@ -21,10 +21,12 @@ import { Position } from "./Position";
 import { ProductStatus } from "./ProductStatus";
 import { MarketScope } from "./MarketScope";
 import { Cohort } from "./Cohort";
+import { Service } from "./Service";
 
 @Index("user_id", ["userId"], {})
 @Index("document_type_id", ["documentTypeId"], {})
 @Index("business_size_id", ["businessSizeId"], {})
+@Index("service_id", ["serviceId"], {})
 @Index("position_id", ["positionId"], {})
 @Index("product_status_id", ["productStatusId"], {})
 @Index("market_scope_id", ["marketScopeId"], {})
@@ -57,6 +59,9 @@ export class Business {
 
   @Column("int", { name: "business_size_id" })
   businessSizeId: number;
+
+  @Column("int", { name: "service_id", nullable: true })
+  serviceId: number | null;
 
   @Column("int", { name: "number_of_employees" })
   numberOfEmployees: number;
@@ -191,6 +196,13 @@ export class Business {
   })
   @JoinColumn([{ name: "business_size_id", referencedColumnName: "id" }])
   businessSize: BusinessSize;
+
+  @ManyToOne(() => Service, (service) => service.businesses, {
+    onDelete: "RESTRICT",
+    onUpdate: "RESTRICT",
+  })
+  @JoinColumn([{ name: "service_id", referencedColumnName: "id" }])
+  service: Service;
 
   @ManyToOne(() => Position, (position) => position.businesses, {
     onDelete: "RESTRICT",

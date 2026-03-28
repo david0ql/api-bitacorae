@@ -47,6 +47,7 @@ export class ReportService {
 					'accompaniment.business.user',
 					'accompaniment.business.economicActivities',
 					'accompaniment.business.businessSize',
+					'accompaniment.business.service',
 					'accompaniment.expert.user',
 					'accompaniment.expert.strengtheningAreas',
 					'accompaniment.expert.educationLevel',
@@ -67,6 +68,7 @@ export class ReportService {
 				.leftJoinAndSelect('business.user', 'user')
 				.leftJoinAndSelect('business.economicActivities', 'economicActivities')
 				.leftJoinAndSelect('business.businessSize', 'businessSize')
+				.leftJoinAndSelect('business.service', 'service')
 				.leftJoinAndSelect('business.accompaniments', 'accompaniments')
 				.leftJoinAndSelect('accompaniments.strengtheningAreas', 'strengtheningAreas')
 				.leftJoinAndSelect('accompaniments.expert', 'expert')
@@ -105,7 +107,8 @@ export class ReportService {
 					'accompaniments.business',
 					'accompaniments.business.user',
 					'accompaniments.business.economicActivities',
-					'accompaniments.business.businessSize'
+					'accompaniments.business.businessSize',
+					'accompaniments.business.service'
 				]
 			})
 		} finally {
@@ -177,6 +180,7 @@ export class ReportService {
 			bEmail: session.accompaniment?.business?.email || 'No registra.',
 			bEconomicActivity: session.accompaniment?.business?.economicActivities?.map(activity => activity.name).join(', ') || 'No registra.',
 			bBusinessSize: session.accompaniment?.business?.businessSize?.name || 'No registra.',
+			bService: session.accompaniment?.business?.service?.name || 'No registra.',
 			bFacebook: session.accompaniment?.business?.facebook || 'No registra.',
 			bInstagram: session.accompaniment?.business?.instagram || 'No registra.',
 			bTwitter: session.accompaniment?.business?.twitter || 'No registra.',
@@ -250,6 +254,7 @@ export class ReportService {
 			bEmail: business.email || 'No registra.',
 			bEconomicActivity: businessEconomicActivities.map(activity => activity.name).join(', ') || 'No registra.',
 			bBusinessSize: business.businessSize?.name || 'No registra.',
+			bService: business.service?.name || 'No registra.',
 			bFacebook: business.facebook || 'No registra.',
 			bInstagram: business.instagram || 'No registra.',
 			bTwitter: business.twitter || 'No registra.',
@@ -302,6 +307,7 @@ export class ReportService {
 					bEmail: business?.email || 'No registra.',
 					bEconomicActivity: businessEconomicActivities.map(activity => activity.name).join(', ') || 'No registra.',
 					bBusinessSize: business?.businessSize?.name || 'No registra.',
+					bService: business?.service?.name || 'No registra.',
 					bFacebook: business?.facebook || 'No registra.',
 					bInstagram: business?.instagram || 'No registra.',
 					bTwitter: business?.twitter || 'No registra.',
@@ -507,6 +513,7 @@ export class ReportService {
 				b.social_reason AS socialReason,
 				CONCAT(c.first_name, ' ', c.last_name) AS contactName,
 				bs.name AS businessSize,
+				srv.name AS serviceName,
 				b.assigned_hours AS assignedHours,
 				IFNULL(acc_stats.accompanimentsCount, 0) AS accompanimentsCount,
 				IFNULL(acc_stats.accompanimentHours, 0) AS accompanimentHours,
@@ -517,6 +524,7 @@ export class ReportService {
 			FROM business b
 			LEFT JOIN contact_information c ON c.business_id = b.id
 			LEFT JOIN business_size bs ON bs.id = b.business_size_id
+			LEFT JOIN service srv ON srv.id = b.service_id
 			LEFT JOIN (
 				SELECT
 					business_id,

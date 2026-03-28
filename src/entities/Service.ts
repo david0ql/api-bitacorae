@@ -4,9 +4,11 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
 import { StrengtheningLevel } from "./StrengtheningLevel";
+import { Business } from "./Business";
 
 @Index("service_strengthening_level_FK", ["levelId"], {})
 @Entity("service")
@@ -39,4 +41,7 @@ export class Service {
   )
   @JoinColumn([{ name: "level_id", referencedColumnName: "id" }])
   level: StrengtheningLevel;
+
+  @OneToMany(() => Business, (business) => business.service)
+  businesses: Business[];
 }

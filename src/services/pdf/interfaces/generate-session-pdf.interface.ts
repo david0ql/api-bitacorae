@@ -21,6 +21,7 @@ export interface GenerateSessionPdfData {
 	bEmail: string
 	bEconomicActivity: string
 	bBusinessSize: string
+	bService: string
 	bFacebook: string
 	bInstagram: string
 	bTwitter: string

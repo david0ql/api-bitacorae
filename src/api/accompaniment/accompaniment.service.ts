@@ -98,6 +98,7 @@ export class AccompanimentService {
 				SELECT
 					b.id AS id,
 					b.social_reason AS socialReason,
+					srv.name AS serviceName,
 					CONCAT(c.first_name, ' ', c.last_name) AS name,
 					CONCAT("${envVars.APP_URL}", "/", c.photo) AS photo,
 					bs.name AS size,
@@ -118,6 +119,7 @@ export class AccompanimentService {
 				FROM
 					business b
 					INNER JOIN business_size bs ON bs.id = b.business_size_id
+					LEFT JOIN service srv ON srv.id = b.service_id
 					LEFT JOIN contact_information c ON c.business_id = b.id
 					LEFT JOIN accompaniment a ON a.business_id = b.id
 					LEFT JOIN accompaniment_strengthening_area_rel asar ON asar.accompaniment_id = a.id
@@ -192,6 +194,7 @@ export class AccompanimentService {
 						ea.expert_id AS expertId,
 						ea.accompaniment_id AS accompanimentId,
 						b.social_reason AS socialReason,
+						srv.name AS serviceName,
 						CONCAT(c.first_name, ' ', c.last_name) AS name,
 						CONCAT("${envVars.APP_URL}", "/", c.photo) AS photo,
 						bs.name AS size,
@@ -212,6 +215,7 @@ export class AccompanimentService {
 					FROM
 						business b
 						INNER JOIN business_size bs ON bs.id = b.business_size_id
+						LEFT JOIN service srv ON srv.id = b.service_id
 						LEFT JOIN contact_information c ON c.business_id = b.id
 						INNER JOIN expert_accompaniment ea ON ea.business_id = b.id
 						LEFT JOIN accompaniment_strengthening_area_rel asar ON asar.accompaniment_id = ea.accompaniment_id
