@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
-import { In } from 'typeorm'
+import { In, Repository } from 'typeorm'
 
 import { Session } from 'src/entities/Session'
 import { Accompaniment } from 'src/entities/Accompaniment'
@@ -26,6 +26,8 @@ import { JwtUser } from '../auth/interfaces/jwt-user.interface'
 
 @Injectable()
 export class SessionService {
+	private static readonly HOURS_PRECISION = 2
+
 	constructor(
 		private readonly dynamicDbService: DynamicDatabaseService,
 		private readonly fileUploadService: FileUploadService,
@@ -74,6 +76,41 @@ export class SessionService {
 		const safeSocialReason = socialReason?.trim() || ''
 		if (safeUserName && safeSocialReason) return `${safeUserName} - ${safeSocialReason}`
 		return safeUserName || safeSocialReason || ''
+	}
+
+	private roundHours(value: number) {
+		return Number(value.toFixed(SessionService.HOURS_PRECISION))
+	}
+
+	private formatHours(value: number) {
+		const roundedValue = this.roundHours(Math.max(value, 0))
+		return Number.isInteger(roundedValue) ? String(roundedValue) : String(roundedValue)
+	}
+
+	private getSessionDurationHours(start: string | Date, end: string | Date) {
+		const startDate = this.dateService.parseToDate(start)
+		const endDate = this.dateService.parseToDate(end)
+
+		const durationMs = endDate.getTime() - startDate.getTime()
+		return durationMs / (1000 * 60 * 60)
+	}
+
+	private async getAssignedSessionHours(
+		sessionRepository: Repository<Session>,
+		accompanimentId: number,
+		excludeSessionId?: number
+	) {
+		const query = sessionRepository
+			.createQueryBuilder('session')
+			.select('COALESCE(SUM(TIMESTAMPDIFF(MINUTE, session.startDatetime, session.endDatetime)), 0)', 'assignedMinutes')
+			.where('session.accompanimentId = :accompanimentId', { accompanimentId })
+
+		if (excludeSessionId) {
+			query.andWhere('session.id != :excludeSessionId', { excludeSessionId })
+		}
+
+		const result = await query.getRawOne()
+		return this.roundHours(Number(result?.assignedMinutes || 0) / 60)
 	}
 
 	private async getSessionWithRelations(id: number, businessName: string) {
@@ -246,8 +283,7 @@ export class SessionService {
 			// Validar duración de la sesión
 			const startDate = new Date(startDatetime)
 			const endDate = new Date(endDatetime)
-			const durationMs = endDate.getTime() - startDate.getTime()
-			const durationHours = durationMs / (1000 * 60 * 60)
+			const durationHours = this.getSessionDurationHours(startDate, endDate)
 
 			console.log('⏱️ [SESSION CREATE] Validando duración:', {
 				startDatetime,
@@ -267,6 +303,13 @@ export class SessionService {
 
 			if (durationHours > accompaniment.maxHoursPerSession) {
 				throw new BadRequestException(`La duración máxima de la sesión debe ser de ${accompaniment.maxHoursPerSession} hora(s)`)
+			}
+
+			const assignedHours = await this.getAssignedSessionHours(sessionRepository, accompanimentId)
+			const remainingHours = this.roundHours(accompaniment.totalHours - assignedHours)
+
+			if (assignedHours + durationHours > accompaniment.totalHours) {
+				throw new BadRequestException(`La sesión excede las horas totales permitidas del acompañamiento. Horas disponibles: ${this.formatHours(remainingHours)}`)
 			}
 
 			console.log('✅ [SESSION CREATE] Validación de duración exitosa')
@@ -692,10 +735,7 @@ export class SessionService {
 				throw new BadRequestException(`Sesión con id ${id} no encontrada`)
 			}
 
-			const accompaniment = await accompanimentRepository.findOne({
-				where: { id: session.accompanimentId },
-				relations: ['sessions']
-			})
+			const accompaniment = await accompanimentRepository.findOne({ where: { id: session.accompanimentId } })
 			if (!accompaniment) {
 				this.removeFiles(preparationFiles)
 				throw new BadRequestException(`Acompañamiento con id ${session.accompanimentId} no encontrado`)
@@ -716,7 +756,7 @@ export class SessionService {
 				const endDate = this.dateService.parseToDate(endDatetime)
 				const now = this.dateService.getNow()
 
-				const diffInHours = this.dateService.getHoursDiff(startDate, endDate)
+				const diffInHours = this.getSessionDurationHours(startDate, endDate)
 
 				if (diffInHours <= 0) {
 					this.removeFiles(preparationFiles)
@@ -738,16 +778,12 @@ export class SessionService {
 					throw new BadRequestException('La fecha de inicio y fin deben ser posteriores a la actual')
 				}
 
-				const assignedHours = accompaniment.sessions
-				.filter(session => [1, 2, 3].includes(session.statusId))
-				.reduce((total, session) => {
-					const sessionHours = this.dateService.getHoursDiff(session.startDatetime, session.endDatetime)
-					return total + sessionHours
-				}, 0)
+				const assignedHours = await this.getAssignedSessionHours(sessionRepository, accompaniment.id, session.id)
+				const remainingHours = this.roundHours(accompaniment.totalHours - assignedHours)
 
 				if (assignedHours + diffInHours > accompaniment.totalHours) {
 					this.removeFiles(preparationFiles)
-					throw new BadRequestException(`La sesión excede las horas totales permitidas del acompañamiento. Horas disponibles: ${accompaniment.totalHours - assignedHours}`)
+					throw new BadRequestException(`La sesión excede las horas totales permitidas del acompañamiento. Horas disponibles: ${this.formatHours(remainingHours)}`)
 				}
 
 			}

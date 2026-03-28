@@ -4,6 +4,7 @@ import { BadRequestException, Injectable } from '@nestjs/common'
 import { Accompaniment } from 'src/entities/Accompaniment'
 import { Business } from 'src/entities/Business'
 import { Expert } from 'src/entities/Expert'
+import { Session } from 'src/entities/Session'
 import { StrengtheningArea } from 'src/entities/StrengtheningArea'
 import { DynamicDatabaseService } from 'src/services/dynamic-database/dynamic-database.service'
 
@@ -21,6 +22,10 @@ export class AccompanimentService {
 	constructor(
 		private readonly dynamicDbService: DynamicDatabaseService
 	) {}
+
+	private roundHours(value: number) {
+		return Number(value.toFixed(2))
+	}
 
 	async create(createAccompanimentDto: CreateAccompanimentDto, businessName: string) {
 		console.log('🏁 AccompanimentService.create called with businessName:', businessName)
@@ -470,6 +475,7 @@ export class AccompanimentService {
 			const businessRepository = businessDataSource.getRepository(Business)
 			const expertRepository = businessDataSource.getRepository(Expert)
 			const accompanimentRepository = businessDataSource.getRepository(Accompaniment)
+			const sessionRepository = businessDataSource.getRepository(Session)
 			const strengtheningAreaRepository = businessDataSource.getRepository(StrengtheningArea)
 
 			if(businessId) {
@@ -523,6 +529,20 @@ export class AccompanimentService {
 
 			if (!existingAccompaniment) {
 				throw new BadRequestException(`No se encontró un acompañamiento con el ID ${id}`)
+			}
+
+			if (totalHours) {
+				const scheduledSessionHoursResult = await sessionRepository
+					.createQueryBuilder('session')
+					.select('COALESCE(SUM(TIMESTAMPDIFF(MINUTE, session.startDatetime, session.endDatetime)), 0)', 'scheduledMinutes')
+					.where('session.accompanimentId = :id', { id })
+					.getRawOne()
+
+				const scheduledSessionHours = this.roundHours(Number(scheduledSessionHoursResult?.scheduledMinutes || 0) / 60)
+
+				if (totalHours < scheduledSessionHours) {
+					throw new BadRequestException(`El total de horas (${totalHours}) no puede ser menor a las horas ya programadas (${scheduledSessionHours}) en las sesiones`)
+				}
 			}
 
 			if (businessId) existingAccompaniment.businessId = businessId
