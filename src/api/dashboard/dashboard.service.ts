@@ -402,6 +402,7 @@ export class DashboardService {
       const strengtheningAreas = strengtheningAreasRaw.map((item) => {
         return {
           name: item.name,
+          levelId: item.levelId,
           value: parseInt(item.value),
         };
       });
