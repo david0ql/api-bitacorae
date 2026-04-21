@@ -1,55 +1,57 @@
-import { Injectable } from '@nestjs/common'
-import { DynamicDatabaseService } from 'src/services/dynamic-database/dynamic-database.service'
+import { Injectable } from '@nestjs/common';
+import { DynamicDatabaseService } from 'src/services/dynamic-database/dynamic-database.service';
 
 @Injectable()
 export class DashboardService {
-	constructor(
-		private readonly dynamicDbService: DynamicDatabaseService
-	) {}
+  constructor(private readonly dynamicDbService: DynamicDatabaseService) {}
 
-	async findAll(businessName: string) {
-		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
-		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+  async findAll(businessName: string) {
+    const businessDataSource =
+      await this.dynamicDbService.getBusinessConnection(businessName);
+    if (!businessDataSource)
+      throw new Error(
+        `No se pudo conectar a la base de datos de la empresa: ${businessName}`,
+      );
 
-		try {
-			const [
-				dataBusiness,
-				activeBusiness,
-				sessionHours,
-				businessSizeRaw,
-				platformData,
-				cohorts,
-				economicSectorsRaw,
-				strengtheningAreasRaw,
-				productStatusesRaw,
-				marketScopesRaw,
-				positionsRaw,
-				educationLevelsRaw,
-				gendersRaw,
-				experienceRangesRaw,
-				dateRange
-			] = await Promise.all([
-				businessDataSource.query(`
+    try {
+      const [
+        dataBusiness,
+        activeBusiness,
+        sessionHours,
+        businessSizeRaw,
+        platformData,
+        cohorts,
+        economicSectorsRaw,
+        strengtheningAreasRaw,
+        productStatusesRaw,
+        marketScopesRaw,
+        positionsRaw,
+        educationLevelsRaw,
+        gendersRaw,
+        experienceRangesRaw,
+        dateRange,
+      ] = await Promise.all([
+        businessDataSource.query(`
 					SELECT
 						COUNT(b.id) AS business_count,
 						SUM(b.assigned_hours) totalHours
 					FROM
 						business b
 				`),
-				businessDataSource.query(`
+        businessDataSource.query(`
 					SELECT
 						COUNT(DISTINCT b.id) AS business_active_count
 					FROM
 						business b
 						INNER JOIN accompaniment a ON a.business_id = b.id
 				`),
-				businessDataSource.query(`
+        businessDataSource.query(`
 					SELECT
 						IFNULL(ROUND(SUM(CASE WHEN s.status_id IN (2, 3, 4) THEN TIMESTAMPDIFF(HOUR, s.start_datetime, s.end_datetime) ELSE 0 END)), 0) AS completedHours
 					FROM
 						session s
 				`),
-				businessDataSource.query(`
+        businessDataSource.query(`
 					SELECT
 						bs.name AS name,
 						COUNT(*) AS value 
@@ -58,9 +60,13 @@ export class DashboardService {
 						INNER JOIN business_size bs ON b.business_size_id = bs.id
 					GROUP BY bs.id
 				`),
-				businessDataSource.query(`SELECT program_start_date FROM platform LIMIT 1`),
-				businessDataSource.query(`SELECT id, name, start_date, end_date FROM cohort c ORDER BY c.order`),
-				businessDataSource.query(`
+        businessDataSource.query(
+          `SELECT program_start_date FROM platform LIMIT 1`,
+        ),
+        businessDataSource.query(
+          `SELECT id, name, start_date, end_date FROM cohort c ORDER BY c.order`,
+        ),
+        businessDataSource.query(`
 					SELECT
 						ea.name AS name,
 						COUNT(DISTINCT b.id) AS value 
@@ -71,18 +77,19 @@ export class DashboardService {
 					GROUP BY ea.id, ea.name
 					ORDER BY value DESC
 				`),
-				businessDataSource.query(`
+        businessDataSource.query(`
 					SELECT
 						sa.name AS name,
+						sa.level_id AS levelId,
 						COUNT(DISTINCT b.id) AS value 
 					FROM
 						business b
 						INNER JOIN business_strengthening_area_rel bsa ON bsa.business_id = b.id
 						INNER JOIN strengthening_area sa ON sa.id = bsa.strengthening_area_id
-					GROUP BY sa.id, sa.name
-					ORDER BY value DESC
+					GROUP BY sa.id, sa.name, sa.level_id
+					ORDER BY sa.level_id ASC, value DESC
 				`),
-				businessDataSource.query(`
+        businessDataSource.query(`
 					SELECT
 						ps.name AS name,
 						COUNT(DISTINCT b.id) AS value 
@@ -92,7 +99,7 @@ export class DashboardService {
 					GROUP BY ps.id, ps.name
 					ORDER BY value DESC
 				`),
-				businessDataSource.query(`
+        businessDataSource.query(`
 					SELECT
 						ms.name AS name,
 						COUNT(DISTINCT b.id) AS value 
@@ -102,7 +109,7 @@ export class DashboardService {
 					GROUP BY ms.id, ms.name
 					ORDER BY value DESC
 				`),
-				businessDataSource.query(`
+        businessDataSource.query(`
 					SELECT
 						ct.name AS name,
 						COUNT(DISTINCT e.id) AS expert_count,
@@ -116,7 +123,7 @@ export class DashboardService {
 					GROUP BY ct.id, ct.name
 					ORDER BY expert_count DESC
 				`),
-				businessDataSource.query(`
+        businessDataSource.query(`
 					SELECT
 						el.name AS name,
 						COUNT(DISTINCT ci.id) AS value 
@@ -126,7 +133,7 @@ export class DashboardService {
 					GROUP BY el.id, el.name
 					ORDER BY value DESC
 				`),
-				businessDataSource.query(`
+        businessDataSource.query(`
 					SELECT
 						g.name AS name,
 						COUNT(DISTINCT ci.id) AS value 
@@ -136,7 +143,7 @@ export class DashboardService {
 					GROUP BY g.id, g.name
 					ORDER BY value DESC
 				`),
-				businessDataSource.query(`
+        businessDataSource.query(`
 					SELECT
 						CASE 
 							WHEN ci.experience_years < 2 THEN '0-2 años'
@@ -158,7 +165,7 @@ export class DashboardService {
 						END
 					ORDER BY value DESC
 				`),
-				businessDataSource.query(`
+        businessDataSource.query(`
 					SELECT 
 						LEAST(
 							COALESCE((SELECT MIN(DATE(start_datetime)) FROM session WHERE start_datetime IS NOT NULL), '2024-01-01'),
@@ -168,40 +175,44 @@ export class DashboardService {
 							COALESCE((SELECT MAX(DATE(start_datetime)) FROM session WHERE start_datetime IS NOT NULL), '2024-12-31'),
 							COALESCE((SELECT MAX(DATE(created_at)) FROM business WHERE created_at IS NOT NULL), '2024-12-31')
 						) AS max_date
-				`)
-			])
+				`),
+      ]);
 
-			// Calculate percentage safely
-			const assignedHours = dataBusiness[0].totalHours || 0
-			const completedHours = sessionHours[0].completedHours || 0
-			const percentage = assignedHours > 0 
-				? Math.round((completedHours / assignedHours) * 100)
-				: 0
+      // Calculate percentage safely
+      const assignedHours = dataBusiness[0].totalHours || 0;
+      const completedHours = sessionHours[0].completedHours || 0;
+      const percentage =
+        assignedHours > 0
+          ? Math.round((completedHours / assignedHours) * 100)
+          : 0;
 
-			const chartData1 = {
-				business_count: dataBusiness[0].business_count,
-				business_active_count: activeBusiness[0].business_active_count,
-				assigned_hours: assignedHours,
-				session_hours_completed: completedHours,
-				percentage: percentage
-			}
-	//*********** */
-			const businessSize = businessSizeRaw.map((item) => {
-				return {
-					name: item.name,
-					value: parseInt(item.value)
-				}
-			})
-			const chartData2 = {
-				business_size: businessSize,
-				total: businessSize.reduce((acc, curr) => acc + curr.value, 0)
-			}
-	//*********** */
-			// Get platform program start date
-			const programStartDate = platformData[0]?.program_start_date || '2025-02-01' // Default fallback
+      const chartData1 = {
+        business_count: dataBusiness[0].business_count,
+        business_active_count: activeBusiness[0].business_active_count,
+        assigned_hours: assignedHours,
+        session_hours_completed: completedHours,
+        percentage: percentage,
+      };
+      //*********** */
+      const businessSize = businessSizeRaw.map((item) => {
+        return {
+          name: item.name,
+          value: parseInt(item.value),
+        };
+      });
+      const chartData2 = {
+        business_size: businessSize,
+        total: businessSize.reduce((acc, curr) => acc + curr.value, 0),
+      };
+      //*********** */
+      // Get platform program start date
+      const programStartDate =
+        platformData[0]?.program_start_date || '2025-02-01'; // Default fallback
 
-			let result3 = await Promise.all(cohorts.map(async cohort => {
-				const data = await businessDataSource.query(`
+      let result3 = await Promise.all(
+        cohorts.map(async (cohort) => {
+          const data = await businessDataSource.query(
+            `
 					WITH RECURSIVE month_series AS (
 						SELECT DATE_FORMAT(? , '%Y-%m-01') AS month
 						UNION ALL
@@ -239,54 +250,66 @@ export class DashboardService {
 					LEFT JOIN empresas_por_mes b ON b.month = m.month
 					ORDER BY m.month
 
-				`, [programStartDate, cohort.end_date, cohort.id, cohort.id])
+				`,
+            [programStartDate, cohort.end_date, cohort.id, cohort.id],
+          );
 
-				const categories = data.map((d: any) => d.month)
-				const hours = data.map((d: any) => Number(d.total_horas) || 0)
-				const sessions = data.map((d: any) => Number(d.total_sesiones) || 0)
-				const businesses = data.map((d: any) => Number(d.total_empresas) || 0)
+          const categories = data.map((d: any) => d.month);
+          const hours = data.map((d: any) => Number(d.total_horas) || 0);
+          const sessions = data.map((d: any) => Number(d.total_sesiones) || 0);
+          const businesses = data.map(
+            (d: any) => Number(d.total_empresas) || 0,
+          );
 
-				const totalHours = hours.reduce((acc, cur) => acc + Number(cur), 0)
-				const totalSessions = sessions.reduce((acc, cur) => acc + Number(cur), 0)
-				const totalBusinesses = businesses.reduce((acc, cur) => acc + Number(cur), 0)
+          const totalHours = hours.reduce((acc, cur) => acc + Number(cur), 0);
+          const totalSessions = sessions.reduce(
+            (acc, cur) => acc + Number(cur),
+            0,
+          );
+          const totalBusinesses = businesses.reduce(
+            (acc, cur) => acc + Number(cur),
+            0,
+          );
 
-				return {
-					[cohort.id]: {
-						categories,
-						hours,
-						sessions,
-						businesses,
-						totalHours,
-						totalSessions,
-						totalBusinesses
-					}
-				}
-			}))
-			result3 = result3.reduce((acc, curr) => {
-				const id = Object.keys(curr)[0]
-				return {
-					...acc,
-					[id]: curr[id]
-				}
-			}, {})
+          return {
+            [cohort.id]: {
+              categories,
+              hours,
+              sessions,
+              businesses,
+              totalHours,
+              totalSessions,
+              totalBusinesses,
+            },
+          };
+        }),
+      );
+      result3 = result3.reduce((acc, curr) => {
+        const id = Object.keys(curr)[0];
+        return {
+          ...acc,
+          [id]: curr[id],
+        };
+      }, {});
 
-			console.log('chartData3 debug:', {
-				cohorts: cohorts,
-				data: result3
-			})
+      console.log('chartData3 debug:', {
+        cohorts: cohorts,
+        data: result3,
+      });
 
-			const chartData3 = {
-				cohorts: cohorts,
-				data: result3
-			}
-	//*********** */
-			// Obtener fechas mínimas y máximas para el rango
-			const minDate = dateRange[0]?.min_date || '2024-01-01'
-			const maxDate = dateRange[0]?.max_date || '2024-12-31'
-			
-			console.log('Date range debug:', { minDate, maxDate })
-			
-			const globalDataRaw = await businessDataSource.query(`
+      const chartData3 = {
+        cohorts: cohorts,
+        data: result3,
+      };
+      //*********** */
+      // Obtener fechas mínimas y máximas para el rango
+      const minDate = dateRange[0]?.min_date || '2024-01-01';
+      const maxDate = dateRange[0]?.max_date || '2024-12-31';
+
+      console.log('Date range debug:', { minDate, maxDate });
+
+      const globalDataRaw = await businessDataSource.query(
+        `
 				WITH RECURSIVE month_series AS (
 					SELECT DATE_FORMAT(?, '%Y-%m-01') AS month
 					UNION ALL
@@ -321,152 +344,164 @@ export class DashboardService {
 				LEFT JOIN sesiones_por_mes s ON s.month = m.month
 				LEFT JOIN empresas_por_mes b ON b.month = m.month
 				ORDER BY m.month
-			`, [minDate, maxDate])
-			
-			console.log('globalDataRaw debug:', globalDataRaw)
-			
-			const categories4 = globalDataRaw.map((d: any) => d.month)
-			const hours4 = globalDataRaw.map((d: any) => Number(d.total_horas) || 0)
-			const sessions4 = globalDataRaw.map((d: any) => Number(d.total_sesiones) || 0)
-			const businesses4 = globalDataRaw.map((d: any) => Number(d.total_empresas) || 0)
-			const totalHours4 = hours4.reduce((acc, cur) => acc + Number(cur), 0)
-			const totalSessions4 = sessions4.reduce((acc, cur) => acc + Number(cur), 0)
-			const totalBusinesses4 = businesses4.reduce((acc, cur) => acc + Number(cur), 0)
+			`,
+        [minDate, maxDate],
+      );
 
-			console.log('chartData4 debug:', {
-				categories: categories4,
-				hours: hours4,
-				sessions: sessions4,
-				businesses: businesses4,
-				totalHours: totalHours4,
-				totalSessions: totalSessions4,
-				totalBusinesses: totalBusinesses4
-			})
+      console.log('globalDataRaw debug:', globalDataRaw);
 
-			const chartData4 = {
-				categories: categories4,
-				hours: hours4,
-				sessions: sessions4,
-				businesses: businesses4,
-				totalHours: totalHours4,
-				totalSessions: totalSessions4,
-				totalBusinesses: totalBusinesses4
-			}
+      const categories4 = globalDataRaw.map((d: any) => d.month);
+      const hours4 = globalDataRaw.map((d: any) => Number(d.total_horas) || 0);
+      const sessions4 = globalDataRaw.map(
+        (d: any) => Number(d.total_sesiones) || 0,
+      );
+      const businesses4 = globalDataRaw.map(
+        (d: any) => Number(d.total_empresas) || 0,
+      );
+      const totalHours4 = hours4.reduce((acc, cur) => acc + Number(cur), 0);
+      const totalSessions4 = sessions4.reduce(
+        (acc, cur) => acc + Number(cur),
+        0,
+      );
+      const totalBusinesses4 = businesses4.reduce(
+        (acc, cur) => acc + Number(cur),
+        0,
+      );
 
-			//*********** */
-			// Sectores económicos
-			const economicSectors = economicSectorsRaw.map((item) => {
-				return {
-					name: item.name,
-					value: parseInt(item.value)
-				}
-			})
+      console.log('chartData4 debug:', {
+        categories: categories4,
+        hours: hours4,
+        sessions: sessions4,
+        businesses: businesses4,
+        totalHours: totalHours4,
+        totalSessions: totalSessions4,
+        totalBusinesses: totalBusinesses4,
+      });
 
-			//*********** */
-			// Áreas de experticia
-			const strengtheningAreas = strengtheningAreasRaw.map((item) => {
-				return {
-					name: item.name,
-					value: parseInt(item.value)
-				}
-			})
+      const chartData4 = {
+        categories: categories4,
+        hours: hours4,
+        sessions: sessions4,
+        businesses: businesses4,
+        totalHours: totalHours4,
+        totalSessions: totalSessions4,
+        totalBusinesses: totalBusinesses4,
+      };
 
-			//*********** */
-			// Estados de producto
-			const productStatuses = productStatusesRaw.map((item) => {
-				return {
-					name: item.name,
-					value: parseInt(item.value)
-				}
-			})
+      //*********** */
+      // Sectores económicos
+      const economicSectors = economicSectorsRaw.map((item) => {
+        return {
+          name: item.name,
+          value: parseInt(item.value),
+        };
+      });
 
-			//*********** */
-			// Alcance de mercado
-			const marketScopes = marketScopesRaw.map((item) => {
-				return {
-					name: item.name,
-					value: parseInt(item.value)
-				}
-			})
+      //*********** */
+      // Áreas de experticia
+      const strengtheningAreas = strengtheningAreasRaw.map((item) => {
+        return {
+          name: item.name,
+          value: parseInt(item.value),
+        };
+      });
 
-			//*********** */
-			// Tipos de consultores/expertos
-			const positions = positionsRaw.map((item) => {
-				return {
-					name: item.name,
-					value: parseInt(item.expert_count),
-					total_hours: parseInt(item.total_hours) || 0,
-					business_count: parseInt(item.business_count)
-				}
-			})
+      //*********** */
+      // Estados de producto
+      const productStatuses = productStatusesRaw.map((item) => {
+        return {
+          name: item.name,
+          value: parseInt(item.value),
+        };
+      });
 
-			//*********** */
-			// Niveles de educación
-			const educationLevels = educationLevelsRaw.map((item) => {
-				return {
-					name: item.name,
-					value: parseInt(item.value)
-				}
-			})
+      //*********** */
+      // Alcance de mercado
+      const marketScopes = marketScopesRaw.map((item) => {
+        return {
+          name: item.name,
+          value: parseInt(item.value),
+        };
+      });
 
-			//*********** */
-			// Géneros
-			const genders = gendersRaw.map((item) => {
-				return {
-					name: item.name,
-					value: parseInt(item.value)
-				}
-			})
+      //*********** */
+      // Tipos de consultores/expertos
+      const positions = positionsRaw.map((item) => {
+        return {
+          name: item.name,
+          value: parseInt(item.expert_count),
+          total_hours: parseInt(item.total_hours) || 0,
+          business_count: parseInt(item.business_count),
+        };
+      });
 
-			//*********** */
-			// Experiencia por rangos
-			const experienceRanges = experienceRangesRaw.map((item) => {
-				return {
-					name: item.name,
-					value: parseInt(item.value)
-				}
-			})
+      //*********** */
+      // Niveles de educación
+      const educationLevels = educationLevelsRaw.map((item) => {
+        return {
+          name: item.name,
+          value: parseInt(item.value),
+        };
+      });
 
-			return {
-				chartData1,
-				chartData2,
-				chartData3,
-				chartData4,
-				economicSectors: {
-					data: economicSectors,
-					total: economicSectors.reduce((acc, curr) => acc + curr.value, 0)
-				},
-				strengtheningAreas: {
-					data: strengtheningAreas,
-					total: strengtheningAreas.reduce((acc, curr) => acc + curr.value, 0)
-				},
-				productStatuses: {
-					data: productStatuses,
-					total: productStatuses.reduce((acc, curr) => acc + curr.value, 0)
-				},
-				marketScopes: {
-					data: marketScopes,
-					total: marketScopes.reduce((acc, curr) => acc + curr.value, 0)
-				},
-				positions: {
-					data: positions,
-					total: positions.reduce((acc, curr) => acc + curr.value, 0)
-				},
-				educationLevels: {
-					data: educationLevels,
-					total: educationLevels.reduce((acc, curr) => acc + curr.value, 0)
-				},
-				genders: {
-					data: genders,
-					total: genders.reduce((acc, curr) => acc + curr.value, 0)
-				},
-				experienceRanges: {
-					data: experienceRanges,
-					total: experienceRanges.reduce((acc, curr) => acc + curr.value, 0)
-				}
-			}
-		} finally {
-			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
-		}
-	}
+      //*********** */
+      // Géneros
+      const genders = gendersRaw.map((item) => {
+        return {
+          name: item.name,
+          value: parseInt(item.value),
+        };
+      });
+
+      //*********** */
+      // Experiencia por rangos
+      const experienceRanges = experienceRangesRaw.map((item) => {
+        return {
+          name: item.name,
+          value: parseInt(item.value),
+        };
+      });
+
+      return {
+        chartData1,
+        chartData2,
+        chartData3,
+        chartData4,
+        economicSectors: {
+          data: economicSectors,
+          total: economicSectors.reduce((acc, curr) => acc + curr.value, 0),
+        },
+        strengtheningAreas: {
+          data: strengtheningAreas,
+          total: strengtheningAreas.reduce((acc, curr) => acc + curr.value, 0),
+        },
+        productStatuses: {
+          data: productStatuses,
+          total: productStatuses.reduce((acc, curr) => acc + curr.value, 0),
+        },
+        marketScopes: {
+          data: marketScopes,
+          total: marketScopes.reduce((acc, curr) => acc + curr.value, 0),
+        },
+        positions: {
+          data: positions,
+          total: positions.reduce((acc, curr) => acc + curr.value, 0),
+        },
+        educationLevels: {
+          data: educationLevels,
+          total: educationLevels.reduce((acc, curr) => acc + curr.value, 0),
+        },
+        genders: {
+          data: genders,
+          total: genders.reduce((acc, curr) => acc + curr.value, 0),
+        },
+        experienceRanges: {
+          data: experienceRanges,
+          total: experienceRanges.reduce((acc, curr) => acc + curr.value, 0),
+        },
+      };
+    } finally {
+      // await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
+    }
+  }
 }
