@@ -1410,6 +1410,10 @@ export class BusinessService {
     }
   }
 
+  async removeEvidence(_businessId: number, attachmentId: number, businessName: string) {
+    return this.requestAttachmentService.removeById({ businessName, id: attachmentId })
+  }
+
   async remove(id: number, businessName: string) {
     const businessDataSource =
       await this.dynamicDbService.getBusinessConnection(businessName);

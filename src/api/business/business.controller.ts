@@ -100,6 +100,12 @@ export class BusinessController {
 		return this.businessService.update(+id, updateBusinessDto, businessName, files)
 	}
 
+	@Delete(':id/evidence/:attachmentId')
+	@HttpCode(200)
+	removeEvidence(@Param('id') id: string, @Param('attachmentId') attachmentId: string, @BusinessName() businessName: string) {
+		return this.businessService.removeEvidence(+id, +attachmentId, businessName)
+	}
+
 	@Delete(':id')
 	@HttpCode(200)
 	remove(@Param('id') id: string, @BusinessName() businessName: string) {
