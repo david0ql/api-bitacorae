@@ -478,6 +478,16 @@ export class AccompanimentService {
 			const sessionRepository = businessDataSource.getRepository(Session)
 			const strengtheningAreaRepository = businessDataSource.getRepository(StrengtheningArea)
 
+			// Fetch existing accompaniment first to use as base for effective values
+			const existingAccompaniment = await accompanimentRepository.findOne({
+				where: { id },
+				relations: ['strengtheningAreas']
+			})
+
+			if (!existingAccompaniment) {
+				throw new BadRequestException(`No se encontró un acompañamiento con el ID ${id}`)
+			}
+
 			if(businessId) {
 				const business = await businessRepository.findOne({ where: { id: businessId } })
 				if (!business) throw new BadRequestException(`No se encontró una empresa con el ID ${businessId}`)
@@ -488,60 +498,71 @@ export class AccompanimentService {
 				if (!expert) throw new BadRequestException(`No se encontró un experto con el ID ${expertId}`)
 			}
 
-			if(businessId && expertId) {
-				const existingAccompaniment = await accompanimentRepository.findOne({
-					where: { businessId, expertId }
+			const effectiveBizId = businessId ?? existingAccompaniment.businessId
+			const effectiveExpertId = expertId ?? existingAccompaniment.expertId
+
+			if(expertId) {
+				const conflict = await accompanimentRepository.findOne({
+					where: { businessId: effectiveBizId, expertId: effectiveExpertId }
 				})
-				if (existingAccompaniment && existingAccompaniment.id !== id) {
-					throw new BadRequestException(`La empresa con el ID ${businessId} ya está siendo acompañada por el experto con el ID ${expertId}`)
+				if (conflict && conflict.id !== id) {
+					throw new BadRequestException(`La empresa con el ID ${effectiveBizId} ya está siendo acompañada por el experto con el ID ${effectiveExpertId}`)
 				}
 			}
 
-			if(totalHours && maxHoursPerSession && totalHours < maxHoursPerSession) {
-				throw new BadRequestException(`El total de horas (${totalHours}) no puede ser menor a las horas máximas por sesión (${maxHoursPerSession})`)
+			// Use effective values combining incoming fields with existing ones
+			const effectiveTotalHours = totalHours ?? existingAccompaniment.totalHours
+			const effectiveMaxHoursPerSession = maxHoursPerSession ?? existingAccompaniment.maxHoursPerSession
+			const effectiveMinimumHours = minimumHours ?? existingAccompaniment.minimumHours
+
+			// Get already-scheduled session hours
+			const scheduledSessionHoursResult = await sessionRepository
+				.createQueryBuilder('session')
+				.select('COALESCE(SUM(TIMESTAMPDIFF(MINUTE, session.startDatetime, session.endDatetime)), 0)', 'scheduledMinutes')
+				.where('session.accompanimentId = :id', { id })
+				.getRawOne()
+
+			const scheduledSessionHours = this.roundHours(Number(scheduledSessionHoursResult?.scheduledMinutes || 0) / 60)
+			const availableHours = this.roundHours(effectiveTotalHours - scheduledSessionHours)
+
+			// totalHours cannot be reduced below already-scheduled session hours
+			if (effectiveTotalHours < scheduledSessionHours) {
+				throw new BadRequestException(`El total de horas (${effectiveTotalHours}) no puede ser menor a las horas ya programadas (${scheduledSessionHours}) en las sesiones`)
 			}
 
-			if(minimumHours && maxHoursPerSession && minimumHours > maxHoursPerSession) {
-				throw new BadRequestException(`El mínimo de horas (${minimumHours}) no puede ser mayor a las horas máximas por sesión (${maxHoursPerSession})`)
+			// totalHours must cover maxHoursPerSession
+			if (effectiveTotalHours < effectiveMaxHoursPerSession) {
+				throw new BadRequestException(`El total de horas (${effectiveTotalHours}) no puede ser menor a las horas máximas por sesión (${effectiveMaxHoursPerSession})`)
 			}
 
-			if(totalHours && businessId) {
+			// minimumHours cannot exceed maxHoursPerSession
+			if (effectiveMinimumHours > effectiveMaxHoursPerSession) {
+				throw new BadRequestException(`El mínimo de horas (${effectiveMinimumHours}) no puede ser mayor a las horas máximas por sesión (${effectiveMaxHoursPerSession})`)
+			}
+
+			// maxHoursPerSession cannot exceed available hours (what's left after scheduled sessions)
+			if (availableHours > 0 && effectiveMaxHoursPerSession > availableHours) {
+				throw new BadRequestException(`Las horas máximas por sesión (${effectiveMaxHoursPerSession}) no pueden ser mayores a las horas disponibles (${availableHours})`)
+			}
+
+			// Only validate against business capacity when totalHours is actually increasing
+			if (totalHours && totalHours > existingAccompaniment.totalHours) {
 				const usedHoursResult = await accompanimentRepository
 					.createQueryBuilder("accompaniment")
 					.select("SUM(accompaniment.totalHours)", "usedHours")
-					.where("accompaniment.businessId = :businessId", { businessId })
+					.where("accompaniment.businessId = :businessId", { businessId: effectiveBizId })
 					.andWhere("accompaniment.id != :id", { id })
 					.getRawOne()
 
 				const usedHours = Number(usedHoursResult.usedHours || 0)
-				const business = await businessRepository.findOne({ where: { id: businessId } })
-				const remainingHours = business ? business.assignedHours - usedHours : 0
+				const business = await businessRepository.findOne({ where: { id: effectiveBizId } })
+				const businessAssignedHours = business?.assignedHours ?? 0
 
-				if (totalHours > remainingHours) {
-					throw new BadRequestException(`El total de horas (${totalHours}) excede las horas disponibles (${remainingHours}) para la empresa`)
-				}
-			}
-
-			const existingAccompaniment = await accompanimentRepository.findOne({
-				where: { id },
-				relations: ['strengtheningAreas']
-			})
-
-			if (!existingAccompaniment) {
-				throw new BadRequestException(`No se encontró un acompañamiento con el ID ${id}`)
-			}
-
-			if (totalHours) {
-				const scheduledSessionHoursResult = await sessionRepository
-					.createQueryBuilder('session')
-					.select('COALESCE(SUM(TIMESTAMPDIFF(MINUTE, session.startDatetime, session.endDatetime)), 0)', 'scheduledMinutes')
-					.where('session.accompanimentId = :id', { id })
-					.getRawOne()
-
-				const scheduledSessionHours = this.roundHours(Number(scheduledSessionHoursResult?.scheduledMinutes || 0) / 60)
-
-				if (totalHours < scheduledSessionHours) {
-					throw new BadRequestException(`El total de horas (${totalHours}) no puede ser menor a las horas ya programadas (${scheduledSessionHours}) en las sesiones`)
+				if (businessAssignedHours > 0) {
+					const remainingHours = businessAssignedHours - usedHours
+					if (totalHours > remainingHours) {
+						throw new BadRequestException(`El total de horas (${totalHours}) excede las horas disponibles (${remainingHours}) para la empresa`)
+					}
 				}
 			}
 
