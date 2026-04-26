@@ -191,6 +191,7 @@ export class AuthService {
 			}
 		} catch (error) {
 			console.error('Error syncing database:', error)
+			if (error?.status) throw error
 			throw new Error(`Error al sincronizar la base de datos ${dbName}: ${error.message}`)
 		}
 	}
