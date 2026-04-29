@@ -173,7 +173,7 @@ export class ReportService {
 		}
 	}
 
-	private async generateSessionPdfData(session: Session, diffInHours: number, preparationFiles, attachments, generationDate, activities) {
+	private async generateSessionPdfData(session: Session, diffInHours: number, preparationFiles, attachments, generationDate, activities, businessName: string) {
 		return this.pdfService.generateReportBySessionPdf({
 			bSocialReason: session.accompaniment?.business?.socialReason || 'No registra.',
 			bPhone: session.accompaniment?.business?.phone || 'No registra.',
@@ -203,7 +203,7 @@ export class ReportService {
 			sAttachments: attachments,
 			sActivities: activities,
 			generationDate
-		}, session.accompaniment?.business?.socialReason || 'No registra.')
+		}, businessName)
 	}
 
 	private async getBusinessReportData(business: Business, generationDate: string, businessName: string) {
@@ -355,7 +355,8 @@ export class ReportService {
 				preparationFiles,
 				attachments,
 				generationDate,
-				activities
+				activities,
+				businessName
 			)
 			data = { name, reportTypeId, sessionId, filePath: file.filePath }
 		}
@@ -865,6 +866,63 @@ export class ReportService {
 			return reportRepository.delete(id)
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
+		}
+	}
+
+	async regenerateSessionReports(businessName: string) {
+		const businessDataSource = await this.dynamicDbService.getBusinessConnection(businessName)
+		if (!businessDataSource) throw new Error(`No se pudo conectar a la base de datos de la empresa: ${businessName}`)
+		try {
+			const reportRepository = businessDataSource.getRepository(Report)
+			const reports = await reportRepository.find({
+				where: { reportTypeId: 1 },
+				relations: ['reportType']
+			})
+
+			const results: Array<{reportId: number, status: string, reason?: string, filePath?: string, error?: string}> = []
+			for (const report of reports) {
+				try {
+					if (!report.sessionId) {
+						results.push({ reportId: report.id, status: 'skipped', reason: 'No sessionId' })
+						continue
+					}
+
+					const session = await this.getSessionWithRelations(report.sessionId, businessName)
+					if (!session) {
+						results.push({ reportId: report.id, status: 'skipped', reason: 'Session not found' })
+						continue
+					}
+
+					const { preparationFiles, attachments, activities } = await this.mapFiles(report.sessionId, businessName)
+					const diffInHours = this.dateService.getHoursDiff(session.startDatetime, session.endDatetime)
+					const generationDate = this.dateService.getFormattedNow()
+
+					// Delete old file if exists
+					if (report.filePath) {
+						this.fileUploadService.deleteFile(report.filePath)
+					}
+
+					const file = await this.generateSessionPdfData(
+						session,
+						diffInHours,
+						preparationFiles,
+						attachments,
+						generationDate,
+						activities,
+						businessName
+					)
+
+					report.filePath = file.filePath
+					await reportRepository.save(report)
+					results.push({ reportId: report.id, status: 'regenerated', filePath: file.filePath })
+				} catch (error: any) {
+					results.push({ reportId: report.id, status: 'error', error: error.message })
+				}
+			}
+
+			return { total: reports.length, results }
+		} finally {
+			// await this.dynamicDbService.closeBusinessConnection(businessDataSource)
 		}
 	}
 

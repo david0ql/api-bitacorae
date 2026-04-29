@@ -43,4 +43,10 @@ export class ReportController {
 	remove(@Param('id') id: string, @BusinessName() businessName: string) {
 		return this.reportService.remove(+id, businessName)
 	}
+
+	@Post('regenerate-session-reports')
+	@HttpCode(200)
+	regenerateSessionReports(@BusinessName() businessName: string) {
+		return this.reportService.regenerateSessionReports(businessName)
+	}
 }
