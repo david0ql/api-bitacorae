@@ -458,7 +458,15 @@ export class AccompanimentService {
 
 			if (!accompaniment) throw new BadRequestException(`No se encontró un acompañamiento con el ID ${id}`)
 
-			return accompaniment
+			const usedHoursResult = await accompanimentRepository
+				.createQueryBuilder("acc")
+				.select("COALESCE(SUM(acc.totalHours), 0)", "usedHours")
+				.where("acc.businessId = :businessId", { businessId: accompaniment.business.id })
+				.andWhere("acc.id != :id", { id })
+				.getRawOne()
+
+			const usedHoursByOthers = Number(usedHoursResult?.usedHours || 0)
+			return { ...accompaniment, usedHoursByOthers }
 		} finally {
 			// await this.dynamicDbService.closeBusinessConnection(businessDataSource) // Disabled - connections are now cached
 		}
@@ -545,7 +553,7 @@ export class AccompanimentService {
 				throw new BadRequestException(`Las horas máximas por sesión (${effectiveMaxHoursPerSession}) no pueden ser mayores a las horas disponibles (${availableHours})`)
 			}
 
-			// When totalHours increases, auto-expand business.assignedHours if needed
+			// Validate business capacity when totalHours is increasing
 			if (totalHours && totalHours > existingAccompaniment.totalHours) {
 				const usedHoursResult = await accompanimentRepository
 					.createQueryBuilder("accompaniment")
@@ -556,12 +564,12 @@ export class AccompanimentService {
 
 				const usedHours = Number(usedHoursResult.usedHours || 0)
 				const business = await businessRepository.findOne({ where: { id: effectiveBizId } })
+				const businessAssignedHours = business?.assignedHours ?? 0
 
-				if (business) {
-					const remainingHours = business.assignedHours - usedHours
+				if (businessAssignedHours > 0) {
+					const remainingHours = businessAssignedHours - usedHours
 					if (totalHours > remainingHours) {
-						business.assignedHours = usedHours + totalHours
-						await businessRepository.save(business)
+						throw new BadRequestException(`El total de horas (${totalHours}) excede las horas disponibles (${remainingHours}) para la empresa`)
 					}
 				}
 			}
