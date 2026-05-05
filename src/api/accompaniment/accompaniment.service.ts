@@ -545,7 +545,7 @@ export class AccompanimentService {
 				throw new BadRequestException(`Las horas máximas por sesión (${effectiveMaxHoursPerSession}) no pueden ser mayores a las horas disponibles (${availableHours})`)
 			}
 
-			// Only validate against business capacity when totalHours is actually increasing
+			// When totalHours increases, auto-expand business.assignedHours if needed
 			if (totalHours && totalHours > existingAccompaniment.totalHours) {
 				const usedHoursResult = await accompanimentRepository
 					.createQueryBuilder("accompaniment")
@@ -556,12 +556,12 @@ export class AccompanimentService {
 
 				const usedHours = Number(usedHoursResult.usedHours || 0)
 				const business = await businessRepository.findOne({ where: { id: effectiveBizId } })
-				const businessAssignedHours = business?.assignedHours ?? 0
 
-				if (businessAssignedHours > 0) {
-					const remainingHours = businessAssignedHours - usedHours
+				if (business) {
+					const remainingHours = business.assignedHours - usedHours
 					if (totalHours > remainingHours) {
-						throw new BadRequestException(`El total de horas (${totalHours}) excede las horas disponibles (${remainingHours}) para la empresa`)
+						business.assignedHours = usedHours + totalHours
+						await businessRepository.save(business)
 					}
 				}
 			}
